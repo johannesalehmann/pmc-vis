@@ -33,8 +33,14 @@ body ::-webkit-scrollbar-thumb {
 
 /* Sidebar */
 #container {
+    display: flex;
     width: calc(100% - 350px);
     transition: width .5s;
+    overflow: hidden;
+}
+
+#container > * {
+    min-width: 0;
 }
 
 body.config-closed #container {
@@ -47,17 +53,19 @@ body.config-closed #container {
     right: 0;
     top: 0;
     bottom: 0;
-    background: var(--config-bg-color);
+    background: var(--dragbar);
     box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 1;
     width: var(--config-width);
     transition: width .5s;
+    
 }
 
 .config.ui > .ui.segment {
     margin: 1em !important;
+    background: var(--pane-background)
 }
 
 .config-closed .config {

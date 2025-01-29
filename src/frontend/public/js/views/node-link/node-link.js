@@ -1025,6 +1025,7 @@ function bindListeners(cy) {
   });
 
   cy.on("mouseout", "node", function (event) {
+    console.log(event.target)
     unmarkRecurringNodes();
   });
 

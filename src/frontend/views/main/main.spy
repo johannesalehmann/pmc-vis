@@ -34,11 +34,9 @@
   </nav>
 
   
-  <div id="container">
+  <div id="container" class="flex-container">
     <!-- panes are appended here -->
   </div>
-  
-  
 
   <div id="config" class="config ui">
     <div class="ui segment">
@@ -99,19 +97,15 @@
       <br>
       <div>
         <b>Edges</b>
-        
         <div style="display:flex">
           <span class="legend-edge chosen-edge"></span>
-          <p class="legend-p">Recommended actions</p>
+          <p class="legend-p">Recommended path(s)</p>
         </div>
         <div style="display:flex">
           <span class="legend-edge not-chosen-edge"></span>
-          <p class="legend-p">Other actions</p>
+          <p class="legend-p">Other path(s)</p>
         </div>
       </div>
-        
-      
-
     </div>
 
     <div class="ui segment">

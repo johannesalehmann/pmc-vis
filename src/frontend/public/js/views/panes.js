@@ -40,7 +40,6 @@ function spawnPane(
     //     destroyPanes(panes[spawner].spawned);
     // }
   
-    const dims = calcPaneDims();
     const panesLength = Object.keys(panes).length;
     const index = panesLength % colorList.length;
     const backgroundColor = colorList[index];
@@ -48,9 +47,9 @@ function spawnPane(
         id: id || uid(),
         container: uid(),
         dragbar: uid(),
-        width: dims.width,
-        height: dims.height,
-        split: dims.split || 0.3,
+        // width: dims.width,
+        height,
+        split: 0.3, // defines how much height the pcp has 
         cy: undefined, // must be set later!,
         backgroundColor,
         nodesIds,
@@ -74,7 +73,7 @@ function spawnPane(
     const cyContainer = document.createElement("div");
     cyContainer.id = pane.container;
     cyContainer.className = "cy";
-    cyContainer.style.height = dims.height * (1 - pane.split) + "px";
+    cyContainer.style.height = pane.height * (1 - pane.split) + "px";
 
     cyContainer.style.borderBottomColor = backgroundColor + "50";
     cyContainer.style.borderBottomWidth = "25px";
@@ -88,25 +87,30 @@ function spawnPane(
     const details = document.createElement("div");
     details.className = "detail-inspector";
     details.id = pane.details;
-    details.style.width = "100%";
-    details.style.height = dims.height * pane.split + "px";
+    details.style.height = pane.height * pane.split + "px";
 
     const split_dragbar = document.createElement("div");
     split_dragbar.id = pane.dragbar + "-split";
     split_dragbar.className = "split-dragbar";
 
     const div = document.createElement("div");
-    div.className = "cy-s";
+    div.className = "cy-s flex-item pane";
     div.id = pane.id;
-    div.style.width = dims.width + "px";
-    div.style.height = dims.height + "px";
+    div.style.flex = panesLength+1; 
+    div.style.height = pane.height + "px";
     div.appendChild(cyContainer);
     div.appendChild(split_dragbar);
     div.appendChild(details);
-    div.appendChild(dragbar);
 
-    if (document.getElementById(spawner) && newPanePosition?.value === "insert") {
-        document.getElementById(spawner).insertAdjacentElement("afterend", div);
+    const paneIds = Object.keys(panes);
+    if (paneIds.length > 0) {
+        if (document.getElementById(spawner) && newPanePosition?.value === "insert") {
+            document.getElementById(spawner).insertAdjacentElement("afterend", div);
+            document.getElementById(spawner).insertAdjacentElement("afterend", dragbar);
+        } else {
+            document.getElementById("container")?.appendChild(dragbar);
+            document.getElementById("container")?.appendChild(div);
+        }
     } else {
         document.getElementById("container")?.appendChild(div);
     }
@@ -121,23 +125,9 @@ function spawnPane(
         panes[spawner].spawned = div.id; // to remember which pane was created from this one
     }
 
+    dispatchEvent(new CustomEvent("paneResize", { detail: { pane: "all", }, }));
+    
     return pane;
-}
-
-function calcPaneDims() {
-    let paneHeight, paneWidth;
-    const paneAmount = Object.keys(panes).length;
-
-    paneHeight = height; // for now, always use all height (lane)
-    paneWidth = width;
-
-    if (paneAmount >= 3) {
-        paneWidth = width/3;
-    } else if (paneAmount !== 0) {
-        paneWidth = width/paneAmount;
-    } 
-
-    return { height: paneHeight, width: paneWidth };
 }
 
 function resizePane(div, pwidth) {
@@ -184,7 +174,7 @@ function togglePane(div) {
 function expandPane(div) {
     const windWidth = window.innerWidth;
     if (div) {
-        resizePane(div, windWidth / 1.5);
+        resizePane(div, windWidth);
 
         dispatchEvent(
             new CustomEvent("paneResize", {
@@ -238,20 +228,101 @@ function enableDragBars() {
 
 function enablePaneDragBars() {
     const dragbars = document.getElementsByClassName("dragbar");
+    let dragging = false;
 
     for (const d of dragbars) {
         d.onmousedown = null;
         d.ondblclick = null;
     }
 
-    let dragging = false;
+    for (const d of dragbars) {
+        d.onmousedown = function (e) {
+            const resizer = e.target;
+            if (!resizer.classList.contains("dragbar")) {
+                return;
+            }
+        
+            const parent = resizer.parentNode;
+            const parentStyle = getComputedStyle(parent);
+            if (parentStyle.display !== "flex") {
+                return;
+            }
+        
+            const [prev, next, sizeProp, posProp] = [
+                resizer.previousElementSibling, 
+                resizer.nextElementSibling, 
+                "offsetWidth",  
+                "pageX"
+            ];
+        
+            e.preventDefault();
+        
+            // Avoid cursor flickering (reset in onMouseUp)
+            document.body.style.cursor = getComputedStyle(resizer).cursor;
+        
+            let prevSize = prev[sizeProp];
+            let nextSize = next[sizeProp];
+            const sumSize = prevSize + nextSize;
+            const prevGrow = Number(getComputedStyle(prev).flexGrow);
+            const nextGrow = Number(getComputedStyle(next).flexGrow);
+            const sumGrow = prevGrow + nextGrow;
+            let lastPos = e[posProp];
+            dragging = true;
+        
+            document.onmousemove = function (ex) {
+                let pos = ex[posProp];
+                const d = pos - lastPos;
+                prevSize += d;
+                nextSize -= d;
+                if (prevSize < 0) {
+                    nextSize += prevSize;
+                    pos -= prevSize;
+                    prevSize = 0;
+                }
+                if (nextSize < 0) {
+                    prevSize += nextSize;
+                    pos += nextSize;
+                    nextSize = 0;
+                }
+        
+                const prevGrowNew = sumGrow * (prevSize / sumSize);
+                const nextGrowNew = sumGrow * (nextSize / sumSize);
+        
+                prev.style.flexGrow = prevGrowNew;
+                next.style.flexGrow = nextGrowNew;
+        
+                lastPos = pos;
+            };
+
+            document.onmouseup = function (e) {
+                document.onmousemove = null;
+                document.body.style.removeProperty("cursor");
+                
+                if (dragging) {
+                    dragging = false;
+                    // resize vis inside pane
+                    dispatchEvent(
+                        new CustomEvent("paneResize", {
+                            detail: {
+                                pane: "all",
+                            },
+                        })
+                    );
+                }
+                refreshCys();
+            };
+        };
+    }
+
+    return; 
+    // let dragging = false;
     for (const d of dragbars) {
         d.onmousedown = function (e) {
             const elementId = e.target ? e.target.id : e.srcElement.id;
             const div = document.getElementById(elementId).parentElement;
             dragging = panes[div.id];
             document.onmousemove = function (ex) {
-                resizePane(div, ex.x - div.getBoundingClientRect().left + 2);
+                resizePane(div, ex.x - div.getBoundingClientRect().left);
             };
 
             document.onmouseup = function (e) {
@@ -352,7 +423,6 @@ function highlightPaneById(paneId) {
     setPane(paneId);
     if (paneDiv) {
         expandPane(paneDiv);
-        // resizePane(paneDiv, windWidth / 1.5);
         dispatchEvent(
             new CustomEvent("paneResize", {
                 detail: {
@@ -380,7 +450,7 @@ function updateDocDims() {
         document.documentElement.clientWidth ||
         document.body.clientWidth;
 
-    height = -45 + (
+    height = -35 + (
         window.innerHeight ||
         document.documentElement.clientHeight ||
         document.body.clientHeight);

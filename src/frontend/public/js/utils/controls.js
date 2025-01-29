@@ -54,7 +54,7 @@ function setPane(paneId, make = false, force = false) {
   if (panes[paneId]) {
     if (pane && pane.id && panes[pane.id]) {
       if (force || pane.id !== paneId) {
-        document.getElementById(pane.container).classList.remove("active-pane");
+        document.getElementById(pane.id).classList.remove("active-pane");
       } else {
         return; // nothing to change, avoid extra computations
       }
@@ -75,7 +75,7 @@ function setPane(paneId, make = false, force = false) {
 
     document.onkeydown = (e) => pane.cy.vars["ur"].fn(pane.cy, e);
     document.getElementById("selected-pane").innerHTML = paneId;
-    document.getElementById(pane.container).classList.add("active-pane");
+    document.getElementById(pane.id).classList.add("active-pane");
     createControllers(pane.cy.params);
 
     socket.emit("active pane", paneId);

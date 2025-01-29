@@ -42,9 +42,10 @@ const parallelCoords = function (pane, data, metadata) {
     };
 
     function draw(pane, data) {
+        const paneDiv = document.getElementById(pane.id);
         const where = {
             id: pane.details,
-            width: pane.width,
+            width: paneDiv.getBoundingClientRect().width,
             height: pane.height * pane.split, // document.getElementById(pane.details).getBoundingClientRect().height,
         };
 
@@ -68,7 +69,7 @@ const parallelCoords = function (pane, data, metadata) {
             longestLabel = c.length > longestLabel ? c.length : longestLabel;
         });
 
-        const labelMargin = longestLabel * 3;
+        const labelMargin = longestLabel * 5;
 
         // determines whether the plot appears vertically or horizontally
         const orient = where.width < where.height ? 0 : 1; // 0 horizontal, 1 vertical
@@ -78,15 +79,15 @@ const parallelCoords = function (pane, data, metadata) {
         const brush_width = 8;
 
         const margin = {
-            top: (pad - 20) + (orient ? labelMargin / 5 : 0),
-            right: pad + (orient ? labelMargin : 0),
-            bottom: pad / 2,
-            left: pad + (orient ? 0 : labelMargin)
+            top: 10 + (orient ? labelMargin / 2 : 30),
+            right: pad + (orient ? labelMargin / 3 : 10),
+            bottom: (pad / 2) + (orient ? 0: labelMargin / 2),
+            left: pad + (orient ? labelMargin / 3 : labelMargin)
         },
             width = where.width - margin.left - margin.right,
             height = where.height - margin.top - margin.bottom;
 
-        if (width < 10 || height < 10) {
+        if (width < 5 || height < 5) {
             return; // do not draw
         }
 
@@ -98,7 +99,7 @@ const parallelCoords = function (pane, data, metadata) {
             svg_dims: [width, height],
             w_h: ["width", "height"],
             x_y: ["x", "y"],
-            anchor: ["end", "start"],
+            anchor: ["end", "middle"],
             trans: ["translate(0, ", "translate("]
         };
 
@@ -120,8 +121,8 @@ const parallelCoords = function (pane, data, metadata) {
         const div = document.getElementById(pcpHtml.div);
 
         d3.select('#' + where.id).selectAll("#" + pcpHtml.fg + ", #" + pcpHtml.bg + ", #" + pcpHtml.hl)
-            .attr("width", width + 10)
-            .attr("height", height + 10)
+            .attr("width", width)
+            .attr("height", height)
             .style("padding", Object.values(margin).join("px ") + "px");
 
         const foreground = div.querySelector('#' + pcpHtml.fg).getContext('2d');
@@ -370,7 +371,7 @@ const parallelCoords = function (pane, data, metadata) {
             .each(function (d) { d3.select(this).call(axis.scale(resp.axes[d])); })
             .append("text")
             .attr("text-anchor", resp.anchor[orient])
-            .attr("transform", "rotate(-10)")
+            .attr("transform", "rotate(-20)")
             .attr(resp.x_y[orient], -12)
             .text(String);
 
@@ -592,6 +593,7 @@ const parallelCoords = function (pane, data, metadata) {
     updateCountStrings();
 
     function resize(e) {
+        console.trace(e.detail)
         // assigning it to this div disables it on remove()
         if (e.detail.pane && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)) {
             draw(pane, data);

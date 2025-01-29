@@ -3,24 +3,20 @@
 /* the logic for resizing panes is in panes.js */
 .dragbar {
     background-color: var(--dragbar);
-    height: 100%;
-    position: absolute;
-    top: 0;
-    right: 0;
     width: 5px;
     cursor: col-resize;
 }
 
 .dragbar:hover {
     background-color: var(--dragbar-hover);
-    width: 10px;
+    width: 5px;
     z-index: 2;
 }
 
 /* the logic for resizing the split inside panes is in panes.js */
 .split-dragbar {
     background-color: var(--dragbar);
-    height: 3px;
+    height: 5px;
     position: absolute;
     width: 100%;
     cursor: row-resize;
@@ -29,27 +25,19 @@
 
 .split-dragbar:hover {
     background-color: var(--dragbar-hover);
-    height: 6px;
+    height: 5px;
 }
 
-.active-pane, .active-pane + .split-dragbar + .detail-inspector {
+.pane {
+    border-top: 5px var(--pane-background) solid; /* avoids flickering between active and non-active panes*/
+}
+
+.active-pane {
     -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
     -moz-box-sizing: border-box;    /* Firefox, other Gecko */
     box-sizing: border-box; 
 
-    border-top-color: var(--active-pane);
-    border-top-width: 5px;
-    border-top-style: solid;
-}
-
-#container {
-    display: flex;
-    overflow-x: scroll;
-    overflow-y: hidden;
-}
-
-#container > * {
-    flex-shrink: 0;
+    border-top: 5px var(--active-pane) solid;
 }
 
 #cy-overview {
