@@ -109,13 +109,13 @@
     </div>
 
     <div class="ui segment">
-      <h3 class="label label-info cy-config">Settings </h3>
+      <h3 class="label label-info cy-config">Model Settings</h3>
       <div id="props-config">
         <!-- layout specific options are appended here-->
       </div>
     </div>
     <div class="ui segment">
-      <h3 class="label label-info">Graph View </h3>
+      <h3 class="label label-info">Graph Settings </h3>
       <details class="ui accordion" closed="">
         <summary class="title">
           <i class="dropdown icon left"></i>
@@ -132,7 +132,7 @@
     </div>
 
     <div class="ui segment">
-      <h3 class="label label-info" id="pcp-config-span">Inspection View</h3>
+      <h3 class="label label-info" id="pcp-config-span">Attribute Settings</h3>
       <div id="pcp-config">
         <!-- layout specific options are appended here-->
       </div>

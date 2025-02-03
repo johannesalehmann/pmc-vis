@@ -436,7 +436,7 @@ const parallelCoords = function (pane, data, metadata) {
         // returns the dimension in x/y or modified in dragging
         function position(d) {
             const v = dragging[d];
-            return v == null ? resp.scale(d) : v;
+            return v === undefined ? resp.scale(d) : v;
         }
 
         // returns the path for a given data point - this maps the generated x/y function for each of the data points to every dimension
@@ -444,7 +444,7 @@ const parallelCoords = function (pane, data, metadata) {
             ctx.beginPath();
             if (orient) {
                 dimensions.map(function (p, i) {
-                    if (i == 0) {
+                    if (i === 0) {
                         ctx.moveTo(resp.scale(p), resp.axes[p](d[p].value));
                     } else {
                         ctx.lineTo(resp.scale(p), resp.axes[p](d[p].value));
@@ -452,7 +452,7 @@ const parallelCoords = function (pane, data, metadata) {
                 })
             } else {
                 dimensions.map(function (p, i) {
-                    if (i == 0) {
+                    if (i === 0) {
                         ctx.moveTo(resp.axes[p](d[p].value), resp.scale(p));
                     } else {
                         ctx.lineTo(resp.axes[p](d[p].value), resp.scale(p));
@@ -593,7 +593,6 @@ const parallelCoords = function (pane, data, metadata) {
     updateCountStrings();
 
     function resize(e) {
-        console.trace(e.detail)
         // assigning it to this div disables it on remove()
         if (e.detail.pane && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)) {
             draw(pane, data);

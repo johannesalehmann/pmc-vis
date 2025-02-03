@@ -130,9 +130,11 @@ function hideAllTippies() {
 function createControllers(params) {
   // props
   $props_config.innerHTML = "";
-  makeSelectionModesDropdown();
-  makeDetailCheckboxes();
+  
   makeSchedulerPropDropdown();
+  makeDetailCheckboxes();
+  makeAppendDropdown();
+  makeSelectionModesDropdown();
 
   // graph view settings
   $graph_config.innerHTML = "";
@@ -159,7 +161,7 @@ function createControllers(params) {
 
   // recurring nodes setting
   makeRecurringNodeMarkSettings();
-  makeAppendDropdown();
+  
 
   // pcp config
   $pcp_config.innerHTML = "";
@@ -342,13 +344,13 @@ function makeSchedulerPropDropdown() {
       pane.cy.vars["scheduler"].fn(pane.cy, value);
     },
     "scheduler-prop",
-    "Scheduler",
+    "Scheduler (DOI)",
     $props_config
   );
 
   const $param = h("div", { class: "param" });
   const $label = h("p", { class: "label label-default param" }, [
-    t("Number of iterations for batch expansion"),
+    t("Simulation Steps"),
   ]);
   const $numberInput = h("input", {
     type: "number",
@@ -678,7 +680,7 @@ function makeAppendDropdown() {
     },
     "select-pane-position",
     "New Pane Position",
-    $graph_config
+    $props_config
   );
 }
 

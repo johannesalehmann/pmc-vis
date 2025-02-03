@@ -414,7 +414,7 @@ const parallelCoords = function (pane, data, metadata) {
         // returns the dimension in x/y or modified in dragging
         function position(d) {
             const v = dragging[d];
-            return v == null ? resp.scale(d) : v;
+            return v === null ? resp.scale(d) : v;
         }
 
         // returns the path for a given data point - this maps the generated x/y function for each of the data points to every dimension

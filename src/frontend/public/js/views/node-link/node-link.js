@@ -512,7 +512,7 @@ function ctxmenu(cy) {
       // node specific
       {
         id: 'expand',
-        content: 'Expand outgoing',
+        content: 'Expand Once',
         tooltipText: 'expand outgoing',
         selector: 'node.s',
         onClickFunction: function (event) {
@@ -534,6 +534,18 @@ function ctxmenu(cy) {
         },
         hasTrailingDivider: false
       },*/
+      {
+        id: "expand-best-path",
+        content: "Expand N (Simulation)",
+        tooltipText: "Expand node to specified iterations",
+        selector: "node:selected",
+        onClickFunction: function (event) {
+          const target = event.target || event.cyTarget;
+          iteration = 0;
+          expandBestPath(cy, target);
+        },
+        hasTrailingDivider: false,
+      },
       {
         id: "color",
         content: "Mark/unmark node",
@@ -582,6 +594,18 @@ function ctxmenu(cy) {
           );
         },
         hasTrailingDivider: false,
+      },
+      {
+        id: "mark-recurring-node-pane",
+        content: "Mark pane-nodes",
+        tooltipText: "Mark pane-nodes that include this node",
+        selector: "node:selected",
+        onClickFunction: function (event) {
+          const target = event.target || event.cyTarget;
+          const nodeId = target.data().id;
+          markRecurringNodesById(nodeId, true);
+        },
+        hasTrailingDivider: true,
       },
       {
         id: "inspect-pcp",
@@ -693,31 +717,7 @@ function ctxmenu(cy) {
           resetPaneNodeMarkings();
         },
         hasTrailingDivider: false,
-      },
-      {
-        id: "expand-best-path",
-        content: "Batch-expand",
-        tooltipText: "Expand node to specified iterations",
-        selector: "node:selected",
-        onClickFunction: function (event) {
-          const target = event.target || event.cyTarget;
-          iteration = 0;
-          expandBestPath(cy, target);
-        },
-        hasTrailingDivider: false,
-      },
-      {
-        id: "mark-recurring-node-pane",
-        content: "Mark pane-nodes",
-        tooltipText: "Mark pane-nodes that include this node",
-        selector: "node:selected",
-        onClickFunction: function (event) {
-          const target = event.target || event.cyTarget;
-          const nodeId = target.data().id;
-          markRecurringNodesById(nodeId, true);
-        },
-        hasTrailingDivider: true,
-      },
+      }
     ],
     menuItemClasses: ["dropdown-item"],
     contextMenuClasses: ["dropdown-menu"],
@@ -738,7 +738,7 @@ function expandBestPath(cy, target) {
   const isTargetEnd = 
     target.data()?.details[NAMES.atomicPropositions]?.end?.value;
 
-  if (cy.vars["scheduler"].value == "_none_") {
+  if (cy.vars["scheduler"].value === "_none_") {
     Swal.fire({
       position: "top-end",
       icon: "error",
@@ -925,6 +925,7 @@ function unbindListeners(cy) {
 function bindListeners(cy) {
   unbindListeners(cy);
 
+
   // new listeners
   cy.on('tap', function (e) {
     if (e.target === cy) {
@@ -957,11 +958,28 @@ function bindListeners(cy) {
     hideAllTippies();
   });
 
-  cy.on("boxselect", function (event) {
-    var selectedNodes = cy.$("node:selected");
+  cy.on("boxselect tapselect tapunselect", function (e) {
+    // automatically syncs node selection to the PCP
+    const nodes = cy.$('node:selected');
+    if (nodes.length > 0) { // needed for tapunselect
+      spawnPCP(cy);
+    }
+  });
 
-    // Do something with the selected nodes, for example, log their IDs
-    var selectedNodeIDs = selectedNodes.map((node) => node.id());
+  cy.on('click', (e) => {
+    if (e.target === cy) { // background
+      cy.nodes().unselectify();
+    } else {
+      cy.nodes().selectify();
+    }
+  });
+
+  cy.on('dblclick', _ => {
+    cy.nodes().selectify();
+  });
+
+  cy.on('select boxselect', 'node.s', function (event) {
+    handleEditorSelection(event, cy);
   });
 
   cy.nodes().forEach(function (n) {
@@ -1002,19 +1020,19 @@ function bindListeners(cy) {
 
         makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
       }
+    });
 
+    n.on('dblclick', function (e) {
+      hideAllTippies();
+      
       if (
         e.originalEvent.altKey && 
         n.classes().filter(c => c === 's').length > 0
       ) {
+        spawnGraphOnNewPane(cy, [n.data()]);
+      } else {
         graphExtend(cy, n);
       }
-    });
-
-    n.on('dblclick', function (e) {
-      //setPane(cy.paneId);
-      hideAllTippies();
-      spawnGraphOnNewPane(cy, [n.data()]);
     });
   });
 
@@ -1025,12 +1043,7 @@ function bindListeners(cy) {
   });
 
   cy.on("mouseout", "node", function (event) {
-    console.log(event.target)
     unmarkRecurringNodes();
-  });
-
-  cy.on('select boxselect', 'node.s', function (event) {
-    handleEditorSelection(event, cy);
   });
 }
 
@@ -1115,11 +1128,15 @@ function updateNewPanePosition(cy, prop) {
   cy.vars["panePosition"].value = prop;
 }
 
-function cyUndoRedo(cy, e) {
-  if (e.keyCode == 90 && e.ctrlKey) {
-    cy.vars['ur'].value.undo(); // ctrl+z
-  } else if (e.keyCode == 89 && e.ctrlKey) {
-    cy.vars['ur'].value.redo(); // ctrl+y
+function keyboardShortcuts(cy, e) {
+  if (e.keyCode === 90 && e.ctrlKey) { // ctrl+z
+    cy.vars['ur'].value.undo(); 
+  } else if (e.keyCode === 89 && e.ctrlKey) { // ctrl+y
+    cy.vars['ur'].value.redo(); 
+  } else if (e.keyCode === 65 && e.ctrlKey) { // ctrl+a
+    e.preventDefault(); 
+    cy.nodes().select();
+    spawnPCP(cy);
   }
 }
 
@@ -1299,7 +1316,7 @@ function setPublicVars(cy, preset) {
     ur: {
       value: cy.undoRedo(),
       avoidInClone: true, // workaround for structuredClone
-      fn: cyUndoRedo,
+      fn: keyboardShortcuts,
     },
     mode: {
       value: 's',
