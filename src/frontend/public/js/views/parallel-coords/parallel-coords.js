@@ -527,41 +527,14 @@ const parallelCoords = function (pane, data, metadata) {
         }
 
         makeCtxMenu(pane.details, pane, publicFunctions, {
-            condition: (e) => { 
-                return true // return e.axis !== undefined;
-            },
             extras: [
                 {
                     label: "Select Minimum",
-                    callback: (e) => {
-                        if (!e.axisName) {
-                            Swal.fire({
-                                position: 'top-end',
-                                icon: 'error',
-                                title: 'No axis selected!',
-                                timer: 1500, 
-                                timerProgressBar: true
-                            });
-                            return;
-                        }
-                        drawBrushMinMax(data, e.axisName, pane, true);
-                    },
+                    callback: (e) => drawBrushMinMax(data, e.axisName, pane, true),
                 },
                 {
                     label: "Select Maximum",
-                    callback: (e) => {
-                        if (!e.axisName) {
-                            Swal.fire({
-                                position: 'top-end',
-                                icon: 'error',
-                                title: 'No axis selected!',
-                                timer: 1500, 
-                                timerProgressBar: true
-                            });
-                            return;
-                        }
-                        drawBrushMinMax(data, e.axisName, pane, false);
-                    },
+                    callback: (e) => drawBrushMinMax(data, e.axisName, pane, false),
                 },
             ]
         });

@@ -62,5 +62,6 @@ svg {
 }
 
 .detail-inspector {
+  width: 100%;
   position: absolute;
 }

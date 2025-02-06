@@ -38,7 +38,7 @@
         "nouislider": "14.6.4",
         "parse-json": "5.2.0",
         "popper.js": "1.14.3",
-        "pure-context-menu": "1.1.1",
+        "pure-context-menu": "1.2.8",
         "recursive-fs": "2.1.0",
         "short-uuid": "4.2.2",
         "socket.io": "4.7.5",
