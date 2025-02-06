@@ -241,87 +241,80 @@ function setStyles(cy) {
 }
 
 // requests outgoing edges from a selection of nodes and adds them to the graph
-function graphExtend(cy, node) {
-  const g = node.data();
+async function graphExtend(cy, nodes, onLayoutStopFn) {
+  const res = await fetch(
+    "http://localhost:8080/" +
+      PROJECT +
+      "/outgoing?id=" +
+      nodes.map(n => n.data().id).join("&id=")
+  );
+  const data = await res.json();
 
-  Promise.all([
-    fetch("http://localhost:8080/" + PROJECT + "/outgoing?id=" + g.id).then(
-      (res) => res.json()
-    ),
-  ]).then((promises) => {
-    const data = promises[0];
+  const elements = {
+    nodes: data.nodes
+      .map(d => ({
+        group: "nodes",
+        data: d,
+        //position: node.position() // WARNING: setting this prop makes nodes immutable, possible bug with cytoscape
+      }))
+      .filter(d => {
+        const accept = !cy.elementMapper.nodes.has(d.data.id);
+        if (accept) {
+          cy.elementMapper.nodes.set(d.data.id, d);
+        }
+        return accept;
+      }),
+    edges: data.edges
+      .map(d => ({
+        group: "edges",
+        data: {
+          id: d.id,
+          label: d.label,
+          source: d.source,
+          target: d.target,
+        }
+      }))
+      .filter(d => {
+        const accept = !cy.elementMapper.edges.has(getEdgeId(d));
+        if (accept) {
+          cy.elementMapper.edges.set(getEdgeId(d), d);
+        }
+        return accept;
+      }),
+  };
 
-    const elements = {
-      nodes: data.nodes
-        .map((d) => {
-          return {
-            group: "nodes",
-            data: d,
-            //position: node.position() // WARNING: setting this prop makes nodes immutable, possible bug with cytoscape
-          };
-        })
-        .filter((d) => {
-          const accept = !cy.elementMapper.nodes.has(d.data.id);
-          if (accept) {
-            cy.elementMapper.nodes.set(d.data.id, d);
-          }
-          return accept;
-        }),
-      edges: data.edges
-        .map((d) => {
-          return {
-            group: "edges",
-            data: {
-              id: d.id,
-              label: d.label,
-              source: d.source,
-              target: d.target,
-            },
-          };
-        })
-        .filter((d) => {
-          const accept = !cy.elementMapper.edges.has(getEdgeId(d));
-          if (accept) {
-            cy.elementMapper.edges.set(getEdgeId(d), d);
-          }
-          return accept;
-        }),
-    };
+  cy.nodes().lock();
+  cy.add(elements);
+  cy.$("#" + elements.nodes.map((n) => n.data.id).join(", #")).position(
+    nodes[0].position()
+  ); // alternatively, cy.nodes().position(node.position())
+  cy.nodes().unlock();
 
-    cy.nodes().lock();
-    cy.add(elements);
-    cy.$("#" + elements.nodes.map((n) => n.data.id).join(", #")).position(
-      node.position()
-    ); // alternatively, cy.nodes().position(node.position())
-    cy.nodes().unlock();
+  const layout = cy.layout(cy.params);
+  layout.pon('layoutstop').then(onLayoutStopFn);
+  layout.run();
 
-    cy.layout(cy.params).run();
-    bindListeners(cy);
-    setStyles(cy);
-    initHTML(cy);
+  bindListeners(cy);
+  setStyles(cy);
+  //initHTML(cy);
 
-    const nodesIds = data.nodes
-      .map((node) => node.id)
-      .filter((id) => !id.includes("t_"));
+  const nodesIds = data.nodes
+    .map((node) => node.id)
+    .filter((id) => !id.includes("t_"));
 
-    const panes = getPanes();
-    const paneNodeIds = (
-      panes[cy.paneId].nodesIds || []
-    ).concat(nodesIds);
-    panes[cy.paneId].nodesIds = paneNodeIds;
-    updatePanes(panes);
-  });
+  const panes = getPanes();
+  const paneNodeIds = (
+    panes[cy.paneId].nodesIds || []
+  ).concat(nodesIds);
+  panes[cy.paneId].nodesIds = paneNodeIds;
+  updatePanes(panes);
 }
 
 // inits cy with graph data on a pane
 function spawnGraph(pane, data, params, vars = {}, src) {
   const elements = {
-    nodes: data.nodes.map((d) => {
-      return { data: d.data ? d.data : d };
-    }),
-    edges: data.edges.map((d) => {
-      return { data: d.data ? d.data : d };
-    }),
+    nodes: data.nodes.map(d => ({ data: d.data ? d.data : d })),
+    edges: data.edges.map(d => ({ data: d.data ? d.data : d }))
   };
 
   const cytoscapeInit = {
@@ -342,18 +335,14 @@ function spawnGraph(pane, data, params, vars = {}, src) {
     const nodes = cy
       .elements()
       .nodes()
-      .map((d) => {
-        return { data: d.data() };
-      });
+      .map(d => ({ data: d.data() }));
 
     setElementMapper(cy, {
       nodes: nodes,
       edges: cy
         .elements()
         .edges()
-        .map((d) => {
-          return { data: d.data() };
-        }),
+        .map(d => ({ data: d.data() }))
     });
 
     cy.startBatch();
@@ -367,11 +356,8 @@ function spawnGraph(pane, data, params, vars = {}, src) {
     setPane(pane.id, true);
     cy.endBatch();
 
-    initHTML(cy);
-    spawnPCP(
-      cy,
-      cy.nodes().map((n) => n.data())
-    );
+    //initHTML(cy);
+    spawnPCP(cy, cy.nodes().map(n => n.data()));
     dispatchEvent(
       new CustomEvent("global-action", {
         detail: {
@@ -465,44 +451,41 @@ function spawnGraphOnNewPane(cy, nodes) {
   checkSpawnNodes(cy, nodes);
 }
 
-function fetchAndSpawn(cy, nodes) {
-  Promise.all([
-    fetch(
-      "http://localhost:8080/" +
-        PROJECT +
-        "/outgoing?id=" +
-        nodes.map((n) => n.id).join("&id=")
-    ).then((res) => res.json()),
-  ]).then((promises) => {
-    const data = promises[0];
+async function fetchAndSpawn(cy, nodes) {
+  const res = await fetch(
+    "http://localhost:8080/" +
+      PROJECT +
+      "/outgoing?id=" +
+      nodes.map((n) => n.id).join("&id=")
+  );
+  const data = await res.json();
 
-    const nodesIds = data.nodes
-      .map((node) => node.id)
-      .filter((id) => !id.includes("t_"));
-    const spawnerNodes = nodes.map((n) => n.id);
+  const nodesIds = data.nodes
+    .map((node) => node.id)
+    .filter((id) => !id.includes("t_"));
+  const spawnerNodes = nodes.map((n) => n.id);
 
-    const newPanePosition = cy.vars["panePosition"];
-    const pane = spawnPane(
-      { spawner: cy.container().parentElement.id, id: null, newPanePosition }, // pane that spawns the new one
-      nodesIds,
-      spawnerNodes
-    );
+  const newPanePosition = cy.vars["panePosition"];
+  const pane = spawnPane(
+    { spawner: cy.container().parentElement.id, id: null, newPanePosition }, // pane that spawns the new one
+    nodesIds,
+    spawnerNodes
+  );
 
-    let vars = {};
-    if (cy.vars) {
-      const varsValues = {};
-      Object.keys(cy.vars).forEach((k) => {
-        if (cy.vars[k].avoidInClone) {
-          return;
-        }
-        varsValues[k] = {
-          value: cy.vars[k].value,
-        };
-      });
-      vars = structuredClone(varsValues);
-    }
-    spawnGraph(pane, data, structuredClone(cy.params), vars, nodes);
-  });
+  let vars = {};
+  if (cy.vars) {
+    const varsValues = {};
+    Object.keys(cy.vars).forEach((k) => {
+      if (cy.vars[k].avoidInClone) {
+        return;
+      }
+      varsValues[k] = {
+        value: cy.vars[k].value,
+      };
+    });
+    vars = structuredClone(varsValues);
+  }
+  spawnGraph(pane, data, structuredClone(cy.params), vars, nodes);
 }
 
 // interactions
@@ -515,11 +498,10 @@ function ctxmenu(cy) {
         content: 'Expand Once',
         tooltipText: 'expand outgoing',
         selector: 'node.s',
-        onClickFunction: function (event) {
-          const target = event.target || event.cyTarget;
+        onClickFunction: () => {
           setPane(cy.paneId);
           hideAllTippies();
-          graphExtend(cy, target);
+          graphExtend(cy, cy.$('node:selected'));
         },
         hasTrailingDivider: false,
       },
@@ -528,7 +510,7 @@ function ctxmenu(cy) {
         content: 'Collapse outgoing',
         tooltipText: 'collapse outgoing',
         selector: 'node.s',
-        onClickFunction: function (event) {
+        onClickFunction: (event) => {
           const target = event.target || event.cyTarget;
           console.log('Under development!')
         },
@@ -539,10 +521,9 @@ function ctxmenu(cy) {
         content: "Expand N (Simulation)",
         tooltipText: "Expand node to specified iterations",
         selector: "node:selected",
-        onClickFunction: function (event) {
-          const target = event.target || event.cyTarget;
+        onClickFunction: async () => {
           iteration = 0;
-          expandBestPath(cy, target);
+          await expandBestPath(cy, cy.$('node:selected'));
         },
         hasTrailingDivider: false,
       },
@@ -551,7 +532,7 @@ function ctxmenu(cy) {
         content: "Mark/unmark node",
         tooltipText: "mark node",
         selector: "node.s",
-        onClickFunction: function (event) {
+        onClickFunction: (event) => {
           const target = event.target || event.cyTarget;
 
           if (!target.classes().includes("marked")) {
@@ -583,15 +564,10 @@ function ctxmenu(cy) {
         content: "Explore in new pane",
         tooltipText: "explore in new pane",
         selector: "node.s:selected",
-        onClickFunction: function (event) {
-          //const target = event.target || event.cyTarget; // gives the selected node
+        onClickFunction: () => {
           const nodes = cy.$("node.s:selected");
-          //setPane(cy.paneId);
           hideAllTippies();
-          spawnGraphOnNewPane(
-            cy,
-            nodes.map((n) => n.data())
-          );
+          spawnGraphOnNewPane(cy, nodes.map((n) => n.data()));
         },
         hasTrailingDivider: false,
       },
@@ -600,7 +576,7 @@ function ctxmenu(cy) {
         content: "Mark pane-nodes",
         tooltipText: "Mark pane-nodes that include this node",
         selector: "node:selected",
-        onClickFunction: function (event) {
+        onClickFunction: (event) => {
           const target = event.target || event.cyTarget;
           const nodeId = target.data().id;
           markRecurringNodesById(nodeId, true);
@@ -734,9 +710,9 @@ var maxIteration = 5;
 const setMaxIteration = (value) => {
   maxIteration = value;
 };
-function expandBestPath(cy, target) {
-  const isTargetEnd = 
-    target.data()?.details[NAMES.atomicPropositions]?.end?.value;
+
+async function expandBestPath(cy, allSources) {
+  const sources = allSources.filter(s => !s.data()?.details[NAMES.atomicPropositions]?.end?.value);
 
   if (cy.vars["scheduler"].value === "_none_") {
     Swal.fire({
@@ -746,86 +722,77 @@ function expandBestPath(cy, target) {
       timer: 1500,
       timerProgressBar: true,
     });
-  } else {
-    var sourceNodeId = target.data().id;
-    graphExtend(cy, target);
+    return; 
+  } 
+    
+  await graphExtend(cy, sources, function() {
+    // determines the next best node for each of the selected nodes
+    const ids = sources
+      .map(src => getNextBestPath(cy, src.data().id))
+      .filter(n => n && n.nodeToExpand)
+      .map(n => n.nodeToExpand.data.id);
 
-    var nextCy = cy;
-    var nextTarget = target;
+    const nextBests = cy.nodes("#" + ids.join(", #"));
+    iteration++;
 
-    getNextBestPath(cy, sourceNodeId).then((res) => {
-      iteration++;
-      nextCy = res.cy;
-      nextTarget = res?.nodeToExpand;
-      sourceNodeId = nextTarget?.data?.id;
-
-      var selectedCyNode = cy.nodes("#" + sourceNodeId);
-      if (maxIteration > 0) {
-        if (
-          iteration < maxIteration &&
-          nextCy &&
-          selectedCyNode &&
-          !isTargetEnd
-        ) {
-          expandBestPath(nextCy, selectedCyNode);
-        }
-      } else {
-        if (nextCy && selectedCyNode && !isTargetEnd) {
-          expandBestPath(nextCy, selectedCyNode);
-        }
+    if (maxIteration > 0) {
+      if (
+        iteration < maxIteration &&
+        nextBests
+      ) {
+        expandBestPath(cy, nextBests);
       }
-    });
-  }
+    } else {
+      if (cy && nextBests) {
+        expandBestPath(cy, nextBests);
+      }
+    }
+  });
 }
 
-async function getNextBestPath(cy, sourceNodeId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      var bestValue = 0;
-      var bestNodeToExpand = "";
-      var tId = "";
+function getNextBestPath(cy, sourceNodeId) {
+  var bestValue = 0;
+  var bestNodeToExpand = "";
+  var tId = "";
 
-      cy.edges().forEach((n) => {
-        const source = n.data().source;
-        const target = n.data().target;
+  cy.edges().forEach((n) => {
+    const source = n.data().source;
+    const target = n.data().target;
 
-        if (target && target.startsWith("t_")) {
-          const node = cy.elementMapper.nodes.get(target);
-          if (node && node.data.scheduler && source === sourceNodeId) {
-            const nodeSchedulerValue =
-              node.data.scheduler[cy.vars["scheduler"].value];
-            if (nodeSchedulerValue >= bestValue) {
-              bestValue = nodeSchedulerValue;
-              bestNodeToExpand = target;
-              tId = target;
-            }
-          }
+    if (target && target.startsWith("t_")) {
+      const node = cy.elementMapper.nodes.get(target);
+      if (node && node.data.scheduler && source === sourceNodeId) {
+        const nodeSchedulerValue =
+          node.data.scheduler[cy.vars["scheduler"].value];
+        if (nodeSchedulerValue >= bestValue) {
+          bestValue = nodeSchedulerValue;
+          bestNodeToExpand = target;
+          tId = target;
         }
-      });
-
-      cy.edges().forEach((n) => {
-        const source = n.data().source;
-        const target = n.data().target;
-
-        if (source && source.startsWith("t_") && source === tId) {
-          const node = cy.elementMapper.nodes.get(source);
-          if (node && node.data.scheduler) {
-            const nodeSchedulerValue =
-              node.data.scheduler[cy.vars["scheduler"].value];
-            if (nodeSchedulerValue >= bestValue) {
-              bestValue = nodeSchedulerValue;
-              bestNodeToExpand = target;
-              tId = source;
-            }
-          }
-        }
-      });
-      const nodeToExpand = cy.elementMapper.nodes.get(bestNodeToExpand);
-      var res = { cy: cy, nodeToExpand: nodeToExpand };
-
-      resolve(res);
-    }, "500");
+      }
+    }
   });
+
+  cy.edges().forEach((n) => {
+    const source = n.data().source;
+    const target = n.data().target;
+
+    if (source && source.startsWith("t_") && source === tId) {
+      const node = cy.elementMapper.nodes.get(source);
+      if (node && node.data.scheduler) {
+        const nodeSchedulerValue =
+          node.data.scheduler[cy.vars["scheduler"].value];
+        if (nodeSchedulerValue >= bestValue) {
+          bestValue = nodeSchedulerValue;
+          bestNodeToExpand = target;
+          tId = source;
+        }
+      }
+    }
+  });
+
+  const nodeToExpand = cy.elementMapper.nodes.get(bestNodeToExpand);
+  return { cy, nodeToExpand };
 }
 
 function resetPaneNodeMarkings() {
@@ -908,11 +875,10 @@ function spawnPCP(cy, _nodes) {
 
 function unbindListeners(cy) {
   // clean listeners
-  cy.off('tap');
-  cy.off('cxttapstart');
-  cy.off('grabon');
+  cy.off('tap cxttapstart grabon zoom pan');
+  cy.off('select boxselect tapselect tapunselect dblclick')
+  cy.off('mouseover mousemove mouseout')
   cy.off('tap', 'edge');
-  cy.off('zoom pan');
   cy.nodes().forEach(function (n) {
     n.off('click');
     n.off('dblclick');
@@ -958,7 +924,7 @@ function bindListeners(cy) {
     hideAllTippies();
   });
 
-  cy.on("boxselect tapselect tapunselect", function (e) {
+  cy.on("boxselect tapselect tapunselect", _.debounce(function (e) {
     // automatically syncs node selection to the PCP
     const nodes = cy.$('node:selected');
     if (
@@ -967,7 +933,7 @@ function bindListeners(cy) {
     ) { 
       spawnPCP(cy);
     }
-  });
+  }, 100));
 
   // ensure that selections don't go away when clicking the background once
   cy.on('click', (e) => {
@@ -1036,7 +1002,7 @@ function bindListeners(cy) {
       ) {
         spawnGraphOnNewPane(cy, [n.data()]);
       } else {
-        graphExtend(cy, n);
+        graphExtend(cy, [n]);
       }
     });
   });
@@ -1146,6 +1112,12 @@ function keyboardShortcuts(cy, e) {
     cy.nodes().select();
     if (cy.vars["fullSync"].value) {
       spawnPCP(cy);
+    }
+  } else if (e.key === 'Enter' || e.keyCode === 13) { 
+    if (e.ctrlKey) {
+      spawnGraphOnNewPane(cy, cy.$('node:selected').map(n => n.data()));
+    } else {
+      graphExtend(cy, cy.$('node:selected'));
     }
   }
 }
