@@ -358,6 +358,7 @@ function makeSchedulerPropDropdown() {
     name: "bestPathLength",
     id: "bestPathLength",
     value: 5,
+    min: 1,
   });
   const update = (e) => {
     const value = e.target.value;
