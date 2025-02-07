@@ -981,9 +981,10 @@ function bindListeners(cy) {
 
         const details = cy.vars['details'].value;
         Object.keys(details).forEach(d => {
-          const show = 
-            details[d].all || 
-            Object.values(details[d].props).reduce((a, b) => a || b);
+          const show = details[d].all || 
+            Object.values(
+              details[d].props
+            ).reduce((a, b) => a || b, false);
 
           if (show) {
             $links.push(
