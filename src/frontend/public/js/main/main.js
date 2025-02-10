@@ -26,7 +26,12 @@ Promise.all([
       delete data.info[k];
     }
   });
+  const nodesIds = data.nodes
+    .map((node) => node.id)
+    .filter((id) => !id.includes("t_"));
+
   info.metadata = data.info;
+  info.metadata.initial = "#" + nodesIds.join(', #');
   delete data.info;
 
   if (document.getElementById("project-id")) {
@@ -35,9 +40,7 @@ Promise.all([
 
   const firstPaneId = "pane-0";
 
-  const nodesIds = data.nodes
-    .map((node) => node.id)
-    .filter((id) => !id.includes("t_"));
+  
   const pane = spawnPane(
     { id: firstPaneId },
     nodesIds
@@ -50,5 +53,9 @@ addEventListener('linked-selection', function (e) {
   const selection = e.detail.selection;
   const panes = getPanes();
   panes[e.detail.pane].cy.nodes().unselect();
-  panes[e.detail.pane].cy.$('#' + selection.map(n => n.id).join(', #')).select();
+  const strSelection = '#' + selection.map(n => n.id).join(', #');
+  
+  if (strSelection !== '#') {
+    panes[e.detail.pane].cy.$(strSelection).select();
+  }
 }, true);

@@ -52,7 +52,7 @@ function spawnPane(
         split: 0.3, // defines how much height the pcp has 
         cy: undefined, // must be set later!,
         backgroundColor,
-        nodesIds,
+        nodesIds: new Set(nodesIds),
         spawner,
         spawnerNodes,
     };

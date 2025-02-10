@@ -31,6 +31,7 @@ import { parallelCoords } from "../parallel-coords/parallel-coords.js";
 import { ndl_to_pcp } from "../format.js";
 import NAMES from "../../utils/names.js";
 
+const THROTTLE_DEBOUNCE_DELAY = 100;
 const socket = io();
 let selectedPanesData = {
   selectedPanes: [],
@@ -202,9 +203,7 @@ function setStyles(cy) {
   cy.startBatch();
   cy.nodes()
     .addClass("t")
-    .filter((n) => {
-      return n.data().type === "s";
-    })
+    .filter(n => n.data().type === "s")
     .removeClass("t")
     .addClass("s");
 
@@ -305,10 +304,10 @@ async function graphExtend(cy, nodes, onLayoutStopFn) {
     .filter((id) => !id.includes("t_"));
 
   const panes = getPanes();
-  const paneNodeIds = (
-    panes[cy.paneId].nodesIds || []
-  ).concat(nodesIds);
-  panes[cy.paneId].nodesIds = paneNodeIds;
+  panes[cy.paneId].nodesIds = new Set([
+    ...(panes[cy.paneId].nodesIds || []), 
+    ...nodesIds
+  ]);
   updatePanes(panes);
 }
 
@@ -714,12 +713,15 @@ const setMaxIteration = (value) => {
 };
 
 async function expandBestPath(cy, allSources) {
-  const sources = allSources.filter(s => !s.data()?.details[NAMES.atomicPropositions]?.end?.value);
+  const sources = allSources.filter(s => 
+    !s.data()
+    ?.details[NAMES.atomicPropositions][NAMES.ap_end]
+    ?.value
+  );
 
   // open everything, as there is no decider / DOI / scheduler
   if (cy.vars["scheduler"].value === "_none_") { 
     await graphExtend(cy, sources, function() {
-      
       const ids = sources.map(src => getNextInPath(cy, src.data().id).next).flat();
       const nexts = cy.nodes("#" + ids.join(", #"));
       iteration++;
@@ -918,10 +920,6 @@ function unbindListeners(cy) {
   cy.off('select boxselect tapselect tapunselect dbltap')
   cy.off('mouseover mousemove mouseout')
   cy.off('tap', 'edge');
-  cy.nodes().forEach(function (n) {
-    n.off('tap');
-    n.off('dbltap');
-  });
   if (cy.ctxmenu) {
     cy.ctxmenu.destroy();
   }
@@ -971,7 +969,7 @@ function bindListeners(cy) {
     ) { 
       spawnPCP(cy);
     }
-  }, 100));
+  }, THROTTLE_DEBOUNCE_DELAY));
 
   // ensure that selections don't go away when clicking the background once
   cy.on('tap', (e) => {
@@ -991,59 +989,59 @@ function bindListeners(cy) {
     handleEditorSelection(event, cy);
   });
 
-  cy.nodes().forEach(function (n) {
-    n.on('tap', function (e) {
-      setPane(cy.paneId);
+  cy.on('tap', 'node', function (e) {
+    const n = e.target;
+    setPane(cy.paneId);
 
-      if (!e.originalEvent.shiftKey) {
-        hideAllTippies();
-      }
-
-      if (e.originalEvent.shiftKey) {
-        let g = n.data();
-
-        const $links = [];
-
-        const details = cy.vars['details'].value;
-        Object.keys(details).forEach(d => {
-          const show = details[d].all || 
-            Object.values(
-              details[d].props
-            ).reduce((a, b) => a || b, false);
-
-          if (show) {
-            $links.push(
-              h('p', {}, [t(`==== ${d} ====`)]),
-              ...Object.keys(details[d].props)
-                .filter(p => details[d].props[p])
-                .map(k => {
-                  const detail = g.details[d][k];
-                  if (detail.type === 'numbers') {
-                    return h('p', {}, [t(k + ': ' + fixed(detail.value) + '\n ')]);
-                  } else {
-                    return h('p', {}, [t(k + ': ' + (detail.value) + '\n ')]);
-                  }
-                })
-            );
-          }
-        });
-
-        makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
-      }
-    });
-
-    n.on('dbltap', function (e) {
+    if (!e.originalEvent.shiftKey) {
       hideAllTippies();
-      
-      if (
-        (e.originalEvent.altKey || e.originalEvent.ctrlKey) 
-        &&  n.classes().filter(c => c === 's').length > 0
-      ) {
-        spawnGraphOnNewPane(cy, [n.data()]);
-      } else {
-        graphExtend(cy, [n]);
-      }
-    });
+    }
+
+    if (e.originalEvent.shiftKey) {
+      let g = n.data();
+
+      const $links = [];
+
+      const details = cy.vars['details'].value;
+      Object.keys(details).forEach(d => {
+        const show = details[d].all || 
+          Object.values(
+            details[d].props
+          ).reduce((a, b) => a || b, false);
+
+        if (show) {
+          $links.push(
+            h('p', {}, [t(`==== ${d} ====`)]),
+            ...Object.keys(details[d].props)
+              .filter(p => details[d].props[p])
+              .map(k => {
+                const detail = g.details[d][k];
+                if (detail.type === 'numbers') {
+                  return h('p', {}, [t(k + ': ' + fixed(detail.value) + '\n ')]);
+                } else {
+                  return h('p', {}, [t(k + ': ' + (detail.value) + '\n ')]);
+                }
+              })
+          );
+        }
+      });
+
+      makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
+    }
+  });
+
+  cy.on('dbltap', 'node', function (e) {
+    const n = e.target;
+    hideAllTippies();
+    
+    if (
+      (e.originalEvent.altKey || e.originalEvent.ctrlKey) 
+      && n.classes().filter(c => c === 's').length > 0
+    ) {
+      spawnGraphOnNewPane(cy, [n.data()]);
+    } else {
+      graphExtend(cy, [n]);
+    }
   });
 
   cy.on("mouseover", "node", function (event) {
@@ -1141,6 +1139,27 @@ function toggleFullSync(cy, prop) {
   cy.vars["fullSync"].value = prop;
 }
 
+function selectBasedOnAP(e, ap) {
+  e.preventDefault(); 
+  
+  if (info.metadata.initial !== "#") {
+    cy.nodes().deselect();
+    const states = cy.nodes('.s')
+      .filter(d => d.data()
+        .details[NAMES.atomicPropositions][ap]
+        ?.value === true
+    );
+
+    if (states.length > 0) {
+      states.select();
+      
+      if (cy.vars["fullSync"].value) {
+        spawnPCP(cy);
+      }
+    }
+  }
+}
+
 function keyboardShortcuts(cy, e) {
   const modifier = (e.ctrlKey || e.altKey);
   cy.nodes().selectify();
@@ -1165,14 +1184,19 @@ function keyboardShortcuts(cy, e) {
   } 
 
   // ctrl+i: select initial states 
-  if (e.keyCode === 73 && modifier) { 
-    e.preventDefault(); 
-    cy.nodes().deselect();
-    cy.nodes('node.s[[indegree = 0]]').select();
-    if (cy.vars["fullSync"].value) {
-      spawnPCP(cy);
-    }
-  } 
+  if (e.keyCode === 73 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_init);
+  }
+
+  // ctrl+d: select deadlock states 
+  if (e.keyCode === 68 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_deadlock);
+  }
+
+  // ctrl+e: select deadlock states 
+  if (e.keyCode === 69 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_end);
+  }
 
   // left arrow
   if (e.keyCode === 37) { 
@@ -1219,6 +1243,7 @@ function keyboardShortcuts(cy, e) {
     }
   }
 
+  // TODO: visual selection + shift on a single node
   // up arrow
   if (e.keyCode === 38) { 
     // if siblings list, go backward
@@ -1415,7 +1440,7 @@ function setPublicVars(cy, preset) {
     ur: {
       value: cy.undoRedo(),
       avoidInClone: true, // workaround for structuredClone
-      fn: _.throttle(keyboardShortcuts, 100),
+      fn: _.throttle(keyboardShortcuts, THROTTLE_DEBOUNCE_DELAY),
     },
     mode: {
       value: 's',
@@ -1537,14 +1562,14 @@ function unmarkRecurringNodes() {
 
 function markRecurringNodes() {
   const panes = getPanes();
-  var duplicates = {};
+  const duplicates = {};
   Object.keys(panes).forEach(function (paneId) {
     const nodesIds = panes[paneId].nodesIds;
     nodesIds.forEach((nodeId) => {
-      if (duplicates[nodeId] && !duplicates[nodeId].includes(paneId)) {
-        duplicates[nodeId] = duplicates[nodeId].concat(paneId);
+      if (duplicates[nodeId]) {
+        duplicates[nodeId].add(paneId);
       } else {
-        duplicates[nodeId] = [paneId];
+        duplicates[nodeId] = new Set([paneId]);
       }
     });
   });
@@ -1552,7 +1577,7 @@ function markRecurringNodes() {
   const recurringNodes = {};
   Object.keys(duplicates).forEach(function (nodeId) {
     const duplicatePanes = duplicates[nodeId];
-    if (duplicatePanes.length > 1) {
+    if (duplicatePanes.size > 1) {
       recurringNodes[nodeId] = duplicatePanes;
 
       const randomColor = getRandomColor();
@@ -1566,15 +1591,15 @@ function markRecurringNodes() {
 
 function markRecurringNodesById(markId, showInOverview = false) {
   const panes = getPanes();
-  var duplicates = {};
+  const duplicates = {};
   Object.keys(panes).forEach(function (paneId) {
     const nodesIds = panes[paneId].nodesIds;
     nodesIds.forEach((nodeId) => {
       if (markId === nodeId) {
-        if (duplicates[nodeId] && !duplicates[nodeId].includes(paneId)) {
-          duplicates[nodeId] = duplicates[nodeId].concat(paneId);
+        if (duplicates[nodeId]) {
+          duplicates[nodeId].add(paneId);
         } else {
-          duplicates[nodeId] = [paneId];
+          duplicates[nodeId] = new Set([paneId]);
         }
       }
     });
@@ -1583,9 +1608,8 @@ function markRecurringNodesById(markId, showInOverview = false) {
   var recurringNodes = {};
   Object.keys(duplicates).forEach(function (nodeId) {
     const duplicatePanes = duplicates[nodeId];
-    if (duplicatePanes.length > 1) {
+    if (duplicatePanes.size > 1) {
       recurringNodes[nodeId] = duplicatePanes;
-
       duplicatePanes.forEach((paneId) => {
         const paneCy = panes[paneId].cy;
         paneCy.$("#" + nodeId).addClass("recurring");
