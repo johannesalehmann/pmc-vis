@@ -131,6 +131,9 @@ function spawnPane(
 }
 
 function resizePane(div, pwidth) {
+
+    return; 
+    
     const _width = Math.max(MIN_LANE_SIZE, pwidth);
     const _height = div.getBoundingClientRect().height;
     div.style.width = _width + "px";
@@ -226,6 +229,7 @@ function enableDragBars() {
     enableSplitDragBars();
 }
 
+// https://stackoverflow.com/questions/28767221/flexbox-resizing
 function enablePaneDragBars() {
     const dragbars = document.getElementsByClassName("dragbar");
     let dragging = false;

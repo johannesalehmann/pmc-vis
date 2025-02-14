@@ -1062,30 +1062,23 @@ function setSelectMode(cy, mode = 's') {
   cy.startBatch();
   //adjust selection styles
   if (mode === 's') { //states
-    cy.style()
-      .selector('core')
-      .css({ "selection-box-color": colors.SELECTED_NODE_COLOR });
-
+    cy.style().selector('core').css({ 
+      "selection-box-color": colors.SELECTED_NODE_COLOR, 
+    });
     cy.style().selector('node.t:selected').css({
       'opacity': '0.5',
       'border-color': colors.SECONDARY_NODE_COLOR,
-    })
-
+    });
     cy.style().selector('node.s:selected').css(selections.primary);
-
   } else if (mode === 't') { //actions / transitions
     cy.style().selector('core').css({ "selection-box-color": colors.SECONDARY_SELECTION });
-
     cy.style().selector('node.s:selected').css({
       'opacity': '0.5',
       'border-color': colors.NODE_COLOR,
     });
-
     cy.style().selector('node.t:selected').css(selections.secondary);
-
   } else if (mode === 's+t') { //both
     cy.style().selector('core').css({ "selection-box-color": colors.DUAL_SELECTION });
-
     cy.style().selector('node.s:selected').css(selections.primary);
     cy.style().selector('node.t:selected').css(selections.secondary);
   }
