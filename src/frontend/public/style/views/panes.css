@@ -38,6 +38,27 @@
     box-sizing: border-box; 
 
     border-top: 5px var(--active-pane) solid;
+
+    .pane-controls {
+        display:block;
+        position:absolute;
+        z-index:3;
+        .button {
+            background: var(--active-pane);
+            i {
+                color:white;
+            }
+        }
+    }
+}
+
+.pane-controls {
+    display:none;
+}
+
+.ui.attached.buttons {
+    margin-top: -4px;
+    margin-left: 5px;
 }
 
 #cy-overview {

@@ -1,5 +1,6 @@
-import { setPane } from "../utils/controls.js";
-import { colorList } from "../utils/utils.js";
+import { setPane } from "../../utils/controls.js";
+import { colorList } from "../../utils/utils.js";
+import { INTERACTIONS } from "../../utils/names.js";
 
 const MIN_LANE_SIZE = 10;
 const socket = io();
@@ -75,13 +76,12 @@ function spawnPane(
     cyContainer.className = "cy";
     cyContainer.style.height = pane.height * (1 - pane.split) + "px";
 
-    cyContainer.style.borderBottomColor = backgroundColor + "50";
-    cyContainer.style.borderBottomWidth = "25px";
-    cyContainer.style.borderBottomStyle = "solid";
-
     const dragbar = document.createElement("div");
     dragbar.id = pane.dragbar;
     dragbar.className = "dragbar";
+
+    const buttons = createPaneControls(pane);
+    
 
     // add the pane for the detail view (pcp)
     const details = document.createElement("div");
@@ -98,6 +98,7 @@ function spawnPane(
     div.id = pane.id;
     div.style.flex = panesLength+1; 
     div.style.height = pane.height + "px";
+    div.appendChild(buttons);
     div.appendChild(cyContainer);
     div.appendChild(split_dragbar);
     div.appendChild(details);
@@ -128,6 +129,33 @@ function spawnPane(
     dispatchEvent(new CustomEvent("paneResize", { detail: { pane: "all", }, }));
     
     return pane;
+}
+
+function createPaneControls(pane) {
+    const buttons = document.createElement("div");
+    buttons.className = "pane-controls";
+    buttons.id = `${pane.container}-controls`;
+    buttons.style.width = 0;
+    buttons.style.width = 0;
+    buttons.style.backgroundColor = pane.backgroundColor + "50";
+
+    buttons.innerHTML = `
+    <div class="active-pane-controls ui small blue bottom attached icon buttons">
+        <button class="ui button" id="${pane.id}-expand1"
+            title="${INTERACTIONS.expand1.name} \t (${INTERACTIONS.expand1.keyboard})">
+            <i class="${INTERACTIONS.expand1.icon}" aria-hidden="true"></i>
+        </button>
+        <button class="ui button" id="${pane.id}-expandN"
+            title="${INTERACTIONS.expandN.name} \t (${INTERACTIONS.expandN.keyboard})">
+            <i class="${INTERACTIONS.expandN.icon}" aria-hidden="true"></i>
+        </button>
+        <button class="ui button" id="${pane.id}-mark"
+            title="${INTERACTIONS.mark.name} \t (${INTERACTIONS.mark.keyboard})">
+            <i class="${INTERACTIONS.mark.icon}" aria-hidden="true"></i>
+        </button>
+    </div>`
+
+    return buttons;
 }
 
 function resizePane(div, pwidth) {
