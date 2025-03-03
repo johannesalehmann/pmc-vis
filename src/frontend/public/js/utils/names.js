@@ -26,7 +26,7 @@ const INTERACTIONS = {
         name: 'Mark/Unmark Node(s)', 
         icon: 'fa-regular fa-bookmark',
         description: 'Marks nodes for safekeeping (e.g., strategy)',
-        keyboard: 'Ctrl+M' // not implemented
+        keyboard: 'Ctrl+M' 
     }
     // ctrl+z: undo
     // ctrl+y: redo 

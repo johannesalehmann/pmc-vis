@@ -1,6 +1,7 @@
 // Adapted from: https://gist.github.com/mbostock/1341021
 // d3v7 brushing example https://observablehq.com/@d3/brushable-parallel-coordinates
 
+import events from "../../utils/events.js";
 import makeCtxMenu from "./ctx-menu.js";
 
 const parallelCoords = function (pane, data, metadata) {
@@ -472,12 +473,7 @@ const parallelCoords = function (pane, data, metadata) {
             drawBrushed();
             updateCountStrings()
             
-            dispatchEvent(new CustomEvent("linked-selection", {
-                detail: {
-                    pane: pane.id,
-                    selection: publicFunctions.getSelection(),
-                },
-            }));
+            dispatchEvent(events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()));
         }
 
         makeCtxMenu(pane.details, pane, publicFunctions, {
@@ -524,12 +520,7 @@ const parallelCoords = function (pane, data, metadata) {
         addEventListener("paneResize", resize, true);
         drawBrushed();
         updateCountStrings();
-        dispatchEvent(new CustomEvent("linked-selection", {
-            detail: {
-                pane: pane.id,
-                selection: publicFunctions.getSelection(),
-            },
-        }));
+        dispatchEvent(events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()));
     }
 
     function updateCountStrings() {

@@ -2,15 +2,10 @@ import { spawnPane, info, getPanes } from "../views/panes/panes.js";
 import { params } from "../views/node-link/layout-options/elk.js";
 import { spawnGraph } from "../views/node-link/node-link.js";
 import { PROJECT } from "../utils/controls.js";
+import events from "../utils/events.js";
 
 window.onresize = () => {
-  dispatchEvent(
-    new CustomEvent("paneResize", {
-      detail: {
-        pane: "all",
-      },
-    })
-  );
+  dispatchEvent(events.RESIZE_ALL);
 };
 
 Promise.all([

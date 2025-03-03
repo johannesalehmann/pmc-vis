@@ -1,6 +1,7 @@
 import { setPane } from "../../utils/controls.js";
 import { colorList } from "../../utils/utils.js";
 import { INTERACTIONS } from "../../utils/names.js";
+import events from "../../utils/events.js";
 
 const MIN_LANE_SIZE = 10;
 const socket = io();
@@ -126,7 +127,7 @@ function spawnPane(
         panes[spawner].spawned = div.id; // to remember which pane was created from this one
     }
 
-    dispatchEvent(new CustomEvent("paneResize", { detail: { pane: "all", }, }));
+    dispatchEvent(events.RESIZE_ALL);
     
     return pane;
 }
@@ -190,14 +191,7 @@ function togglePane(div) {
             resizePane(div, MIN_LANE_SIZE);
         }
 
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -206,15 +200,7 @@ function expandPane(div) {
     const windWidth = window.innerWidth;
     if (div) {
         resizePane(div, windWidth);
-
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -226,15 +212,7 @@ function collapsePane(div) {
         } else {
         }
         resizePane(div, MIN_LANE_SIZE);
-
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -333,13 +311,7 @@ function enablePaneDragBars() {
                 if (dragging) {
                     dragging = false;
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: "all",
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ALL);
                 }
                 refreshCys();
             };
@@ -361,13 +333,7 @@ function enablePaneDragBars() {
                 document.onmousemove = null;
                 if (dragging) {
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: dragging,
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ONE(dragging));
                     dragging = false;
                 }
                 refreshCys();
@@ -403,13 +369,7 @@ function enableSplitDragBars() {
                 document.onmousemove = null;
                 if (dragging) {
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: dragging,
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ONE(dragging));
                     dragging = false;
                 }
                 refreshCys();
@@ -430,7 +390,7 @@ function updatePanes(newPanesData) {
 // recursively destroy every pane starting from an id
 function destroyPanes(firstId, firstOnly = false) {
     const pane = document.getElementById(firstId);
-
+    
     if (pane) {
         if (panes[firstId] && panes[firstId].spawned) {
             if (!firstOnly) {
@@ -438,14 +398,22 @@ function destroyPanes(firstId, firstOnly = false) {
             }
         }
 
+        const dragbar = pane.previousElementSibling;
+        if (dragbar && dragbar.classList.contains("dragbar")) {
+            dragbar.remove();
+        }
+
         pane.remove();
         delete panes[firstId];
-        Object.keys(panes).forEach((k) => {
+        
+        const newKeys = Object.keys(panes);
+        newKeys.forEach((k) => {
             if (panes[k].spawned === firstId) {
                 panes[k].spawned = undefined;
             }
         });
-
+        setPane(panes[newKeys[newKeys.length - 1]].id); 
+        dispatchEvent(events.RESIZE_ALL);
         socket.emit("pane removed", firstId);
     }
 }
@@ -455,13 +423,7 @@ function highlightPaneById(paneId) {
     setPane(paneId);
     if (paneDiv) {
         expandPane(paneDiv);
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[paneDiv.id],
-                },
-            })
-        );
+        dispatchEvent(events.RESIZE_ONE(panes[paneDiv.id]));
         if (panes) {
             Object.keys(panes).forEach((id) => {
                 if (id !== paneId) {

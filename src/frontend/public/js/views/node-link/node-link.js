@@ -30,6 +30,7 @@ import {
 import { parallelCoords } from "../parallel-coords/parallel-coords.js";
 import { ndl_to_pcp } from "../format.js";
 import { INTERACTIONS, NAMES } from "../../utils/names.js";
+import events from "../../utils/events.js";
 
 const THROTTLE_DEBOUNCE_DELAY = 100;
 var iteration = 0;
@@ -226,14 +227,7 @@ function spawnGraph(pane, data, params, vars = {}, src) {
     initControls(cy);
   
     spawnPCP(cy, cy.nodes().map(n => n.data()));
-    dispatchEvent(
-      new CustomEvent("global-action", {
-        detail: {
-          action: "propagate",
-        },
-      })
-    );
-
+    dispatchEvent(events.GLOBAL_PROPAGATE);
     return cy;
   }
   return null;
@@ -809,13 +803,7 @@ async function importCy(cy) {
             vars
           );
           setPane(cy.paneId, true, true); // reset sidebar to new content
-          dispatchEvent(
-            new CustomEvent("global-action", {
-              detail: {
-                action: 'propagate',
-              },
-            })
-          );
+          dispatchEvent(events.GLOBAL_PROPAGATE);
         };
         reader.readAsText(file);
       }
@@ -1269,29 +1257,11 @@ function handleExportPane() {
 }
 
 function handleMarkNodes(e) {
-  const target = cy.$('node:selected');
-  //const target = event.target || event.cyTarget;
-
-  if (!target.classes().includes("marked")) {
-    dispatchEvent(
-      new CustomEvent("global-action", {
-        detail: {
-          action: "mark",
-          type: "",
-          elements: [target.data().id],
-        },
-      })
-    );
+  const targets = cy.$('node:selected');
+  if (!targets.classes().includes("marked")) {
+    dispatchEvent(events.GLOBAL_MARK(targets.map(t => t.data().id)));
   } else {
-    dispatchEvent(
-      new CustomEvent("global-action", {
-        detail: {
-          action: "mark",
-          type: "undo-",
-          elements: [target.data().id],
-        },
-      })
-    );
+    dispatchEvent(events.GLOBAL_UNMARK(targets.map(t => t.data().id)));
   }
   document.activeElement.blur()
 }
@@ -1542,6 +1512,11 @@ function keyboardShortcuts(cy, e) {
   // ctrl+e: select end states 
   if (e.keyCode === 69 && modifier) {
     selectBasedOnAP(e, NAMES.ap_end);
+  }
+
+  // ctrl+m: mark/unmark selected nodes 
+  if (e.keyCode === 77 && modifier) {
+    handleMarkNodes(e);
   }
 
   // left arrow
