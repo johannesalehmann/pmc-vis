@@ -1,8 +1,8 @@
 <link rel="shortcut icon" type="image/svg" href="/favicon.svg"/>
 
 <link rel="stylesheet" href="/libs/normalize.css/normalize.css">
-<link rel="stylesheet" href="/libs/font-awesome/css/font-awesome.min.css">
 <link rel="stylesheet" href="/libs/fomantic-ui-css/semantic.min.css">
+<link rel="stylesheet" href="/libs/@fortawesome/fontawesome-free/css/all.min.css">
 
 <link rel="stylesheet" href="/style/cy-custom-extensions/ctx-menu.css">
 <link rel="stylesheet" href="/style/main.css">

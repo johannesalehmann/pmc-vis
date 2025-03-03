@@ -28,7 +28,7 @@
 
     <div class="nav-wrapper-right">
       <div class="right-buttons"> 
-        <i class="fa fa-bars" id="config-toggle" aria-hidden="true"></i>
+        <i class="bars icon" id="config-toggle" aria-hidden="true"></i>
       </div>
     </div>
   </nav>
@@ -61,9 +61,9 @@
 
       </div>
 
-    </div>
+      <div class="ui divider"></div>
 
-    <div class="ui segment">
+
       <h3 class="label label-info">Legend </h3>
       <div style="display:flex">
         <div style="float:right">  
@@ -106,15 +106,16 @@
           <p class="legend-p">Other path(s)</p>
         </div>
       </div>
-    </div>
+    
+      <div class="ui divider"></div>
 
-    <div class="ui segment">
       <h3 class="label label-info cy-config">Model Settings</h3>
       <div id="props-config">
         <!-- layout specific options are appended here-->
       </div>
-    </div>
-    <div class="ui segment">
+    
+      <div class="ui divider"></div>
+
       <h3 class="label label-info">Graph Settings </h3>
       <details class="ui accordion" closed="">
         <summary class="title">
@@ -129,16 +130,16 @@
       <div class="param" id="graph-config">
         <!-- options for the graph view are appended here -->
       </div>
-    </div>
+    
+      <div class="ui divider"></div>
 
-    <div class="ui segment">
       <h3 class="label label-info" id="pcp-config-span">Attribute Settings</h3>
       <div id="pcp-config">
         <!-- layout specific options are appended here-->
       </div>
-    </div>
+    
+      <div class="ui divider"></div>
 
-    <div class="ui segment">
       <h3 class="label label-info" id="overview-config-span">Overview Settings</h3>
       <div id="overview-config">
         <!-- layout specific options are appended here-->

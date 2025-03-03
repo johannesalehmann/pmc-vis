@@ -13,7 +13,7 @@ import {
   expandPane,
   collapsePane,
   highlightPaneById,
-} from "../panes.js";
+} from "../panes/panes.js";
 import { handleEditorSelection } from "../editor.js";
 import {
   h,
@@ -29,154 +29,22 @@ import {
 } from "../../utils/controls.js";
 import { parallelCoords } from "../parallel-coords/parallel-coords.js";
 import { ndl_to_pcp } from "../format.js";
-import NAMES from "../../utils/names.js";
+import { INTERACTIONS, NAMES } from "../../utils/names.js";
+import events from "../../utils/events.js";
+
+const THROTTLE_DEBOUNCE_DELAY = 100;
+var iteration = 0;
+var maxIteration = 5;
+
+const setMaxIteration = (value) => {
+  maxIteration = value;
+};
 
 const socket = io();
 let selectedPanesData = {
   selectedPanes: [],
   paneCy: null,
 };
-
-socket.on("handle overview nodes selected", (data) => {
-  if (data) {
-    var selectedPanes = [];
-    var paneCy;
-    data.forEach((id) => {
-      const selectedPane = getPanes()[id];
-      if (selectedPane) {
-        paneCy = getPanes()[id].cy;
-        const data = {
-          nodes: Array.from(paneCy.elementMapper.nodes.values()),
-          edges: Array.from(paneCy.elementMapper.edges.values()),
-          info: info,
-          cyImport: paneCy.json(),
-          paneId: paneCy.paneId,
-          paneCy,
-        };
-        selectedPanes.push(data);
-      }
-    });
-    selectedPanesData = {
-      selectedPanes,
-      paneCy,
-    };
-  }
-});
-
-socket.on("handle selection", (data) => {
-  if (data) {
-    switch (data) {
-      case "merge":
-        handleMergePane();
-        break;
-      case "delete":
-        handleDeletePane();
-        break;
-      case "duplicate":
-        handleDuplicatePane();
-        break;
-      case "expand":
-        handleExpandPane();
-        break;
-      case "collapse":
-        handleCollapsePane();
-        break;
-
-      case "export":
-        handleExportPane();
-        break;
-    }
-  }
-});
-
-function handleMergePane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 1) {
-    mergePanes(selectedPanesData.selectedPanes, selectedPanesData.paneCy);
-  }
-}
-
-function handleDeletePane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
-    selectedPanesData.selectedPanes.forEach((pane) => {
-      destroyPanes(pane.paneId, true);
-    });
-  }
-}
-
-function handleDuplicatePane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
-    // selectedPanesData.selectedPanes.forEach((pane) => {
-    //   duplicatePane(pane.paneCy);
-    // });
-
-    duplicatePanes(selectedPanesData.selectedPanes);
-  }
-}
-
-function handleExpandPane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
-    selectedPanesData.selectedPanes.forEach((pane) => {
-      const paneId = pane.paneId;
-
-      const paneDiv = document.getElementById(paneId);
-      expandPane(paneDiv);
-    });
-  }
-}
-
-function handleCollapsePane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
-    selectedPanesData.selectedPanes.forEach((pane) => {
-      const paneId = pane.paneId;
-
-      const paneDiv = document.getElementById(paneId);
-      collapsePane(paneDiv);
-    });
-  }
-}
-
-function handleExportPane() {
-  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
-    var cyList = [];
-    selectedPanesData.selectedPanes.forEach((pane) => {
-      cyList.push(pane.paneCy);
-    });
-    exportCyList(cyList);
-  }
-}
-
-function mergePanes(panesToMerge, paneCy) {
-  if (panesToMerge && panesToMerge.length > 0) {
-    Swal.fire({
-      title: "Merge Panes",
-      text: "Do you want to keep the merged panes? ",
-      icon: "warning",
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#555",
-      confirmButtonText: "Keep merged panes",
-      denyButtonText: "Remove merged panes",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        mergePane(panesToMerge, paneCy);
-      } else if (result.isDenied) {
-        const paneIds = panesToMerge.map((p) => p.paneId);
-        const panes = getPanes();
-        const prevSpawners = [];
-        paneIds.forEach((id) => {
-          const paneData = panes[id];
-          if (paneData?.spawner) {
-            prevSpawners.push(paneData?.spawner);
-          }
-
-          destroyPanes(id);
-        });
-        mergePane(panesToMerge, paneCy, prevSpawners);
-      }
-    });
-  }
-}
 
 function getEdgeId(edge) {
   return edge.data.source + edge.data.label + edge.data.target;
@@ -202,9 +70,7 @@ function setStyles(cy) {
   cy.startBatch();
   cy.nodes()
     .addClass("t")
-    .filter((n) => {
-      return n.data().type === "s";
-    })
+    .filter(n => n.data().type === "s")
     .removeClass("t")
     .addClass("s");
 
@@ -285,9 +151,11 @@ async function graphExtend(cy, nodes, onLayoutStopFn) {
 
   cy.nodes().lock();
   cy.add(elements);
-  cy.$("#" + elements.nodes.map((n) => n.data.id).join(", #")).position(
-    nodes[0].position()
-  ); // alternatively, cy.nodes().position(node.position())
+  if (elements.nodes.length > 0) {
+    cy.$("#" + elements.nodes.map((n) => n.data.id).join(", #")).position(
+      nodes[0].position()
+    ); // alternatively, cy.nodes().position(node.position())
+  }
   cy.nodes().unlock();
 
   const layout = cy.layout(cy.params);
@@ -303,10 +171,10 @@ async function graphExtend(cy, nodes, onLayoutStopFn) {
     .filter((id) => !id.includes("t_"));
 
   const panes = getPanes();
-  const paneNodeIds = (
-    panes[cy.paneId].nodesIds || []
-  ).concat(nodesIds);
-  panes[cy.paneId].nodesIds = paneNodeIds;
+  panes[cy.paneId].nodesIds = new Set([
+    ...(panes[cy.paneId].nodesIds || []), 
+    ...nodesIds
+  ]);
   updatePanes(panes);
 }
 
@@ -356,38 +224,13 @@ function spawnGraph(pane, data, params, vars = {}, src) {
     setPane(pane.id, true);
     cy.endBatch();
 
-    //initHTML(cy);
+    initControls(cy);
+  
     spawnPCP(cy, cy.nodes().map(n => n.data()));
-    dispatchEvent(
-      new CustomEvent("global-action", {
-        detail: {
-          action: "propagate",
-        },
-      })
-    );
-
+    dispatchEvent(events.GLOBAL_PROPAGATE);
     return cy;
   }
   return null;
-}
-
-function initHTML(cy) {
-  const nodesHTML = document.getElementsByClassName(
-    `cy-html cy-html-${cy.paneId}`
-  );
-
-  // the html layer lives here, remove it before creating a new one
-  if (
-    nodesHTML[0] &&
-    nodesHTML[0].parentNode &&
-    nodesHTML[0].parentNode.parentNode
-  ) {
-    nodesHTML[0].parentNode.parentNode.remove();
-  }
-
-  cy.nodeHtmlLabel([
-    
-  ]);
 }
 
 function haveCommonNodes(array1, obj2) {
@@ -488,273 +331,48 @@ async function fetchAndSpawn(cy, nodes) {
   spawnGraph(pane, data, structuredClone(cy.params), vars, nodes);
 }
 
-// interactions
-function ctxmenu(cy) {
-  cy.ctxmenu = cy.contextMenus({
-    menuItems: [
-      // node specific
-      {
-        id: 'expand',
-        content: 'Expand Once',
-        tooltipText: 'expand outgoing',
-        selector: 'node.s',
-        onClickFunction: () => {
-          setPane(cy.paneId);
-          hideAllTippies();
-          graphExtend(cy, cy.$('node:selected'));
-        },
-        hasTrailingDivider: false,
-      },
-      /*{
-        id: 'remove',
-        content: 'Collapse outgoing',
-        tooltipText: 'collapse outgoing',
-        selector: 'node.s',
-        onClickFunction: (event) => {
-          const target = event.target || event.cyTarget;
-          console.log('Under development!')
-        },
-        hasTrailingDivider: false
-      },*/
-      {
-        id: "expand-best-path",
-        content: "Expand N (Simulation)",
-        tooltipText: "Expand node to specified iterations",
-        selector: "node:selected",
-        onClickFunction: async () => {
-          iteration = 0;
-          await expandBestPath(cy, cy.$('node:selected'));
-        },
-        hasTrailingDivider: false,
-      },
-      {
-        id: "color",
-        content: "Mark/unmark node",
-        tooltipText: "mark node",
-        selector: "node.s",
-        onClickFunction: (event) => {
-          const target = event.target || event.cyTarget;
-
-          if (!target.classes().includes("marked")) {
-            dispatchEvent(
-              new CustomEvent("global-action", {
-                detail: {
-                  action: "mark",
-                  type: "",
-                  elements: [target.data().id],
-                },
-              })
-            );
-          } else {
-            dispatchEvent(
-              new CustomEvent("global-action", {
-                detail: {
-                  action: "mark",
-                  type: "undo-",
-                  elements: [target.data().id],
-                },
-              })
-            );
-          }
-        },
-        hasTrailingDivider: true,
-      },
-      {
-        id: "commit",
-        content: "Explore in new pane",
-        tooltipText: "explore in new pane",
-        selector: "node.s:selected",
-        onClickFunction: () => {
-          const nodes = cy.$("node.s:selected");
-          hideAllTippies();
-          spawnGraphOnNewPane(cy, nodes.map((n) => n.data()));
-        },
-        hasTrailingDivider: false,
-      },
-      {
-        id: "mark-recurring-node-pane",
-        content: "Mark pane-nodes",
-        tooltipText: "Mark pane-nodes that include this node",
-        selector: "node:selected",
-        onClickFunction: (event) => {
-          const target = event.target || event.cyTarget;
-          const nodeId = target.data().id;
-          markRecurringNodesById(nodeId, true);
-        },
-        hasTrailingDivider: true,
-      },
-      {
-        id: "inspect-pcp",
-        content: "Inspect selection details",
-        tooltipText: "inspect selection details",
-        selector: "node:selected",
-        onClickFunction: function (event) {
-          spawnPCP(cy);
-        },
-        hasTrailingDivider: true,
-      },
-
-      // pane controls
-      {
-        id: "fit-to-pane",
-        content: "Fit to view",
-        tooltipText: "fit to pane",
-        coreAsWell: true,
-        onClickFunction: () => cy.fit(),
-        hasTrailingDivider: false,
-      },
-      {
-        id: "collapse-pane",
-        content: "Collapse/expand pane",
-        tooltipText: "collapse/expand pane",
-        coreAsWell: true,
-        onClickFunction: () => {
-          togglePane(
-            document.getElementById(
-              document.getElementById("selected-pane").innerHTML
-            )
-          );
-        },
-        hasTrailingDivider: true,
-      },
-      {
-        id: "import-pane",
-        content: "Import Graph",
-        tooltipText: "import graph",
-        selector: "node, edge",
-        coreAsWell: true,
-        onClickFunction: () => {
-          importCy(cy);
-        },
-        hasTrailingDivider: false,
-      },
-      {
-        id: "export-pane",
-        content: "Export Graph",
-        tooltipText: "export graph",
-        selector: "node, edge",
-        coreAsWell: true,
-        onClickFunction: () => {
-          exportCy(cy);
-        },
-        hasTrailingDivider: true,
-      },
-      {
-        id: "duplicate-pane",
-        content: "Duplicate pane",
-        tooltipText: "dup-pane",
-        coreAsWell: true,
-        onClickFunction: () => {
-          duplicatePane(cy);
-        },
-        hasTrailingDivider: false,
-      },
-      {
-        id: "destroy-pane",
-        content: "Remove pane",
-        tooltipText: "remove pane",
-        coreAsWell: true,
-        onClickFunction: () => {
-          if (cy.paneId === "pane-0") {
-            Swal.fire({
-              icon: "error",
-              title: "Oops...",
-              text: "Cannot delete initial pane!",
-            });
-          } else {
-            Swal.fire({
-              title: "Removing Pane(s)",
-              text: "This action cannot be reverted.",
-              icon: "warning",
-              showCancelButton: true,
-              showDenyButton: true,
-              confirmButtonColor: "#d33",
-              cancelButtonColor: "#555",
-              confirmButtonText: "Remove Current",
-              denyButtonText: "Remove All From Selected",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                destroyPanes(getPanes()[cy.paneId].id, true);
-              } else if (result.isDenied) {
-                destroyPanes(getPanes()[cy.paneId].id);
-              }
-            });
-          }
-        },
-        hasTrailingDivider: true,
-      },
-      // new options
-      {
-        id: "reset-pane-node-markings",
-        content: "Reset pane-node markings",
-        tooltipText: "Reset pane-node markings",
-        coreAsWell: true,
-        onClickFunction: () => {
-          resetPaneNodeMarkings();
-        },
-        hasTrailingDivider: false,
-      }
-    ],
-    menuItemClasses: ["dropdown-item"],
-    contextMenuClasses: ["dropdown-menu"],
-    submenuIndicator: {
-      src: "/style/icons/submenu.svg",
-      width: 12,
-      height: 12,
-    },
-  });
-}
-var iteration = 0;
-var maxIteration = 5;
-
-const setMaxIteration = (value) => {
-  maxIteration = value;
-};
-
 async function expandBestPath(cy, allSources) {
-  const sources = allSources.filter(s => !s.data()?.details[NAMES.atomicPropositions]?.end?.value);
+  const sources = allSources.filter(s => 
+    !s.data()
+    ?.details[NAMES.atomicPropositions][NAMES.ap_end]
+    ?.value
+  );
 
-  if (cy.vars["scheduler"].value === "_none_") {
-    Swal.fire({
-      position: "top-end",
-      icon: "error",
-      title: "No scheduler selected!",
-      timer: 1500,
-      timerProgressBar: true,
+  // open everything, as there is no decider / DOI / scheduler
+  if (cy.vars["scheduler"].value === "_none_") { 
+    await graphExtend(cy, sources, function() {
+      const ids = sources.map(src => getNextInPath(cy, src.data().id).next).flat();
+      const nexts = cy.nodes("#" + ids.join(", #"));
+      iteration++;
+  
+      if (iteration < maxIteration && nexts) {
+        expandBestPath(cy, nexts);
+      }
     });
-    return; 
-  } 
-    
-  await graphExtend(cy, sources, function() {
-    // determines the next best node for each of the selected nodes
-    const ids = sources
-      .map(src => getNextBestPath(cy, src.data().id))
-      .filter(n => n && n.nodeToExpand)
-      .map(n => n.nodeToExpand.data.id);
-
-    const nextBests = cy.nodes("#" + ids.join(", #"));
-    iteration++;
-
-    if (maxIteration > 0) {
-      if (
-        iteration < maxIteration &&
-        nextBests
-      ) {
+  } else { // follow only the "best" path according to DOI/scheduler
+    await graphExtend(cy, sources, function() {
+      const ids = sources.map(src => getNextBestInPath(cy, src.data().id).bestNext);
+      const nextBests = cy.nodes("#" + ids.join(", #"));
+      iteration++;
+  
+      if (iteration < maxIteration && nextBests) {
         expandBestPath(cy, nextBests);
       }
-    } else {
-      if (cy && nextBests) {
-        expandBestPath(cy, nextBests);
-      }
-    }
-  });
+    });
+  }
 }
 
-function getNextBestPath(cy, sourceNodeId) {
-  var bestValue = 0;
-  var bestNodeToExpand = "";
-  var tId = "";
+// for a state, returns best next state based on DOI/scheduler
+function getNextBestInPath(cy, sourceNodeId) {
+  if (cy.$(`#${sourceNodeId}`).outgoers().length === 0) {
+    return { cy, bestNext: sourceNodeId };
+  }
+  
+  let bestValue = 0;
+  let bestNext = "";
+  let tId = "";
 
+  // chooses next best action
   cy.edges().forEach((n) => {
     const source = n.data().source;
     const target = n.data().target;
@@ -766,13 +384,14 @@ function getNextBestPath(cy, sourceNodeId) {
           node.data.scheduler[cy.vars["scheduler"].value];
         if (nodeSchedulerValue >= bestValue) {
           bestValue = nodeSchedulerValue;
-          bestNodeToExpand = target;
+          bestNext = target;
           tId = target;
         }
       }
     }
   });
 
+  // chooses next best state, from the selected action
   cy.edges().forEach((n) => {
     const source = n.data().source;
     const target = n.data().target;
@@ -784,46 +403,56 @@ function getNextBestPath(cy, sourceNodeId) {
           node.data.scheduler[cy.vars["scheduler"].value];
         if (nodeSchedulerValue >= bestValue) {
           bestValue = nodeSchedulerValue;
-          bestNodeToExpand = target;
+          bestNext = target;
           tId = source;
         }
       }
     }
   });
 
-  const nodeToExpand = cy.elementMapper.nodes.get(bestNodeToExpand);
-  return { cy, nodeToExpand };
+  return { cy, bestNext: cy.elementMapper.nodes.get(bestNext).data.id };
 }
 
-function resetPaneNodeMarkings() {
-  socket.emit("reset pane-node markings");
+// for a state, returns all possible next states
+function getNextInPath(cy, sourceNodeId) {
+  if (cy.$(`#${sourceNodeId}`).outgoers().length === 0) {
+    return { cy, next: sourceNodeId };
+  }
+
+  // gathers children actions 
+  const nextActions = cy
+    .$(`#${sourceNodeId}`)
+    .outgoers('node.t')
+    .map(n => n.data().id);
+
+  // gathers states children to the actions
+  const next = cy
+    .$('#' + nextActions.join(', #'))
+    .outgoers('node.s')
+    .map(n => n.data().id);
+  
+  return { cy, next };
 }
 
-function lockCy(cy) {
-  cy.nodes().lock();
-  cy.panningEnabled(false);
-  cy.zoomingEnabled(false);
-  unbindListeners(cy);
+// for a state, returns all states that led to it
+function getPreviousInPath(cy, sourceNodeId) {
+  if (cy.$(`#${sourceNodeId}`).incomers().length === 0) {
+    return { cy, prev: sourceNodeId };
+  }
 
-  cy.on("tap", function (e) {
-    setPane(cy.paneId);
-  });
+  // gathers children actions 
+  const prevActions = cy
+    .$(`#${sourceNodeId}`)
+    .incomers('node.t')
+    .map(n => n.data().id);
 
-  cy.on("grabon", function (e) {
-    setPane(cy.paneId);
-  });
-
-  cy.on("cxttapstart", function (e) {
-    setPane(cy.paneId);
-    console.log("right click lane");
-  });
-}
-
-function unlockCy(cy) {
-  cy.nodes().unlock();
-  cy.panningEnabled(true);
-  cy.zoomingEnabled(true);
-  bindListeners(cy);
+  // gathers states children to the actions
+  const prev = cy
+    .$('#' + prevActions.join(', #'))
+    .incomers('node.s')
+    .map(n => n.data().id);
+  
+  return { cy, prev };
 }
 
 function spawnPCP(cy, _nodes) {
@@ -848,9 +477,6 @@ function spawnPCP(cy, _nodes) {
     );
   }
 
-  //lockCy(cy);
-  //cy.container().childNodes.forEach(c => c.style.visibility = 'hidden');
-
   const hidden = new Set(['color']);
   const props = Object.keys(pcp_data[0]).filter(k => !hidden.has(k));
 
@@ -866,23 +492,21 @@ function spawnPCP(cy, _nodes) {
     }
   );
 
-  //unlockCy(cy);
-
   cy.paneFromPCP = (pane) => {
     spawnGraphOnNewPane(pane.cy, pane.cy.pcp.getSelection());
   };
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+//  INTERACTIONS: Everything below here could be refactored to other files 
+////////////////////////////////////////////////////////////////////////////////////////
+
 function unbindListeners(cy) {
   // clean listeners
   cy.off('tap cxttapstart grabon zoom pan');
-  cy.off('select boxselect tapselect tapunselect dblclick')
+  cy.off('select boxselect tapselect tapunselect dbltap')
   cy.off('mouseover mousemove mouseout')
   cy.off('tap', 'edge');
-  cy.nodes().forEach(function (n) {
-    n.off('click');
-    n.off('dblclick');
-  });
   if (cy.ctxmenu) {
     cy.ctxmenu.destroy();
   }
@@ -890,7 +514,6 @@ function unbindListeners(cy) {
 
 function bindListeners(cy) {
   unbindListeners(cy);
-
 
   // new listeners
   cy.on('tap', function (e) {
@@ -933,10 +556,10 @@ function bindListeners(cy) {
     ) { 
       spawnPCP(cy);
     }
-  }, 100));
+  }, THROTTLE_DEBOUNCE_DELAY));
 
   // ensure that selections don't go away when clicking the background once
-  cy.on('click', (e) => {
+  cy.on('tap', (e) => {
     if (e.target === cy) { // background
       cy.nodes().unselectify();
     } else {
@@ -945,7 +568,7 @@ function bindListeners(cy) {
   });
 
   // re-enable selections after the previous check happened
-  cy.on('dblclick mousemove', _ => {
+  cy.on('dbltap mousemove', _ => {
     cy.nodes().selectify();
   });
 
@@ -953,58 +576,59 @@ function bindListeners(cy) {
     handleEditorSelection(event, cy);
   });
 
-  cy.nodes().forEach(function (n) {
-    n.on('click', function (e) {
-      setPane(cy.paneId);
+  cy.on('tap', 'node', function (e) {
+    const n = e.target;
+    setPane(cy.paneId);
 
-      if (!e.originalEvent.shiftKey) {
-        hideAllTippies();
-      }
-
-      if (e.originalEvent.shiftKey) {
-        let g = n.data();
-
-        const $links = [];
-
-        const details = cy.vars['details'].value;
-        Object.keys(details).forEach(d => {
-          const show = 
-            details[d].all || 
-            Object.values(details[d].props).reduce((a, b) => a || b);
-
-          if (show) {
-            $links.push(
-              h('p', {}, [t(`==== ${d} ====`)]),
-              ...Object.keys(details[d].props)
-                .filter(p => details[d].props[p])
-                .map(k => {
-                  const detail = g.details[d][k];
-                  if (detail.type === 'numbers') {
-                    return h('p', {}, [t(k + ': ' + fixed(detail.value) + '\n ')]);
-                  } else {
-                    return h('p', {}, [t(k + ': ' + (detail.value) + '\n ')]);
-                  }
-                })
-            );
-          }
-        });
-
-        makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
-      }
-    });
-
-    n.on('dblclick', function (e) {
+    if (!e.originalEvent.shiftKey) {
       hideAllTippies();
-      
-      if (
-        e.originalEvent.altKey && 
-        n.classes().filter(c => c === 's').length > 0
-      ) {
-        spawnGraphOnNewPane(cy, [n.data()]);
-      } else {
-        graphExtend(cy, [n]);
-      }
-    });
+    }
+
+    if (e.originalEvent.shiftKey) {
+      let g = n.data();
+
+      const $links = [];
+
+      const details = cy.vars['details'].value;
+      Object.keys(details).forEach(d => {
+        const show = details[d].all || 
+          Object.values(
+            details[d].props
+          ).reduce((a, b) => a || b, false);
+
+        if (show) {
+          $links.push(
+            h('p', {}, [t(`==== ${d} ====`)]),
+            ...Object.keys(details[d].props)
+              .filter(p => details[d].props[p])
+              .map(k => {
+                const detail = g.details[d][k];
+                if (detail.type === 'numbers') {
+                  return h('p', {}, [t(k + ': ' + fixed(detail.value) + '\n ')]);
+                } else {
+                  return h('p', {}, [t(k + ': ' + (detail.value) + '\n ')]);
+                }
+              })
+          );
+        }
+      });
+
+      makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
+    }
+  });
+
+  cy.on('dbltap', 'node', function (e) {
+    const n = e.target;
+    hideAllTippies();
+    
+    if (
+      (e.originalEvent.altKey || e.originalEvent.ctrlKey) 
+      && n.classes().filter(c => c === 's').length > 0
+    ) {
+      spawnGraphOnNewPane(cy, [n.data()]);
+    } else {
+      graphExtend(cy, [n]);
+    }
   });
 
   cy.on("mouseover", "node", function (event) {
@@ -1025,30 +649,23 @@ function setSelectMode(cy, mode = 's') {
   cy.startBatch();
   //adjust selection styles
   if (mode === 's') { //states
-    cy.style()
-      .selector('core')
-      .css({ "selection-box-color": colors.SELECTED_NODE_COLOR });
-
+    cy.style().selector('core').css({ 
+      "selection-box-color": colors.SELECTED_NODE_COLOR, 
+    });
     cy.style().selector('node.t:selected').css({
       'opacity': '0.5',
       'border-color': colors.SECONDARY_NODE_COLOR,
-    })
-
+    });
     cy.style().selector('node.s:selected').css(selections.primary);
-
   } else if (mode === 't') { //actions / transitions
     cy.style().selector('core').css({ "selection-box-color": colors.SECONDARY_SELECTION });
-
     cy.style().selector('node.s:selected').css({
       'opacity': '0.5',
       'border-color': colors.NODE_COLOR,
     });
-
     cy.style().selector('node.t:selected').css(selections.secondary);
-
   } else if (mode === 's+t') { //both
     cy.style().selector('core').css({ "selection-box-color": colors.DUAL_SELECTION });
-
     cy.style().selector('node.s:selected').css(selections.primary);
     cy.style().selector('node.t:selected').css(selections.secondary);
   }
@@ -1102,22 +719,23 @@ function toggleFullSync(cy, prop) {
   cy.vars["fullSync"].value = prop;
 }
 
-function keyboardShortcuts(cy, e) {
-  if (e.keyCode === 90 && e.ctrlKey) { // ctrl+z
-    cy.vars['ur'].value.undo(); 
-  } else if (e.keyCode === 89 && e.ctrlKey) { // ctrl+y
-    cy.vars['ur'].value.redo(); 
-  } else if (e.keyCode === 65 && e.ctrlKey) { // ctrl+a
-    e.preventDefault(); 
-    cy.nodes().select();
-    if (cy.vars["fullSync"].value) {
-      spawnPCP(cy);
-    }
-  } else if (e.key === 'Enter' || e.keyCode === 13) { 
-    if (e.ctrlKey) {
-      spawnGraphOnNewPane(cy, cy.$('node:selected').map(n => n.data()));
-    } else {
-      graphExtend(cy, cy.$('node:selected'));
+function selectBasedOnAP(e, ap) {
+  e.preventDefault(); 
+  
+  if (info.metadata.initial !== "#") {
+    cy.nodes().deselect();
+    const states = cy.nodes('.s')
+      .filter(d => d.data()
+        .details[NAMES.atomicPropositions][ap]
+        ?.value === true
+    );
+
+    if (states.length > 0) {
+      states.select();
+      
+      if (cy.vars["fullSync"].value) {
+        spawnPCP(cy);
+      }
     }
   }
 }
@@ -1185,13 +803,7 @@ async function importCy(cy) {
             vars
           );
           setPane(cy.paneId, true, true); // reset sidebar to new content
-          dispatchEvent(
-            new CustomEvent("global-action", {
-              detail: {
-                action: 'propagate',
-              },
-            })
-          );
+          dispatchEvent(events.GLOBAL_PROPAGATE);
         };
         reader.readAsText(file);
       }
@@ -1210,7 +822,6 @@ async function exportCyList(cyList) {
   }
 }
 
-// download JSON files as a zip
 async function downloadJSONsAsZip(jsonDataList) {
   const zip = new JSZip();
   await Swal.fire({
@@ -1298,7 +909,7 @@ function setPublicVars(cy, preset) {
     ur: {
       value: cy.undoRedo(),
       avoidInClone: true, // workaround for structuredClone
-      fn: keyboardShortcuts,
+      fn: _.throttle(keyboardShortcuts, THROTTLE_DEBOUNCE_DELAY),
     },
     mode: {
       value: 's',
@@ -1387,7 +998,6 @@ function duplicatePane(cy, initSpawner) {
   return pane;
 }
 
-// duplicate multiple panes, considering the paths of the duplicates
 function duplicatePanes(selectedPanes) {
   const panes = getPanes();
   var duplicatedPanes = [];
@@ -1420,14 +1030,14 @@ function unmarkRecurringNodes() {
 
 function markRecurringNodes() {
   const panes = getPanes();
-  var duplicates = {};
+  const duplicates = {};
   Object.keys(panes).forEach(function (paneId) {
     const nodesIds = panes[paneId].nodesIds;
     nodesIds.forEach((nodeId) => {
-      if (duplicates[nodeId] && !duplicates[nodeId].includes(paneId)) {
-        duplicates[nodeId] = duplicates[nodeId].concat(paneId);
+      if (duplicates[nodeId]) {
+        duplicates[nodeId].add(paneId);
       } else {
-        duplicates[nodeId] = [paneId];
+        duplicates[nodeId] = new Set([paneId]);
       }
     });
   });
@@ -1435,7 +1045,7 @@ function markRecurringNodes() {
   const recurringNodes = {};
   Object.keys(duplicates).forEach(function (nodeId) {
     const duplicatePanes = duplicates[nodeId];
-    if (duplicatePanes.length > 1) {
+    if (duplicatePanes.size > 1) {
       recurringNodes[nodeId] = duplicatePanes;
 
       const randomColor = getRandomColor();
@@ -1449,15 +1059,15 @@ function markRecurringNodes() {
 
 function markRecurringNodesById(markId, showInOverview = false) {
   const panes = getPanes();
-  var duplicates = {};
+  const duplicates = {};
   Object.keys(panes).forEach(function (paneId) {
     const nodesIds = panes[paneId].nodesIds;
     nodesIds.forEach((nodeId) => {
       if (markId === nodeId) {
-        if (duplicates[nodeId] && !duplicates[nodeId].includes(paneId)) {
-          duplicates[nodeId] = duplicates[nodeId].concat(paneId);
+        if (duplicates[nodeId]) {
+          duplicates[nodeId].add(paneId);
         } else {
-          duplicates[nodeId] = [paneId];
+          duplicates[nodeId] = new Set([paneId]);
         }
       }
     });
@@ -1466,9 +1076,8 @@ function markRecurringNodesById(markId, showInOverview = false) {
   var recurringNodes = {};
   Object.keys(duplicates).forEach(function (nodeId) {
     const duplicatePanes = duplicates[nodeId];
-    if (duplicatePanes.length > 1) {
+    if (duplicatePanes.size > 1) {
       recurringNodes[nodeId] = duplicatePanes;
-
       duplicatePanes.forEach((paneId) => {
         const paneCy = panes[paneId].cy;
         paneCy.$("#" + nodeId).addClass("recurring");
@@ -1478,6 +1087,10 @@ function markRecurringNodesById(markId, showInOverview = false) {
       socket.emit("duplicate pane ids", duplicatePanes);
     }
   });
+}
+
+function resetPaneNodeMarkings() {
+  socket.emit("reset pane-node markings");
 }
 
 function mergePane(panesToMerge, cy, prevSpawners) {
@@ -1553,6 +1166,475 @@ function mergePane(panesToMerge, cy, prevSpawners) {
     spawnGraph(pane, data, structuredClone(cy.params), vars);
   }
 }
+
+function mergePanes(panesToMerge, paneCy) {
+  if (panesToMerge && panesToMerge.length > 0) {
+    Swal.fire({
+      title: "Merge Panes",
+      text: "Do you want to keep the merged panes? ",
+      icon: "warning",
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#555",
+      confirmButtonText: "Keep merged panes",
+      denyButtonText: "Remove merged panes",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mergePane(panesToMerge, paneCy);
+      } else if (result.isDenied) {
+        const paneIds = panesToMerge.map((p) => p.paneId);
+        const panes = getPanes();
+        const prevSpawners = [];
+        paneIds.forEach((id) => {
+          const paneData = panes[id];
+          if (paneData?.spawner) {
+            prevSpawners.push(paneData?.spawner);
+          }
+
+          destroyPanes(id);
+        });
+        mergePane(panesToMerge, paneCy, prevSpawners);
+      }
+    });
+  }
+}
+
+function handleMergePane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 1) {
+    mergePanes(selectedPanesData.selectedPanes, selectedPanesData.paneCy);
+  }
+}
+
+function handleDeletePane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
+    selectedPanesData.selectedPanes.forEach((pane) => {
+      destroyPanes(pane.paneId, true);
+    });
+  }
+}
+
+function handleDuplicatePane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
+    // selectedPanesData.selectedPanes.forEach((pane) => {
+    //   duplicatePane(pane.paneCy);
+    // });
+
+    duplicatePanes(selectedPanesData.selectedPanes);
+  }
+}
+
+function handleExpandPane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
+    selectedPanesData.selectedPanes.forEach((pane) => {
+      const paneId = pane.paneId;
+
+      const paneDiv = document.getElementById(paneId);
+      expandPane(paneDiv);
+    });
+  }
+}
+
+function handleCollapsePane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
+    selectedPanesData.selectedPanes.forEach((pane) => {
+      const paneId = pane.paneId;
+
+      const paneDiv = document.getElementById(paneId);
+      collapsePane(paneDiv);
+    });
+  }
+}
+
+function handleExportPane() {
+  if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
+    var cyList = [];
+    selectedPanesData.selectedPanes.forEach((pane) => {
+      cyList.push(pane.paneCy);
+    });
+    exportCyList(cyList);
+  }
+}
+
+function handleMarkNodes(e) {
+  const targets = cy.$('node:selected');
+  if (!targets.classes().includes("marked")) {
+    dispatchEvent(events.GLOBAL_MARK(targets.map(t => t.data().id)));
+  } else {
+    dispatchEvent(events.GLOBAL_UNMARK(targets.map(t => t.data().id)));
+  }
+  document.activeElement.blur()
+}
+
+function initControls(cy) {
+  document.getElementById(`${cy.paneId}-expand1`).addEventListener('click', (e) => {
+    const modifier = (e.ctrlKey || e.altKey);
+    if (modifier) {
+      spawnGraphOnNewPane(cy, cy.$('node:selected').map(n => n.data()));
+    } else {
+      graphExtend(cy, cy.$('node:selected'));
+    }
+    document.activeElement.blur()
+  });
+  
+  document.getElementById(`${cy.paneId}-expandN`).addEventListener('click', (e) => {
+    iteration = 0;
+    expandBestPath(cy, cy.$('node.s:selected'));
+    document.activeElement.blur()
+  });
+
+  document.getElementById(`${cy.paneId}-mark`).addEventListener('click', handleMarkNodes);
+}
+
+function ctxmenu(cy) {
+  cy.ctxmenu = cy.contextMenus({
+    menuItems: [
+      // node specific
+      {
+        id: 'expand',
+        content: INTERACTIONS.expand1.name, 
+        tooltipText: `${INTERACTIONS.expand1.description} \t (${INTERACTIONS.expand1.keyboard})`,
+        selector: 'node.s',
+        onClickFunction: () => {
+          setPane(cy.paneId);
+          hideAllTippies();
+          graphExtend(cy, cy.$('node:selected'));
+        },
+        hasTrailingDivider: false,
+      },
+      /*{
+        id: 'remove',
+        content: 'Collapse outgoing',
+        tooltipText: 'collapse outgoing',
+        selector: 'node.s',
+        onClickFunction: (event) => {
+          const target = event.target || event.cyTarget;
+          console.log('Under development!')
+        },
+        hasTrailingDivider: false
+      },*/
+      {
+        id: "expand-best-path",
+        content: INTERACTIONS.expandN.name,
+        tooltipText: `${INTERACTIONS.expandN.description} \t (${INTERACTIONS.expandN.keyboard})`,
+        selector: "node.s:selected",
+        onClickFunction: () => {
+          iteration = 0;
+          expandBestPath(cy, cy.$('node.s:selected'));
+        },
+        hasTrailingDivider: false,
+      },
+      {
+        id: "mark-node",
+        content: INTERACTIONS.mark.name,
+        tooltipText: `${INTERACTIONS.mark.description} \t (${INTERACTIONS.mark.keyboard})`,
+        selector: "node.s",
+        onClickFunction: handleMarkNodes,
+        hasTrailingDivider: true,
+      },
+      {
+        id: "expand-new",
+        content: `${INTERACTIONS.expand1.name} on New Pane`,
+        tooltipText: `${INTERACTIONS.expand1.description} \t (${INTERACTIONS.expand1.keyboard_pane})`,
+        selector: "node.s:selected",
+        onClickFunction: () => {
+          const nodes = cy.$("node.s:selected");
+          hideAllTippies();
+          spawnGraphOnNewPane(cy, nodes.map((n) => n.data()));
+        },
+        hasTrailingDivider: false,
+      },
+      {
+        id: "mark-recurring-node-pane",
+        content: "Mark recurring pane-nodes",
+        tooltipText: "Mark pane-nodes that include this node",
+        selector: "node:selected",
+        onClickFunction: (event) => {
+          const target = event.target || event.cyTarget;
+          const nodeId = target.data().id;
+          markRecurringNodesById(nodeId, true);
+        },
+        hasTrailingDivider: true,
+      },
+      {
+        id: "inspect-pcp",
+        content: "Inspect selection details",
+        tooltipText: "inspect selection details",
+        selector: "node:selected",
+        onClickFunction: function (event) {
+          spawnPCP(cy);
+        },
+        hasTrailingDivider: true,
+      },
+
+      // pane controls
+      {
+        id: "fit-to-pane",
+        content: "Fit to view",
+        tooltipText: "fit to pane",
+        coreAsWell: true,
+        onClickFunction: () => cy.fit(),
+        hasTrailingDivider: false,
+      },
+      {
+        id: "collapse-pane",
+        content: "Collapse/expand pane",
+        tooltipText: "collapse/expand pane",
+        coreAsWell: true,
+        onClickFunction: () => {
+          togglePane(
+            document.getElementById(
+              document.getElementById("selected-pane").innerHTML
+            )
+          );
+        },
+        hasTrailingDivider: true,
+      },
+      {
+        id: "import-pane",
+        content: "Import Graph",
+        tooltipText: "import graph",
+        coreAsWell: true,
+        onClickFunction: () => {
+          importCy(cy);
+        },
+        hasTrailingDivider: false,
+      },
+      {
+        id: "export-pane",
+        content: "Export Graph",
+        tooltipText: "export graph",
+        coreAsWell: true,
+        onClickFunction: () => {
+          exportCy(cy);
+        },
+        hasTrailingDivider: true,
+      },
+      {
+        id: "duplicate-pane",
+        content: "Duplicate pane",
+        tooltipText: "dup-pane",
+        coreAsWell: true,
+        onClickFunction: () => {
+          duplicatePane(cy);
+        },
+        hasTrailingDivider: false,
+      },
+      {
+        id: "destroy-pane",
+        content: "Remove pane",
+        tooltipText: "remove pane",
+        coreAsWell: true,
+        onClickFunction: () => {
+          if (cy.paneId === "pane-0") {
+            Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: "Cannot delete initial pane!",
+            });
+          } else {
+            Swal.fire({
+              title: "Removing Pane(s)",
+              text: "This action cannot be reverted.",
+              icon: "warning",
+              showCancelButton: true,
+              showDenyButton: true,
+              confirmButtonColor: "#d33",
+              cancelButtonColor: "#555",
+              confirmButtonText: "Remove Current",
+              denyButtonText: "Remove All From Selected",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                destroyPanes(getPanes()[cy.paneId].id, true);
+              } else if (result.isDenied) {
+                destroyPanes(getPanes()[cy.paneId].id);
+              }
+            });
+          }
+        },
+        hasTrailingDivider: true,
+      },
+      // new options
+      {
+        id: "reset-pane-node-markings",
+        content: "Reset pane-node markings",
+        tooltipText: "Reset pane-node markings",
+        coreAsWell: true,
+        onClickFunction: () => {
+          resetPaneNodeMarkings();
+        },
+        hasTrailingDivider: false,
+      }
+    ],
+    menuItemClasses: ["dropdown-item"],
+    contextMenuClasses: ["dropdown-menu"],
+    submenuIndicator: {
+      src: "/style/icons/submenu.svg",
+      width: 12,
+      height: 12,
+    },
+  });
+}
+
+function keyboardShortcuts(cy, e) {
+  const modifier = (e.ctrlKey || e.altKey);
+  cy.nodes().selectify();
+
+  // ctrl+z: undo
+  if (e.keyCode === 90 && modifier) { 
+    cy.vars['ur'].value.undo(); 
+  } 
+  
+  // ctrl+y: redo
+  if (e.keyCode === 89 && modifier) { 
+    cy.vars['ur'].value.redo(); 
+  } 
+  
+  // ctrl+a: select all nodes
+  if (e.keyCode === 65 && modifier) { 
+    e.preventDefault(); 
+    cy.nodes().select();
+    if (cy.vars["fullSync"].value) {
+      spawnPCP(cy);
+    }
+  } 
+
+  // ctrl+i: select initial states 
+  if (e.keyCode === 73 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_init);
+  }
+
+  // ctrl+d: select deadlock states 
+  if (e.keyCode === 68 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_deadlock);
+  }
+
+  // ctrl+e: select end states 
+  if (e.keyCode === 69 && modifier) {
+    selectBasedOnAP(e, NAMES.ap_end);
+  }
+
+  // ctrl+m: mark/unmark selected nodes 
+  if (e.keyCode === 77 && modifier) {
+    handleMarkNodes(e);
+  }
+
+  // left arrow
+  if (e.keyCode === 37) { 
+    const sources = cy.$('node.s:selected');
+    sources.deselect();
+
+    if (modifier) {
+      // go to previous pane 
+    } else {
+      // if parents, select parents
+      const ids = sources.map(src => getPreviousInPath(cy, src.data().id).prev).flat();
+      const parents = cy.nodes("#" + ids.join(", #"));
+      parents.select();
+      if (cy.vars["fullSync"].value) {
+        spawnPCP(cy);
+      }
+    }
+  }
+  
+  // right arrow
+  if (e.keyCode === 39) { 
+    const sources = cy.$('node.s:selected');
+    sources.deselect();
+
+    if (modifier) {
+      // go to next pane 
+    } else {
+      // if children, select next best
+      if (cy.vars["scheduler"].value === "_none_") { 
+        // open everything, as there is no decider / DOI / scheduler
+        const ids = sources.map(src => getNextInPath(cy, src.data().id).next).flat();
+        const nexts = cy.nodes("#" + ids.join(", #"));    
+        nexts.select();
+      } else { 
+        // follow only the "best" path according to DOI/scheduler
+        const ids = sources.map(src => getNextBestInPath(cy, src.data().id).bestNext);
+        const nextBests = cy.nodes("#" + ids.join(", #"));
+        nextBests.select();
+      }
+
+      if (cy.vars["fullSync"].value) {
+        spawnPCP(cy);
+      }
+    }
+  }
+
+  // TODO: visual selection + shift for a single node
+  // up arrow
+  if (e.keyCode === 38) { 
+    // if siblings list, go backward
+  }
+
+  // down arrow
+  if (e.keyCode === 40) { 
+    // if siblings list, go forward
+  }
+    
+  // enter, ctrl+enter
+  if (e.key === 'Enter' || e.keyCode === 13) { 
+    if (modifier) {
+      spawnGraphOnNewPane(cy, cy.$('node:selected').map(n => n.data()));
+    } else {
+      graphExtend(cy, cy.$('node:selected'));
+    }
+  }
+}
+
+socket.on("handle selection", (data) => {
+  if (data) {
+    switch (data) {
+      case "merge":
+        handleMergePane();
+        break;
+      case "delete":
+        handleDeletePane();
+        break;
+      case "duplicate":
+        handleDuplicatePane();
+        break;
+      case "expand":
+        handleExpandPane();
+        break;
+      case "collapse":
+        handleCollapsePane();
+        break;
+      case "export":
+        handleExportPane();
+        break;
+    }
+  }
+});
+
+socket.on("handle overview nodes selected", (data) => {
+  if (data) {
+    var selectedPanes = [];
+    var paneCy;
+    data.forEach((id) => {
+      const selectedPane = getPanes()[id];
+      if (selectedPane) {
+        paneCy = getPanes()[id].cy;
+        const data = {
+          nodes: Array.from(paneCy.elementMapper.nodes.values()),
+          edges: Array.from(paneCy.elementMapper.edges.values()),
+          info: info,
+          cyImport: paneCy.json(),
+          paneId: paneCy.paneId,
+          paneCy,
+        };
+        selectedPanes.push(data);
+      }
+    });
+    selectedPanesData = {
+      selectedPanes,
+      paneCy,
+    };
+  }
+});
 
 export {
   spawnGraph,

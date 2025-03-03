@@ -53,6 +53,7 @@ socket.on("handle active pane", (data) => {
   });
 });
 
+// TODO: replay selections of the overview workflow with a different model (if blueprint remains)
 socket.on("disconnect", () => {
   location.reload();
 });

@@ -1,5 +1,7 @@
-import { setPane } from "../utils/controls.js";
-import { colorList } from "../utils/utils.js";
+import { setPane } from "../../utils/controls.js";
+import { colorList } from "../../utils/utils.js";
+import { INTERACTIONS } from "../../utils/names.js";
+import events from "../../utils/events.js";
 
 const MIN_LANE_SIZE = 10;
 const socket = io();
@@ -52,7 +54,7 @@ function spawnPane(
         split: 0.3, // defines how much height the pcp has 
         cy: undefined, // must be set later!,
         backgroundColor,
-        nodesIds,
+        nodesIds: new Set(nodesIds),
         spawner,
         spawnerNodes,
     };
@@ -75,13 +77,12 @@ function spawnPane(
     cyContainer.className = "cy";
     cyContainer.style.height = pane.height * (1 - pane.split) + "px";
 
-    cyContainer.style.borderBottomColor = backgroundColor + "50";
-    cyContainer.style.borderBottomWidth = "25px";
-    cyContainer.style.borderBottomStyle = "solid";
-
     const dragbar = document.createElement("div");
     dragbar.id = pane.dragbar;
     dragbar.className = "dragbar";
+
+    const buttons = createPaneControls(pane);
+    
 
     // add the pane for the detail view (pcp)
     const details = document.createElement("div");
@@ -98,6 +99,7 @@ function spawnPane(
     div.id = pane.id;
     div.style.flex = panesLength+1; 
     div.style.height = pane.height + "px";
+    div.appendChild(buttons);
     div.appendChild(cyContainer);
     div.appendChild(split_dragbar);
     div.appendChild(details);
@@ -125,12 +127,42 @@ function spawnPane(
         panes[spawner].spawned = div.id; // to remember which pane was created from this one
     }
 
-    dispatchEvent(new CustomEvent("paneResize", { detail: { pane: "all", }, }));
+    dispatchEvent(events.RESIZE_ALL);
     
     return pane;
 }
 
+function createPaneControls(pane) {
+    const buttons = document.createElement("div");
+    buttons.className = "pane-controls";
+    buttons.id = `${pane.container}-controls`;
+    buttons.style.width = 0;
+    buttons.style.width = 0;
+    buttons.style.backgroundColor = pane.backgroundColor + "50";
+
+    buttons.innerHTML = `
+    <div class="active-pane-controls ui small blue bottom attached icon buttons">
+        <button class="ui button" id="${pane.id}-expand1"
+            title="${INTERACTIONS.expand1.name} \t (${INTERACTIONS.expand1.keyboard})">
+            <i class="${INTERACTIONS.expand1.icon}" aria-hidden="true"></i>
+        </button>
+        <button class="ui button" id="${pane.id}-expandN"
+            title="${INTERACTIONS.expandN.name} \t (${INTERACTIONS.expandN.keyboard})">
+            <i class="${INTERACTIONS.expandN.icon}" aria-hidden="true"></i>
+        </button>
+        <button class="ui button" id="${pane.id}-mark"
+            title="${INTERACTIONS.mark.name} \t (${INTERACTIONS.mark.keyboard})">
+            <i class="${INTERACTIONS.mark.icon}" aria-hidden="true"></i>
+        </button>
+    </div>`
+
+    return buttons;
+}
+
 function resizePane(div, pwidth) {
+
+    return; 
+    
     const _width = Math.max(MIN_LANE_SIZE, pwidth);
     const _height = div.getBoundingClientRect().height;
     div.style.width = _width + "px";
@@ -159,14 +191,7 @@ function togglePane(div) {
             resizePane(div, MIN_LANE_SIZE);
         }
 
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -175,15 +200,7 @@ function expandPane(div) {
     const windWidth = window.innerWidth;
     if (div) {
         resizePane(div, windWidth);
-
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -195,15 +212,7 @@ function collapsePane(div) {
         } else {
         }
         resizePane(div, MIN_LANE_SIZE);
-
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[div.id],
-                },
-            })
-        );
-
+        dispatchEvent(events.RESIZE_ONE(panes[div.id]));
         refreshCys();
     }
 }
@@ -226,6 +235,7 @@ function enableDragBars() {
     enableSplitDragBars();
 }
 
+// https://stackoverflow.com/questions/28767221/flexbox-resizing
 function enablePaneDragBars() {
     const dragbars = document.getElementsByClassName("dragbar");
     let dragging = false;
@@ -301,13 +311,7 @@ function enablePaneDragBars() {
                 if (dragging) {
                     dragging = false;
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: "all",
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ALL);
                 }
                 refreshCys();
             };
@@ -329,13 +333,7 @@ function enablePaneDragBars() {
                 document.onmousemove = null;
                 if (dragging) {
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: dragging,
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ONE(dragging));
                     dragging = false;
                 }
                 refreshCys();
@@ -371,13 +369,7 @@ function enableSplitDragBars() {
                 document.onmousemove = null;
                 if (dragging) {
                     // resize vis inside pane
-                    dispatchEvent(
-                        new CustomEvent("paneResize", {
-                            detail: {
-                                pane: dragging,
-                            },
-                        })
-                    );
+                    dispatchEvent(events.RESIZE_ONE(dragging));
                     dragging = false;
                 }
                 refreshCys();
@@ -398,7 +390,7 @@ function updatePanes(newPanesData) {
 // recursively destroy every pane starting from an id
 function destroyPanes(firstId, firstOnly = false) {
     const pane = document.getElementById(firstId);
-
+    
     if (pane) {
         if (panes[firstId] && panes[firstId].spawned) {
             if (!firstOnly) {
@@ -406,14 +398,22 @@ function destroyPanes(firstId, firstOnly = false) {
             }
         }
 
+        const dragbar = pane.previousElementSibling;
+        if (dragbar && dragbar.classList.contains("dragbar")) {
+            dragbar.remove();
+        }
+
         pane.remove();
         delete panes[firstId];
-        Object.keys(panes).forEach((k) => {
+        
+        const newKeys = Object.keys(panes);
+        newKeys.forEach((k) => {
             if (panes[k].spawned === firstId) {
                 panes[k].spawned = undefined;
             }
         });
-
+        setPane(panes[newKeys[newKeys.length - 1]].id); 
+        dispatchEvent(events.RESIZE_ALL);
         socket.emit("pane removed", firstId);
     }
 }
@@ -423,13 +423,7 @@ function highlightPaneById(paneId) {
     setPane(paneId);
     if (paneDiv) {
         expandPane(paneDiv);
-        dispatchEvent(
-            new CustomEvent("paneResize", {
-                detail: {
-                    pane: panes[paneDiv.id],
-                },
-            })
-        );
+        dispatchEvent(events.RESIZE_ONE(panes[paneDiv.id]));
         if (panes) {
             Object.keys(panes).forEach((id) => {
                 if (id !== paneId) {

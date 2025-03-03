@@ -1,11 +1,11 @@
-import { getPanes, info } from "../views/panes.js";
+import { getPanes, info } from "../views/panes/panes.js";
 import { h, t } from "./utils.js";
 
 import { params as _elk } from "../views/node-link/layout-options/elk.js";
 import { params as _dagre } from "../views/node-link/layout-options/dagre.js";
 import { params as _klay } from "../views/node-link/layout-options/klay.js";
 import { params as _cola } from "../views/node-link/layout-options/cola.js";
-import NAMES from "./names.js";
+import { NAMES } from "./names.js";
 import {
   markRecurringNodes,
   setMaxIteration,
@@ -246,19 +246,20 @@ function makeParamButton(opts) {
 }
 
 function makeParamToggle(opts) {
+  const id = `checkbox-${opts.param}${opts.subParam?opts.subParam:''}`;
   const value = opts.subParam
     ? pane.cy.params[opts.param][opts.subParam]
     : pane.cy.params[opts.param];
 
-  const $label = h("label", { class: "label label-default" }, [t(opts.label)]);
+  const $label = h("label", { class: "label label-default", for:id }, [t(opts.label)]);
   const $param = h("div", {
     class: "param ui small checkbox",
     style: "display: flex",
   });
   const $toggle = h("input", {
     type: "checkbox",
-    name: "checkbox" + opts.param,
-    id: "checkbox-" + opts.param,
+    name: id,
+    id: id,
     class: "param-" + opts.param,
     style: "margin-right: 5px",
   });
@@ -307,7 +308,7 @@ function makeParamDropdown(opts) {
       makeLayout(pane.cy.params);
       pane.cy._layout.run();
     },
-    "select-" + opts.param,
+    "select-" + opts.param + (opts.subParam ? opts.subParam : ''),
     opts.label,
     $cy_config
   );
@@ -358,6 +359,7 @@ function makeSchedulerPropDropdown() {
     name: "bestPathLength",
     id: "bestPathLength",
     value: 5,
+    min: 1,
   });
   const update = (e) => {
     const value = e.target.value;
@@ -421,7 +423,7 @@ function makeDetailCheckboxes() {
     const $option_label = h("details", { class: "ui accordion" }, [
       h("summary", { class: "title", style: "display:flex" }, [
         h("i", { class: "dropdown icon left" }, []),
-        h("div", { class: "ui checkbox" }, [$toggle, h("label", {}, [t(k)])]),
+        h("div", { class: "ui small checkbox" }, [$toggle, h("label", { for: `checkbox-${k}` }, [t(k)])]),
       ]),
       h("div", { class: "content" }, [
         ...makeDetailPropsCheckboxes(options[k].props, k),
@@ -479,12 +481,15 @@ function makeDetailPropsCheckboxes(options, propsName) {
     const $option_label = h(
       "div",
       {
-        class: "prop-text ui checkbox",
+        class: "prop-text ui small checkbox",
         style: "display:flex",
       },
       [
         $toggle,
-        h("label", {}, [h("p", { class: "prop-text-label-text" }, html)]),
+        h("label", 
+          { for: `checkbox-${propsName}-${k}` }, 
+          [h("p", { class: "prop-text-label-text" }, html)]
+        ),
       ]
     );
 
@@ -688,8 +693,9 @@ function makeAppendDropdown() {
 function makeFullSyncToggle() {
   const param = "fullSync"
   const value = pane.cy.vars[param].value;
+  const id = `checkbox-${param}`;
 
-  const $label = h("label", { class: "label label-default" }, [
+  const $label = h("label", { class: "label label-default", for: id }, [
     t("Automatically synchronize selections")
   ]);
   const $param = h("div", {
@@ -698,8 +704,8 @@ function makeFullSyncToggle() {
   });
   const $toggle = h("input", {
     type: "checkbox",
-    name: "checkbox" + param,
-    id: "checkbox-" + param,
+    name: id,
+    id: id,
     class: "param-" + param,
     style: "margin-right: 5px",
   });

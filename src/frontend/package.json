@@ -4,7 +4,7 @@
     "description": "",
     "type": "module",
     "dependencies": {
-        "@fortawesome/fontawesome-free": "6.4.0",
+        "@fortawesome/fontawesome-free": "^6.7.2",
         "cose-base": "2.2.0",
         "cytoscape": "3.25.0",
         "cytoscape-cola": "2.2.3",
@@ -27,7 +27,6 @@
         "express-fileupload": "1.5.1",
         "extract-zip-relative-path": "2.0.4",
         "fomantic-ui-css": "2.9.3",
-        "font-awesome": "4.7.0",
         "fs-extra": "11.2.0",
         "jszip": "3.10.1",
         "layout-base": "2.0.0",

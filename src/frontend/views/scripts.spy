@@ -43,10 +43,7 @@
 <!-- customized extensions -->
 <script src="/libs/cytoscape-context-menus/cytoscape-context-menus.js"></script>
 
+<!-- sweet alert -->
 <script src="/libs/sweetalert2/dist/sweetalert2.all.min.js"></script>
-<!-- <script src="/libs/@fortawesome/fontawesome-free/js/all.js"></script> -->
-<script src="https://kit.fontawesome.com/7b18c84369.js" crossorigin="anonymous"></script>
 
-<script src="/js/views/panes.js" type="module"></script>
-<script src="/js/utils/controls.js" type="module"></script>
 <script src="/js/main/main.js" type="module"></script>

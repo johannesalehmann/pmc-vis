@@ -64,7 +64,7 @@ body.config-closed #container {
 }
 
 .config.ui > .ui.segment {
-    margin: 1em !important;
+    margin: 1px !important;
     background: var(--pane-background)
 }
 
@@ -74,7 +74,6 @@ body.config-closed #container {
 }
 
 /* End Sidebar */
-
 .param {
     margin-top: 1.5em;
 }
@@ -87,11 +86,6 @@ body.config-closed #container {
     width: 3em;
     margin-right: 0.25em;
     text-align: center;
-}
-
-.label {
-    display: block;
-    padding-bottom: 7px;
 }
 
 .label.inline {
@@ -110,6 +104,14 @@ body.config-closed #container {
     color: var(--config-icon-color-active);
     margin-right: var(--config-width);
     transition: margin .5s;
+}
+
+#config-toggle:hover {
+    color: var(--config-icon-color-inactive);
+}
+
+#config-toggle.icon-inactive:hover {
+    color: var(--config-icon-color-active);
 }
 
 #config-toggle.icon-inactive {
@@ -272,11 +274,6 @@ details {
     border-bottom: solid 0.5px #e6e6e6;
 }
 
-input+label {
-    position: relative;
-    z-index: 0;
-}
-
 .slider {
     -webkit-appearance: none;
     width: 100%;
@@ -327,7 +324,7 @@ a:hover {
 
 nav {
 	background-color: var(--tool-color);    
-    color: var(--light-text-color);
+    color: var(--dark-text-color);
     display: flex;
     justify-content: space-between;
 }
@@ -353,12 +350,12 @@ nav .nav-wrapper-right {
 
 nav .tool-name {
     margin-left: 10px;
-    color: var(--light-text-color)
+    color: var(--dark-text-color)
 }
 
 nav .tool-name:hover {
     margin-left: 10px;
-    color: var(--light-text-color-hover)
+    color: var(--dark-text-color-hover)
 }
 
 .tool-title {
