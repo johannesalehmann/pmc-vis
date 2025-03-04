@@ -140,6 +140,8 @@ public class TaskManager implements Executor, Managed {
             for (Task task : tasks) {
                 currentTasks.add(task.status());
             }
+        }else{
+            currentTasks.add("All tasks finished");
         }
         return currentTasks;
     }

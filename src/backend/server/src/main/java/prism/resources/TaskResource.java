@@ -25,8 +25,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
+@Path("/{project_id}")
 @Produces(MediaType.APPLICATION_JSON)
 public class TaskResource extends Resource {
 
@@ -70,7 +72,17 @@ public class TaskResource extends Resource {
         }
     }
 
-    @Path("@Path(/{project_id}/create-project")
+    @Path("/status")
+    @GET
+    @Timed(name="status")
+    @Operation(summary = "Returns status of current computation", description = "Reads the internal Task Manager for the status of current computations on the server")
+    public Response getStatus(
+
+    ) {
+        return ok(tasks.status());
+    }
+
+    @Path("/create-project")
     @POST
     @Timed
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -130,7 +142,7 @@ public class TaskResource extends Resource {
         return Response.ok(output).build();
     }
 
-    @Path("/{project_id}/add-scheduler")
+    @Path("/add-scheduler")
     @POST
     @Timed
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -166,7 +178,7 @@ public class TaskResource extends Resource {
         return Response.ok(output).build();
     }
 
-    @Path("/remove-project:{project_id}")
+    @Path("/remove-project")
     @GET
     @Timed
     @Operation(summary = "removes an existing project", description = "Removes all Modelfiles and Database Entries regarding the Project in question from the backend")

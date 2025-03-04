@@ -206,26 +206,49 @@ public class ModelParser {
             visitedStates.add(state);
         }
 
+        int numRewards = modulesFile.getNumRewardStructs();
+        List<String> rewardNames = modulesFile.getRewardStructNames();
+        double[] rewardValues = new double[numRewards];
+
+        updater.calculateStateRewards(state, rewardValues);
+
         Map<String, Object> variables = new HashMap<>();
         for (int i = 0; i < state.varValues.length; i++) {
             variables.put(modulesFile.getVarName(i), state.varValues[i]);
         }
 
-        return new prism.api.State(visitedStates.indexOf(state), state.toString(), variables, project.getLabelMap(state), new TreeMap<>(), new TreeMap<>());
+        Map<String, Double> rewards = new TreeMap<>();
+        for (int i = 0; i < numRewards; i++) {
+            rewards.put(rewardNames.get(i), rewardValues[i]);
+        }
+
+        return new prism.api.State(visitedStates.indexOf(state), state.toString(), variables, project.getLabelMap(state), rewards, new TreeMap<>());
     }
 
-    private Transition convertApiTransition(parser.State out, String action, Map<parser.State, Double> distribution) throws Exception {
+    private Transition convertApiTransition(parser.State out, int choice, String action, Map<parser.State, Double> distribution) throws Exception {
         Pair<parser.State, String> identifier = new Pair<>(out, action);
         if (!visitedTransitions.contains(identifier)){
             visitedTransitions.add(identifier);
         }
+
+        int numRewards = modulesFile.getNumRewardStructs();
+        List<String> rewardNames = modulesFile.getRewardStructNames();
+        double[] rewardValues = new double[numRewards];
+
+        updater.calculateTransitionRewards(out, choice, rewardValues);
+
 
         Map<Long, Double> outDistribution = new HashMap<>();
         for (parser.State state : distribution.keySet()) {
             outDistribution.put((long) visitedStates.indexOf(state), distribution.get(state));
         }
 
-        return new Transition(visitedTransitions.indexOf(identifier), String.valueOf(visitedStates.indexOf(out)), action, outDistribution, null, null, null, null, null);
+        Map<String, Double> rewards = new TreeMap<>();
+        for (int i = 0; i < numRewards; i++) {
+            rewards.put(rewardNames.get(i), rewardValues[i]);
+        }
+
+        return new Transition(visitedTransitions.indexOf(identifier), String.valueOf(visitedStates.indexOf(out)), action, outDistribution, rewards, null, null, null, null);
     }
 
     // Output Functions
@@ -270,7 +293,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
 
-                transitions.add(convertApiTransition(state, actionName, probabilities));
+                transitions.add(convertApiTransition(state, i, actionName, probabilities));
             }
         }
         return new Graph(project, outStates, transitions);
@@ -308,7 +331,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
                 if (contained) {
-                    transitions.add(convertApiTransition(state, actionName, probabilities));
+                    transitions.add(convertApiTransition(state, i, actionName, probabilities));
                 }
             }
         }
@@ -344,7 +367,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
 
-                transitions.add(convertApiTransition(state, actionName, probabilities));
+                transitions.add(convertApiTransition(state, i, actionName, probabilities));
             }
         }
         return new Graph(project, outStates, transitions);
