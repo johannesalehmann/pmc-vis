@@ -99,6 +99,6 @@ formula c_formula = (((counter=5)&(pc1=4)&(coin1=0)&(pc2=1)&(coin2=0))|((counter
 label "cause" = c_formula;
 
 // rewards
-//rewards "steps"
-//	true : 1;
-//endrewards
+rewards "steps"
+	true : 1;
+endrewards
