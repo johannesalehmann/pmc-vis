@@ -63,12 +63,12 @@ public class VariableInfo implements Namespace {
     }
 
     @JsonProperty
-    public double getMinValue() {
+    public double getMin() {
         return minValue;
     }
 
     @JsonProperty
-    public double getMaxValue() {
+    public double getMax() {
         return maxValue;
     }
 
