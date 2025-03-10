@@ -215,11 +215,11 @@ public class ModelChecker implements Namespace {
                 return;
             }
 
-            try {
-                Debug.sleep(100000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//            try {
+//                Debug.sleep(100000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
 
             try (prism.core.Utility.Timer build = new Timer("Build Database", project.getLog())) {
                 int numRewards = modulesFile.getNumRewardStructs();
