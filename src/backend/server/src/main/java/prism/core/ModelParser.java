@@ -226,12 +226,14 @@ public class ModelParser {
             int range = (maxValue - minValue) + 1;
             int value;
 
+            int position = modulesFile.getVarIndex(varList.getName(i));
+
             switch(varList.getType(i).getTypeString()){
                 case "int":
-                    value = (int) state.varValues[i];
+                    value = (int) state.varValues[position];
                     break;
                 case "bool":
-                    boolean bool = (boolean) state.varValues[i];
+                    boolean bool = (boolean) state.varValues[position];
                     value = bool ? 1 : 0;
                     break;
                 default:
@@ -255,7 +257,9 @@ public class ModelParser {
             int maxValue = varList.getHigh(i);
 
             int range = (maxValue - minValue) + 1;
-            int value = values[i];
+            int position = modulesFile.getVarIndex(varList.getName(i));
+
+            int value = values[position];
 
             if (value < minValue || value > maxValue) {
                 System.out.println("Value " + value + " is out of range");
@@ -269,7 +273,7 @@ public class ModelParser {
     }
 
     public parser.State translateStateIdentifier(long stateIdentifier) {
-        Values values = new Values();
+        parser.State state = new State(varList.getNumVars());
 
         long prevRange = 1;
 
@@ -277,17 +281,19 @@ public class ModelParser {
             int minValue = varList.getLow(i);
             int maxValue = varList.getHigh(i);
 
+            int position = modulesFile.getVarIndex(varList.getName(i));
+
             int range = (maxValue - minValue) + 1;
             int value = (int) (Math.floorDiv(stateIdentifier, prevRange) % range);
             value += minValue;
 
             switch(varList.getType(i).getTypeString()){
                 case "int":
-                    values.addValue(varList.getName(i), value);
+                    state.setValue(position, value);
                     break;
                 case "bool":
                     boolean bool = value > 0;
-                    values.addValue(varList.getName(i), bool);
+                    state.setValue(position, bool);
                     break;
                 default:
                     throw new RuntimeException("Unknown type: " + varList.getType(i).getTypeString());
@@ -296,11 +302,7 @@ public class ModelParser {
             prevRange = prevRange * range;
         }
 
-        try{
-            return new State(values, modulesFile);
-        } catch (PrismLangException e) {
-            throw new RuntimeException(e);
-        }
+        return state;
     }
 
     public long transitionIdentifier(parser.State outState, Choice<Double> choice) {
