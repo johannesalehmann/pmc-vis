@@ -71,6 +71,7 @@
 
     .split-button i.fa-undo {
         font-size: 5px;
+        margin-top: -2px;
     }
 
     .split-max {

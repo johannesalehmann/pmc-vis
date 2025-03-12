@@ -459,7 +459,7 @@ function getPreviousInPath(cy, sourceNodeId) {
 function spawnPCP(cy, _nodes) {
   const nodes = _nodes || cy.$('node:selected').map(n => n.data());
   const s = nodes.filter(d => cy.vars['mode'].value.includes(d.type));
-  const { ps, psd } = ndl_to_pcp(
+  const { pl, pld } = ndl_to_pcp(
     {
       nodes: s.length > 0 ? s : 
         console.warn('tried to spawn PCP without any selection, using full nodeset') ||
@@ -472,17 +472,17 @@ function spawnPCP(cy, _nodes) {
   );
 
   const hidden = new Set(['color']);
-  const props = Object.keys(psd).filter(k => !hidden.has(k));
+  const props = Object.keys(pld).filter(k => !hidden.has(k));
 
   cy.pcp = parallelCoords(
     getPanes()[cy.paneId],
-    ps,
+    pl,
     {
       data_id: 'id',
-      nominals: props.filter(k => psd[k].type === 'nominal'),
-      booleans: props.filter(k => psd[k].type === 'boolean'),
-      numbers: props.filter(k => psd[k].type === 'number'),
-      psd
+      nominals: props.filter(k => pld[k].type === 'nominal'),
+      booleans: props.filter(k => pld[k].type === 'boolean'),
+      numbers: props.filter(k => pld[k].type === 'number'),
+      pld
     }
   );
 
