@@ -133,8 +133,22 @@ body.config-closed #container {
 .cy-html,
 .tippy-tooltip,
 .prop-text {
-    font-size: 10px;
+    font-size: 12px;
 }
+
+.trigger-check-prop {
+    z-index: 4;
+    cursor: pointer;
+}
+
+summary>.trigger-check-prop {
+    margin-top: 3px;
+}
+
+.trigger-check-prop:hover {
+    color: rgb(94, 94, 94);
+}
+
 
 .config select,
 .config .button {
@@ -256,6 +270,10 @@ body.config-closed #container {
 
 .prop-text-label-icon {
     padding-right: 7px;
+}
+
+.prop-text > .prop-text-label-text {
+    padding-top: 2px;
 }
 
 .prop-text-label-text {

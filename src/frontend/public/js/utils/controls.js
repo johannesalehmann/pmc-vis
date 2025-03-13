@@ -91,7 +91,7 @@ function makeLayout(opts, overwrite = false) {
     pane.cy.params = {};
   }
 
-  for (var i in opts) {
+  for (const i in opts) {
     pane.cy.params[i] = opts[i];
   }
 
@@ -163,7 +163,6 @@ function createControllers(params) {
   // recurring nodes setting
   makeRecurringNodeMarkSettings();
   
-
   // pcp config
   $pcp_config.innerHTML = "";
   makePCPSettings();
@@ -373,7 +372,7 @@ function makeSchedulerPropDropdown() {
 }
 
 function updatePropsValues() {
-  const original = pane.cy.vars["details"].value;
+  const original = pane.cy.vars['details'].value;
   const update = {};
 
   Object.keys(original).forEach((d) => {
@@ -391,7 +390,44 @@ function updatePropsValues() {
   return update;
 }
 
+async function status() {
+  const status = await fetch(`http://localhost:8080/${info.metadata['ID']}/status`, { method: "GET" });
+  const data = await status.json();
+  console.log(data)
+  
+  return data;
+}
+
+async function triggerModelCheckProperty(props) {
+  fetch(
+    `http://localhost:8080/${info.metadata['ID']}/check?property=${props.join('&property=')}`,
+    { method: "GET" }
+  );
+  
+  let interval = setInterval(async _ => {
+    const state = await status(); 
+    
+    if (state[0] === 'All tasks finished') {
+      setPane(pane.id, false, true);
+      clearInterval(interval);
+    }
+  }, 50);
+
+}
+
+async function clear() {
+  const request = await fetch(`http://localhost:8080/${info.metadata['ID']}/clear`, { method: "GET" }); 
+  const response = await request.json(); 
+
+  if (response.content.startsWith('Cleared database for')) {
+    setPane(pane.id, false, true);
+  }
+  
+  console.log(response)
+}
+
 function makeDetailCheckboxes() {
+
   const $param =
     document.getElementById("props-checkboxes") ||
     h("div", {
@@ -408,9 +444,24 @@ function makeDetailCheckboxes() {
   $param.innerHTML = "";
   $param.appendChild($label);
 
-  const options = pane.cy.vars["details"].value;
+  const options = pane.cy.vars['details'].value;
+
+  
+  $props_config.innerHTML = `<div class="buttons param"> 
+    <button class="ui button" id="clear">
+      <span>Clear Properties (Testing)</span>
+    </button>
+    <button class="ui button" id="status">
+      <span>Print Status</span>
+    </button>
+  </div>`;
+  document.getElementById("clear").addEventListener('click', _ => clear())
+  document.getElementById("status").addEventListener('click', _ => status())
 
   Object.keys(options).forEach((k) => {
+    const $button = h("i", { class: "fa fa-rocket trigger-check-prop" });
+    $button.addEventListener('click', _ => triggerModelCheckProperty(Object.keys(options[k].props)));
+
     const $toggle = h("input", {
       type: "checkbox",
       class: "checkbox-prop",
@@ -420,13 +471,21 @@ function makeDetailCheckboxes() {
       value: k,
     });
 
+    const which = k !== NAMES.results ||  
+      Object.values(options[k].metadata)
+        .map(a => a.ready)
+        .reduce((a, b) => a && b, true);
+
     const $option_label = h("details", { class: "ui accordion" }, [
       h("summary", { class: "title", style: "display:flex" }, [
         h("i", { class: "dropdown icon left" }, []),
-        h("div", { class: "ui small checkbox" }, [$toggle, h("label", { for: `checkbox-${k}` }, [t(k)])]),
+        which ? 
+          h("div", { class: "ui small checkbox" }, [$toggle, h("label", { for: `checkbox-${k}` })]) : 
+          $button,
+        h("p", { class: "prop-text-label-text" }, [t(k)])
       ]),
       h("div", { class: "content" }, [
-        ...makeDetailPropsCheckboxes(options[k].props, k),
+        ...makeDetailPropsCheckboxes(options[k], k),
       ]),
     ]);
 
@@ -437,11 +496,14 @@ function makeDetailCheckboxes() {
         document.getElementById(`checkbox-${k}-${p}`).checked =
           e.target.checked;
       });
-      pane.cy.vars["details"].fn(pane.cy, {
+      pane.cy.vars['details'].fn(pane.cy, {
         update: updatePropsValues(),
         mode: false,
       });
     });
+    $button.addEventListener("click", (e)=> {
+      e.preventDefault();
+    })
 
     $param.appendChild($option_label);
   });
@@ -449,60 +511,63 @@ function makeDetailCheckboxes() {
   $props_config.appendChild($param);
 }
 
-function makeDetailPropsCheckboxes(options, propsName) {
+function makeDetailPropsCheckboxes(options, propType) {
+  const props = options.props; 
   const toggles = [];
   const $param = h("div", {
     class: "prop-checkboxes",
-    id: `props-checkboxes-${propsName}`,
+    id: `props-checkboxes-${propType}`,
     style: "display: block",
   });
-  const meta = pane.cy.vars["details"].value[propsName].metadata;
+  const meta = pane.cy.vars['details'].value[propType].metadata;
 
-  Object.keys(options).forEach((k) => {
+
+  Object.keys(props).forEach((propName) => {
+    const checked = props[propName];
+    const $button = h("i", { class: "fa fa-rocket trigger-check-prop" });
+    $button.addEventListener('click', _ => triggerModelCheckProperty([propName]));
     const $toggle = h("input", {
       type: "checkbox",
       class: "checkbox-prop",
-      id: `checkbox-${propsName}-${k}`,
-      name: `checkbox-${propsName}-${k}`,
+      id: `checkbox-${propType}-${propName}`,
+      name: `checkbox-${propType}-${propName}`,
       style: "margin-right: 5px",
-      value: k,
+      value: propName,
     });
 
     const html =
-      meta[k] && meta[k].identifier
+      meta[propName] && meta[propName].identifier
         ? [
-          meta[k].icon
-            ? h("i", { class: meta[k].identifier + " prop-text-label-icon" })
-            : h("span", { class: "prop-text-label-icon" }, [ t(meta[k].identifier), ]),
-          t(k),
-        ]
-        : [t(k)];
+          meta[propName].icon
+            ? h("i", { class: meta[propName].identifier + " prop-text-label-icon" })
+            : h("span", { class: "prop-text-label-icon" }, [ t(meta[propName].identifier), ]),
+          t(propName),
+        ] : [t(propName)];
 
-    const $option_label = h(
-      "div",
-      {
-        class: "prop-text ui small checkbox",
-        style: "display:flex",
+    const which = propType !== NAMES.results || options.metadata[propName].ready;
+    const $div = h("div",
+      { 
+          class: "prop-text ui small checkbox",
+          style: "display:flex",
       },
-      [
-        $toggle,
-        h("label", 
-          { for: `checkbox-${propsName}-${k}` }, 
-          [h("p", { class: "prop-text-label-text" }, html)]
-        ),
+      [ 
+        which ? 
+          h("div", {}, [ $toggle, h("label", { for: `checkbox-${propType}-${propName}` }) ]) : 
+          $button,
+        h("p", { class: "prop-text-label-text" }, html)
       ]
     );
 
-    $toggle.checked = options[k];
+    $toggle.checked = checked;
 
     $toggle.addEventListener("change", (e) => {
-      pane.cy.vars["details"].fn(pane.cy, {
+      pane.cy.vars['details'].fn(pane.cy, {
         update: updatePropsValues(),
         mode: false,
       });
     });
 
-    $param.appendChild($option_label);
+    $param.appendChild($div);
     toggles.push($param);
   });
 
@@ -591,16 +656,7 @@ function makePCPSettings() {
   ];
 
   $pcp_config.innerHTML = "";
-    /*_makeDropdown(
-        pcp_modes,
-        pcp_modes[0].value,
-        (value) => {
-
-        },
-        'select-coordination-mode',
-        'View Coordination',
-        $pcp_config
-    )*/ const countPrinter = h("div", { class: "content" });
+  const countPrinter = h("div", { class: "content" });
   countPrinter.innerHTML = `<pre id="count" style="height: 20px; font-size: 10px">${
     pane.cy.pcp
       ? "Selected elements: " + pane.cy.pcp.getSelection().length

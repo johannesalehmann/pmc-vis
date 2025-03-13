@@ -667,7 +667,7 @@ function setSelectMode(cy, mode = 's') {
 
 function updateDetailsToShow(cy, { update, mode = NAMES.results }) {
   const props = {};
-  const details = cy.elements()[0].data().details;
+  const details = structuredClone(info);
 
   let init = true;
   if (update) {
@@ -675,16 +675,21 @@ function updateDetailsToShow(cy, { update, mode = NAMES.results }) {
   }
 
   Object.keys(details).forEach(d => {
+    if (d === "metadata") {
+      return;
+    }
+
     let truthVal = false;
     if (d === mode) {
       truthVal = true;
     }
-
+    
     props[d] = {
       all: init ? truthVal : update[d].all,
       props: {},
       metadata: {},
     };
+
     Object.keys(details[d]).forEach(p => {
       props[d].props[p] = init ? truthVal : update[d].props[p];
       props[d].metadata[p] = info[d] ? info[d][p] : undefined;

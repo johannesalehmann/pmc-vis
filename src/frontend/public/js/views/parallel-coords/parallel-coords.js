@@ -80,28 +80,33 @@ const parallelCoords = function (pane, data, metadata) {
             return; 
         }
 
-        let longestLabel = cols[0].length;
-        cols.forEach(c => {
-            longestLabel = c.length > longestLabel ? c.length : longestLabel;
-        });
-
-        const labelMargin = longestLabel * 5;
-
         // determines whether the plot appears vertically or horizontally
-        const orient = where.width < where.height ? 0 : 1; // 0 horizontal, 1 vertical
+        const orient = where.width < where.height ? 0 : 1; // 0: ☰, 1 |||
 
         // set up some margins and dimensions for the svg
-        const pad = 50;
-        const brush_width = 8;
+        
+        // let longestLabel = cols[0].length;
+        // cols.forEach(c => {
+        //     longestLabel = c.length > longestLabel ? c.length : longestLabel;
+        // });
+        // const labelMargin = longestLabel * 5;
+        // const pad = 50;
+        // const margin = {
+        //     top: 10 + (orient ? labelMargin / 2 : 30),
+        //     right: pad + (orient ? labelMargin / 3 : 10),
+        //     bottom: (pad / 2) + (orient ? 0: labelMargin / 2),
+        //     left: pad + (orient ? labelMargin / 3 : labelMargin)
+        // },
 
         const margin = {
-            top: 10 + (orient ? labelMargin / 2 : 30),
-            right: pad + (orient ? labelMargin / 3 : 10),
-            bottom: (pad / 2) + (orient ? 0: labelMargin / 2),
-            left: pad + (orient ? labelMargin / 3 : labelMargin)
+            top: orient ? 30 : 50,
+            bottom: orient ? 30 : 50,
+            right: orient ? 50 : 30,
+            left: orient ? 50 : 30
         },
             width = where.width - margin.left - margin.right,
-            height = where.height - margin.top - margin.bottom;
+            height = where.height - margin.top - margin.bottom,
+            brush_width = 8;
 
         if (width < 5 || height < 5) {
             return; // do not draw
@@ -115,7 +120,10 @@ const parallelCoords = function (pane, data, metadata) {
             svg_dims: [width, height],
             w_h: ["width", "height"],
             x_y: ["x", "y"],
-            anchor: ["end", "middle"],
+            //anchor: ["end", "middle"],
+            anchor: ["start", "start"],
+            //title: ["rotate(-20)", "rotate(-20)"],
+            title: ["translate(0, 15)", "translate(0) rotate(90)"],
             trans: ["translate(0, ", "translate("]
         };
 
@@ -133,9 +141,8 @@ const parallelCoords = function (pane, data, metadata) {
         const div = document.getElementById(pcpHtml.div);
 
         d3.select('#' + where.id).selectAll("#" + pcpHtml.fg + ", #" + pcpHtml.bg + ", #" + pcpHtml.hl)
-            .attr("width", width)
-            .attr("height", height)
-            .style("padding", Object.values(margin).join("px ") + "px");
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
 
         const foreground = div.querySelector('#' + pcpHtml.fg).getContext('2d');
         const background = div.querySelector('#' + pcpHtml.bg).getContext('2d');
@@ -165,9 +172,9 @@ const parallelCoords = function (pane, data, metadata) {
         }
 
         // get list of dimensions and create a scale for each, considering the data types.
-        resp.scale.domain(dimensions = cols.filter(function (d) {
+        resp.scale.domain(dimensions = cols.filter(d => {
             if (metadata.nominals.includes(d)) {
-                const domain = data.map(function (p) { return p[d]; });
+                const domain = data.map(p => p[d]);
                 const axis = resp.axes[d] = d3.scalePoint()
                     .domain(domain)
                     .range([0, resp.svg_dims[orient]])
@@ -177,14 +184,9 @@ const parallelCoords = function (pane, data, metadata) {
                     .domain([0, resp.svg_dims[orient]])
                     .range([0, resp.svg_dims[orient]])
 
-                axis.invert = function (pos) {
-                    return axis.linear(pos);
-                }
-
+                axis.invert = pos => axis.linear(pos);
                 axis.mapping = {};
-                axis.domain().forEach(d => {
-                    axis.mapping[d] = axis(d)
-                });
+                axis.domain().forEach(d => axis.mapping[d] = axis(d));
                 return axis;
             } else if (metadata.booleans.includes(d)) {
                 const axis = resp.axes[d] = d3.scalePoint()
@@ -196,14 +198,9 @@ const parallelCoords = function (pane, data, metadata) {
                     .domain([0, resp.svg_dims[orient]])
                     .range([0, resp.svg_dims[orient]]);
 
-                axis.invert = function (pos) {
-                    return axis.linear(pos);
-                }
-
+                axis.invert = pos => axis.linear(pos);
                 axis.mapping = {};
-                axis.domain().forEach(d => {
-                    axis.mapping[d] = axis(d);
-                });
+                axis.domain().forEach(d => axis.mapping[d] = axis(d));
                 return axis;
             } else if (metadata.data_id != d) { // numbers
                 const de = d3.extent(data, p => +p[d]);
@@ -237,7 +234,7 @@ const parallelCoords = function (pane, data, metadata) {
         }
 
         // render full foreground and background
-        data.map(function (d) {
+        data.map(d => {
             path(d, background);
             drawForeground(d);
         });
@@ -281,40 +278,30 @@ const parallelCoords = function (pane, data, metadata) {
             .data(dimensions)
             .enter()
             .append("g")
-            .attr("id", function (d) {
-                return getAxisId(d)
-            })
-            .attr("class", (d) => {
-                return "dimension";
-            })
+            .attr("id", d => getAxisId(d))
+            .attr("class", _ => "dimension")
             .on("contextmenu", (e, d) => {
                 e.axisName = d; // attaches axis information to the event for context menu
             })
-            .attr("transform", function (d) { return resp.trans[orient] + resp.scale(d) + ")"; })
+            .attr("transform", d => resp.trans[orient] + resp.scale(d) + ")")
             // axes re-ordering
             .call(d3.drag()
-                .subject(function (d) {
-                    if (orient) {
-                        return { x: resp.scale(d) };
-                    } else {
-                        return { y: resp.scale(d) };
-                    }
-                })
-                .on("start", function (e, d) {
+                .subject(d => (orient ? { x: resp.scale(d) } : { y: resp.scale(d) }))
+                .on("start", (_, d) => {
                     dragging[d] = resp.scale(d);
                 })
-                .on("drag", function (e, d) {
+                .on("drag", (e, d) => {
                     dragging[d] = orient ?
                         e.subject.x = Math.min(width + margin.right, Math.max(-margin.left, e.x)) :
                         e.subject.y = Math.min(height + margin.bottom, Math.max(-margin.top, e.y));
                     dimensions.sort(basic_sort);
                     resp.scale.domain(dimensions);
                     drawBrushed();
-                    g.attr("transform", function (d) { return resp.trans[orient] + position(d) + ")"; })
+                    g.attr("transform", d => resp.trans[orient] + position(d) + ")")
                 })
-                .on("end", function (e, d) {
+                .on("end", (_, d) => {
                     delete dragging[d];
-                    transition(d3.select(this)).attr("transform", resp.trans[orient] + resp.scale(d) + ")");
+                    transition(d3.select(`#${pane.id}_axis_${d}`)).attr("transform", resp.trans[orient] + resp.scale(d) + ")");
                     drawBrushed();
                 })
             );
@@ -322,14 +309,13 @@ const parallelCoords = function (pane, data, metadata) {
         const countTooltipUpdate = _.throttle((tooltip, mouse, text) => {
             tooltip.attr('x', mouse[0] + 10)
             tooltip.attr('y', mouse[1] - 10);
-
             tooltip.text(text)
         }, 50);
 
 
         // cursor logic
-        svg.on("mousemove", function (e) {
-            highlight.clearRect(0, 0, width + 10, height + 10);
+        svg.on("mousemove", e => {
+            highlight.clearRect(0, 0, width + margin.left + margin.right + 10, height + margin.top + margin.bottom + 10);
             const mouse = d3.pointer(e);  // [x, y]
             const cursor_pad = 20;
 
@@ -345,14 +331,14 @@ const parallelCoords = function (pane, data, metadata) {
             const mouse_scale_pos = resp.axes[dim].invert(mouse[orient]);
             const pixelRange = resp.axes[dim].range();
             const range = [resp.axes[dim].invert(pixelRange[0]), resp.axes[dim].invert(pixelRange[1])];
-            
+
             if (Math.abs(position(dim) - mouse[1 - orient]) > cursor_pad ||
-                !(mouse_scale_pos > Math.max(range[0], range[1]))
-                    && mouse_scale_pos < Math.min(range[0], range[1])
+                mouse_scale_pos > Math.max(range[0], range[1]) ||
+                mouse_scale_pos < Math.min(range[0], range[1])
             ) {
                 cursor_rect.attr(resp.w_h[orient], 0);
                 cursor_rect.attr(resp.w_h[1 - orient], 0);
-                count_tooltip.text('');
+                countTooltipUpdate(count_tooltip, mouse, '');
                 return;
             }
 
@@ -367,13 +353,14 @@ const parallelCoords = function (pane, data, metadata) {
             cursor_rect.attr(resp.x_y[orient], mouse[orient] - cursor_pad);
 
             // compare against mouse value only on closest dimension and within brush selections
-            data.map(function (point) {
+            data.map(point => {
                 const active = checkIfActive(point);
-
-                const val = metadata.pld[dim].type === 'number' ? point[dim] : resp.axes[dim].mapping[point[dim]];
-                if (active && val >= Math.min(mouse_lower_limit, mouse_upper_limit) && val <= Math.max(mouse_lower_limit, mouse_upper_limit)) {
-                    highlighted.add(point.id);
-                    path(point, highlight);
+                if (point[dim] !== undefined) {
+                    const val = metadata.pld[dim].type === 'number' ? point[dim] : resp.axes[dim].mapping[point[dim]];
+                    if (active && val >= Math.min(mouse_lower_limit, mouse_upper_limit) && val <= Math.max(mouse_lower_limit, mouse_upper_limit)) {
+                        highlighted.add(point.id);
+                        path(point, highlight);
+                    } 
                 } else {
                     highlighted.delete(point.id);
                 }
@@ -385,10 +372,10 @@ const parallelCoords = function (pane, data, metadata) {
         // axes and title.
         g.append("g")
             .attr("class", "axis")
-            .each(function (d) { d3.select(this).call(axis.scale(resp.axes[d])); })
+            .each(d => d3.select(`#${getAxisId(d)} > .axis`).call(axis.scale(resp.axes[d])))
             .append("text")
             .attr("text-anchor", resp.anchor[orient])
-            .attr("transform", "rotate(-20)")
+            .attr("transform", resp.title[orient])
             .attr(resp.x_y[orient], -12)
             .text(String);
 
@@ -396,11 +383,13 @@ const parallelCoords = function (pane, data, metadata) {
         const brushes = {};
         g.append("g")
             .attr("class", "brush")
-            .attr("id", (d) => "brush-"+getAxisId(d))
-            .each(function (d) {
-                brushes["brush-"+getAxisId(d)] = this;
+            .attr("id", d => "brush-"+getAxisId(d))
+            .each(d => {
+                const b = d3.select(`#brush-${getAxisId(d)}`);
+                brushes["brush-"+getAxisId(d)] = b;
+
                 if (orient) {
-                    d3.select(this).call(
+                    b.call(
                         resp.axes[d].brush = d3.brushY()
                             .extent([
                                 [-brush_width, 0],
@@ -408,7 +397,7 @@ const parallelCoords = function (pane, data, metadata) {
                             ])
                     );
                 } else {
-                    d3.select(this).call(
+                    b.call(
                         resp.axes[d].brush = d3.brushX()
                             .extent([
                                 [0, -brush_width],
@@ -420,7 +409,7 @@ const parallelCoords = function (pane, data, metadata) {
                 // preserve selections on redraw
                 if (selections.get(d)) {
                     if (!extents[d]) {
-                        d3.select(this).call(resp.axes[d].brush.move, [
+                        b.call(resp.axes[d].brush.move, [
                             resp.axes[d](selections.get(d)[0]),
                             resp.axes[d](selections.get(d)[1])
                         ]);
@@ -432,7 +421,7 @@ const parallelCoords = function (pane, data, metadata) {
 
                         selections.set(d, [trans(selections.get(d)[0]), trans(selections.get(d)[1])]);
 
-                        d3.select(this).call(resp.axes[d].brush.move, [
+                        b.call(resp.axes[d].brush.move, [
                             resp.axes[d].linear(selections.get(d)[0]),
                             resp.axes[d].linear(selections.get(d)[1])
                         ]);
@@ -460,19 +449,19 @@ const parallelCoords = function (pane, data, metadata) {
         function path(d, ctx) {
             ctx.beginPath();
             if (orient) {
-                dimensions.map(function (p, i) {
+                dimensions.map((p, i) => {
                     if (i === 0) {
-                        ctx.moveTo(resp.scale(p), resp.axes[p](d[p]));
+                        ctx.moveTo(resp.scale(p) + margin.left, resp.axes[p](d[p]) + margin.top);
                     } else {
-                        ctx.lineTo(resp.scale(p), resp.axes[p](d[p]));
+                        ctx.lineTo(resp.scale(p) + margin.left, resp.axes[p](d[p]) + margin.top);
                     }
                 })
             } else {
-                dimensions.map(function (p, i) {
+                dimensions.map((p, i) => {
                     if (i === 0) {
-                        ctx.moveTo(resp.axes[p](d[p]), resp.scale(p));
+                        ctx.moveTo(resp.axes[p](d[p]) + margin.left, resp.scale(p) + margin.top);
                     } else {
-                        ctx.lineTo(resp.axes[p](d[p]), resp.scale(p));
+                        ctx.lineTo(resp.axes[p](d[p]) + margin.left, resp.scale(p) + margin.top);
                     }
                 });
             }
@@ -499,12 +488,12 @@ const parallelCoords = function (pane, data, metadata) {
         function drawBrushed() {
             selected = {};
             // clear all canvas
-            foreground.clearRect(0, 0, width + 10, height + 10);
-            background.clearRect(0, 0, width + 10, height + 10);
-            highlight.clearRect(0, 0, width + 10, height + 10);
+            foreground.clearRect(0, 0, width + margin.left + margin.right + 10, height + margin.top + margin.bottom + 10);
+            background.clearRect(0, 0, width + margin.left + margin.right + 10, height + margin.top + margin.bottom + 10);
+            highlight.clearRect(0, 0, width + margin.left + margin.right + 10, height + margin.top + margin.bottom + 10);
 
             // get lines within extents
-            data.map(function (d) {
+            data.map(d => {
                 path(d, background);
 
                 if (checkIfActive(d)) {
@@ -520,7 +509,7 @@ const parallelCoords = function (pane, data, metadata) {
         }
 
         function drawBrushMinMax(data, name, pane, min=true) {
-            d3.select(brushes["brush-"+getAxisId(name)]).call(d3.brush().clear);
+            brushes["brush-"+getAxisId(name)].call(d3.brush().clear);
             const extent = d3.extent(data, p => +p[name]);
             selections.set(name, [extent[min? 0 : 1], extent[min? 0 : 1]]);
             drawBrushed();
