@@ -5,7 +5,15 @@ const NAMES = {
 
     ap_init: 'init',
     ap_deadlock: 'deadlock',
-    ap_end: 'end'
+    ap_end: 'end',
+
+    metadata: 'metadata',
+}
+
+const STATUS = {
+    ready: 'ready',
+    computing: 'computing',
+    missing: 'missing',
 }
 
 const INTERACTIONS = {
@@ -42,4 +50,4 @@ const INTERACTIONS = {
     // ctrl+v: paste seletion (careful with duplicates)
 }
 
-export { NAMES, INTERACTIONS };
+export { NAMES, STATUS, INTERACTIONS };

@@ -5,7 +5,7 @@ import { params as _elk } from "../views/node-link/layout-options/elk.js";
 import { params as _dagre } from "../views/node-link/layout-options/dagre.js";
 import { params as _klay } from "../views/node-link/layout-options/klay.js";
 import { params as _cola } from "../views/node-link/layout-options/cola.js";
-import { NAMES } from "./names.js";
+import { NAMES, STATUS } from "./names.js";
 import {
   markRecurringNodes,
   setMaxIteration,
@@ -25,6 +25,7 @@ const $overview_config = $("#overview-config");
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const PROJECT = params.get("id") || 0;
+const BACKEND = "http://localhost:8080/";
 
 let pane = null;
 let tippies = {};
@@ -333,6 +334,7 @@ function makeSelectionModesDropdown() {
 }
 
 function makeSchedulerPropDropdown() {
+  
   const options = Object.keys(
     info.metadata['Scheduler'] // only scheduler from the 'details'
   ).map(k => { return { value: k, name: k } });
@@ -446,15 +448,15 @@ function makeDetailCheckboxes() {
 
   const options = pane.cy.vars['details'].value;
 
-  
-  $props_config.innerHTML = `<div class="buttons param"> 
-    <button class="ui button" id="clear">
-      <span>Clear Properties (Testing)</span>
-    </button>
-    <button class="ui button" id="status">
-      <span>Print Status</span>
-    </button>
-  </div>`;
+  $props_config.insertAdjacentHTML('beforeend', 
+    `<div class="buttons param"> 
+      <button class="ui button" id="clear">
+        <span>Clear Properties (Testing)</span>
+      </button>
+      <button class="ui button" id="status">
+        <span>Print Status</span>
+      </button>
+    </div>`);
   document.getElementById("clear").addEventListener('click', _ => clear())
   document.getElementById("status").addEventListener('click', _ => status())
 
@@ -473,7 +475,7 @@ function makeDetailCheckboxes() {
 
     const which = k !== NAMES.results ||  
       Object.values(options[k].metadata)
-        .map(a => a.ready)
+        .map(a => a.status === STATUS.ready)
         .reduce((a, b) => a && b, true);
 
     const $option_label = h("details", { class: "ui accordion" }, [
@@ -546,7 +548,7 @@ function makeDetailPropsCheckboxes(options, propType) {
           t(propName),
         ] : [t(propName)];
 
-    const which = propType !== NAMES.results || options.metadata[propName].ready;
+    const which = propType !== NAMES.results || options.metadata[propName].status === STATUS.ready;
     const $div = h("div",
       { 
           class: "prop-text ui small checkbox",
@@ -651,12 +653,6 @@ function _makeDropdown(options, value, fn, id, name, where) {
 }
 
 function makePCPSettings() {
-  const pcp_modes = [
-    { value: "manual", name: "Manual", data: {} },
-    { value: "core-details", name: "Model to Details", data: {} },
-    { value: "details-core", name: "Details to Model", data: {} },
-  ];
-
   $pcp_config.innerHTML = "";
   const countPrinter = h("div", { class: "content" });
   countPrinter.innerHTML = `<pre id="count" style="height: 20px; font-size: 10px">${
@@ -793,4 +789,4 @@ function makeOverviewSettings() {
   $overview_config.appendChild($buttonOverview);
 }
 
-export { makeTippy, hideAllTippies, setPane, PROJECT };
+export { makeTippy, hideAllTippies, setPane, PROJECT, BACKEND };

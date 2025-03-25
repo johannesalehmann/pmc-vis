@@ -26,10 +26,11 @@ import {
   hideAllTippies,
   setPane,
   PROJECT,
+  BACKEND,
 } from "../../utils/controls.js";
 import { parallelCoords } from "../parallel-coords/parallel-coords.js";
 import { ndl_to_pcp } from "../format.js";
-import { INTERACTIONS, NAMES } from "../../utils/names.js";
+import { INTERACTIONS, NAMES, STATUS } from "../../utils/names.js";
 import events from "../../utils/events.js";
 
 const THROTTLE_DEBOUNCE_DELAY = 100;
@@ -109,7 +110,7 @@ function setStyles(cy) {
 // requests outgoing edges from a selection of nodes and adds them to the graph
 async function graphExtend(cy, nodes, onLayoutStopFn) {
   const res = await fetch(
-    "http://localhost:8080/" +
+      BACKEND +
       PROJECT +
       "/outgoing?id=" +
       nodes.map(n => n.data().id).join("&id=")
@@ -296,7 +297,7 @@ function spawnGraphOnNewPane(cy, nodes) {
 
 async function fetchAndSpawn(cy, nodes) {
   const res = await fetch(
-    "http://localhost:8080/" +
+      BACKEND +
       PROJECT +
       "/outgoing?id=" +
       nodes.map((n) => n.id).join("&id=")
@@ -677,15 +678,15 @@ function updateDetailsToShow(cy, { update }) {
   let mode = NAMES.results;
   const ready = details[NAMES.results] && 
     Object.values(details[NAMES.results])
-      .map(a => a.ready)
+      .map(a => a.status === STATUS.ready)
       .reduce((a, b) => a && b, true);
 
   if (!ready) {
     mode = NAMES.variables;
   }
-  console.log(details)
+
   Object.keys(details).forEach(d => {
-    if (d === "metadata") {
+    if (d === NAMES.metadata) {
       return;
     }
 
@@ -701,7 +702,7 @@ function updateDetailsToShow(cy, { update }) {
     };
 
     Object.keys(details[d]).forEach(p => {
-      const iv = truthVal || (d === NAMES.results && info[d][p].ready)
+      const iv = truthVal || (d === NAMES.results && info[d][p].status === STATUS.ready)
       props[d].props[p] = init ? iv : update[d].props[p];
       props[d].metadata[p] = info[d] ? info[d][p] : undefined;
     });
