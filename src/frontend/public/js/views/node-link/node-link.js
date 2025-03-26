@@ -1,3 +1,4 @@
+import { info } from "../../main/main.js";
 import {
   colors,
   selections,
@@ -7,7 +8,6 @@ import {
   getPanes,
   spawnPane,
   togglePane,
-  info,
   destroyPanes,
   updatePanes,
   expandPane,
@@ -222,7 +222,7 @@ function spawnGraph(pane, data, params, vars = {}, src) {
     setPublicVars(cy, vars);
     setStyles(cy);
     bindListeners(cy);
-    setPane(pane.id, true);
+    setPane(pane.id, { make: true });
     cy.endBatch();
 
     initControls(cy);
@@ -809,7 +809,7 @@ async function importCy(cy) {
             structuredClone(cy.params), 
             vars
           );
-          setPane(cy.paneId, true, true); // reset sidebar to new content
+          setPane(cy.paneId, { make: true, force: true }); // reset sidebar to new content
           dispatchEvent(events.GLOBAL_PROPAGATE);
         };
         reader.readAsText(file);
@@ -938,6 +938,12 @@ function setPublicVars(cy, preset) {
       value: true,
       fn: toggleFullSync,
     },
+    update: {
+      fn: () => {
+        updateDetailsToShow(cy, { update: cy.vars['details'].value });
+        updateScheduler(cy, '_none_');
+      }
+    }
   };
 
   cy.fns = {
@@ -1542,7 +1548,7 @@ function keyboardShortcuts(cy, e) {
     } else {
       // if parents, select parents
       const ids = sources.map(src => getPreviousInPath(cy, src.data().id).prev).flat();
-      const parents = cy.nodes("#" + ids.join(", #"));
+      const parents = cy.nodes(ids.length > 0 ? "#" + ids.join(", #") : "");
       parents.select();
       if (cy.vars["fullSync"].value) {
         spawnPCP(cy);
@@ -1562,7 +1568,7 @@ function keyboardShortcuts(cy, e) {
       if (cy.vars["scheduler"].value === "_none_") { 
         // open everything, as there is no decider / DOI / scheduler
         const ids = sources.map(src => getNextInPath(cy, src.data().id).next).flat();
-        const nexts = cy.nodes("#" + ids.join(", #"));    
+        const nexts = cy.nodes(ids.length > 0 ? "#" + ids.join(", #") : "");    
         nexts.select();
       } else { 
         // follow only the "best" path according to DOI/scheduler

@@ -1,8 +1,26 @@
-import { spawnPane, info, getPanes } from "../views/panes/panes.js";
+import { spawnPane, getPanes } from "../views/panes/panes.js";
 import { params } from "../views/node-link/layout-options/elk.js";
 import { spawnGraph } from "../views/node-link/node-link.js";
 import { BACKEND, PROJECT } from "../utils/controls.js";
 import events from "../utils/events.js";
+
+const info = {}; // singleton   
+
+function setInfo(newInfo) {
+  Object.keys(newInfo).forEach(k => {
+    info[k] = newInfo[k];
+  });  
+
+  if (!info.metadata) {
+    info.metadata = {};
+  }
+
+  info.metadata.ID = info.ID;
+  info.metadata.Scheduler = info.Scheduler;
+
+  delete info.ID;
+  delete info.Scheduler;
+}
 
 window.onresize = () => {
   dispatchEvent(events.RESIZE_ALL);
@@ -18,23 +36,16 @@ Promise.all([
   fetch(BACKEND + PROJECT + "/initial").then(r => r.json()),
   //fetch(BACKEND + PROJECT).then((res) => res.json()) // requests entire dataset
 ]).then((promises) => {
-  Object.keys(promises[0].info).forEach(k => {
-    info[k] = promises[0].info[k];
-  });
-  
+  const newInfo = promises[0].info
+  setInfo(newInfo);
+
   const data = promises[1];
   const nodesIds = data.nodes
     .map((node) => node.id)
     .filter((id) => !id.includes("t_"));
 
-  info.metadata = {
-    ID: info.ID,
-    Scheduler: info.Scheduler,
-    initial: `#${nodesIds.join(', #')}`,
-  };
-  delete info.ID;
-  delete info.Scheduler;
-
+  info.metadata.initial = `#${nodesIds.join(', #')}`;
+  
   if (document.getElementById("project-id")) {
     document.getElementById("project-id").innerHTML = info.metadata.ID;
   }
@@ -58,3 +69,5 @@ addEventListener('linked-selection', function (e) {
     panes[e.detail.pane].cy.$(strSelection).select();
   }
 }, true);
+
+export { info, setInfo }

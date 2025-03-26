@@ -9,7 +9,6 @@ const MIN_SIZE = 10;
 const socket = io();
 
 const panes = {}; // governs the pane-based exploration
-const info = {}; // global object  
 const tracker = {}; // keeps track of already seen nodes, marks, etc. 
 let width;
 let height;
@@ -182,8 +181,7 @@ function createPaneControls(pane) {
     buttons.style.width = 0;
     buttons.style.backgroundColor = pane.backgroundColor + "50";
 
-    buttons.innerHTML = `
-    <div class="active-pane-controls ui small blue bottom attached icon buttons">
+    buttons.innerHTML = `<div class="ui blue bottom attached icon buttons">
         <button class="ui button" id="${pane.id}-expand1"
             title="${INTERACTIONS.expand1.name} \t (${INTERACTIONS.expand1.keyboard})">
             <i class="${INTERACTIONS.expand1.icon}" aria-hidden="true"></i>
@@ -480,7 +478,11 @@ function updateDocDims() {
         document.documentElement.clientWidth ||
         document.body.clientWidth;
 
-    height = -35 + (
+    const navHeight = parseInt( // turns NNpx into NN
+        window.getComputedStyle(document.body).getPropertyValue('--nav-height')
+    );
+    
+    height = -navHeight + (
         window.innerHeight ||
         document.documentElement.clientHeight ||
         document.body.clientHeight);
@@ -491,7 +493,7 @@ function updateDocDims() {
 
 updateDocDims();
 
-addEventListener("resize", (event) => {
+addEventListener("resize", _ => {
     updateDocDims();
     Object.keys(panes).forEach((pane) => {
         panes[pane].height = height;
@@ -741,6 +743,5 @@ export {
     collapsePane,
     resizeSplit,
     highlightPaneById,
-    uid,
-    info,
+    uid
 };

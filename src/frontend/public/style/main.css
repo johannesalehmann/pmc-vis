@@ -2,6 +2,8 @@
 
 :root {
     --config-width: 350px;
+    --config-closed-width: 5px;
+    --nav-height: 35px;
 }
 
 .minimap {
@@ -37,21 +39,22 @@ body ::-webkit-scrollbar-thumb {
     width: calc(100% - 350px);
     transition: width .5s;
     overflow: hidden;
-}
+    border-right:1px solid black;
 
-#container > * {
-    min-width: 0;
+    * {
+        min-width: 0;
+    }
 }
 
 body.config-closed #container {
-    width: 100%;
+    width: calc(100% - var(--config-closed-width));
     transition: width .5s;
 }
 
 .config {
     position: fixed;
     right: 0;
-    top: 0;
+    top: var(--nav-height);
     bottom: 0;
     background: var(--dragbar);
     box-sizing: border-box;
@@ -69,12 +72,47 @@ body.config-closed #container {
 
     .ui.checkbox {
         display: block;
+    }    
+}
+
+a {
+    color: var(--config-icon-color-active);
+}
+
+a:hover {
+    color: var(--config-icon-color-inactive);
+}
+
+#config-toggle {
+    position: absolute;
+    z-index: 5;
+    top: calc(var(--nav-height) + 20px);    
+    cursor: pointer;
+    
+    background-color: var(--pane-background);
+    right: calc(var(--config-width));
+    border-left: 1px solid black;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    transition: right .5s;
+
+    i {
+        position: relative;
+        right: calc(50% - 12px);
     }
 }
 
+#config-toggle.icon-inactive {
+    right: var(--config-closed-width);
+    transition: right .5s;
+}
+
 .config-closed .config {
-    width: 0px;
+    width: var(--config-closed-width);
     transition: width .5s;
+    * {
+        display: none;
+    }
 }
 
 /* End Sidebar */
@@ -101,27 +139,6 @@ body.config-closed #container {
     width: 100%;
     margin: 0;
     margin-right: 5px;
-}
-
-#config-toggle {
-    cursor: pointer;
-    color: var(--config-icon-color-active);
-    margin-right: var(--config-width);
-    transition: margin .5s;
-}
-
-#config-toggle:hover {
-    color: var(--config-icon-color-inactive);
-}
-
-#config-toggle.icon-inactive:hover {
-    color: var(--config-icon-color-active);
-}
-
-#config-toggle.icon-inactive {
-    color: var(--config-icon-color-inactive);
-    transition: margin .5s;
-    margin-right: 0px;
 }
 
 .tip-link {
@@ -250,11 +267,6 @@ summary>.trigger-check-prop {
     margin-top: 7px;
 }
 
-.cy-html i,
-.prop-text i {
-    line-height: 2 !important;
-}
-
 .prop-text {
     margin-left: 15px;
     font-size: 10px !important;
@@ -343,50 +355,58 @@ nav {
     color: var(--dark-text-color);
     display: flex;
     justify-content: space-between;
-}
+    
+    height: var(--nav-height);
+    line-height: var(--nav-height);
 
-nav .nav-wrapper-left {
     position: relative;
-    height: 100%;
-    display: flex;
-    text-align: center;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-}
+    z-index: 5;
+    box-shadow: 0px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
 
-nav .nav-wrapper-right {
-    position: relative;
-    height: 100%;
-    display: flex;
-    text-align: center;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-right: 20px;
-}
+    .nav-text {
+        margin-left: 25px
+    }
 
-nav .tool-name {
-    margin-left: 10px;
-    color: var(--dark-text-color)
-}
+    .nav-wrapper-left {
+        position: relative;
+        height: 100%;
+        display: flex;
+        text-align: center;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
 
-nav .tool-name:hover {
-    margin-left: 10px;
-    color: var(--dark-text-color-hover)
-}
+    .nav-wrapper-right {
+        position: relative;
+        height: 100%;
+        display: flex;
+        text-align: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-right: 20px;
+    }
 
-.tool-title {
-    font-size: 20px;
-}
+    .tool-name {
+        margin-left: 10px;
+        color: var(--dark-text-color)
+    }
 
-nav .project-name {
-    margin-left: 25px
-}
+    .tool-name:hover {
+        margin-left: 10px;
+        color: var(--dark-text-color-hover)
+    }
+    
+    .tool-title {
+        font-size: 20px;
+    }
 
-
-nav,
-nav .nav-wrapper i,
-nav a.sidenav-trigger,
-nav a.sidenav-trigger {
-	height: 35px;
-	line-height: 35px;
+    .right-buttons {
+        display:flex;
+        .nav-button {
+            height: var(--nav-height);
+            width: var(--nav-height);
+            line-height: calc(var(--nav-height) + 5px);
+        }
+    }
+    
 }

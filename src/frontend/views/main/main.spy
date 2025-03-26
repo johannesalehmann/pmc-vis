@@ -19,16 +19,28 @@
         <p class="label inline label-info tool-title"> {{ title }} </p>
           
       </a>  
-      <div class="project-name">
-        <p class="label inline label-info">Current Project ID: </p>
+      <div class="nav-text">
+        <p class="label inline label-info">Project ID: </p>
         <p class="label inline label-info" id="project-id"></p>
       </div>
 
+      <div class="nav-text">
+        <p class="label inline label-info">Active pane:</p>
+        <p class="label inline label-info" id="selected-pane"></p>
+      </div>
     </div>
+
+  
 
     <div class="nav-wrapper-right">
       <div class="right-buttons"> 
-        <i class="bars icon" id="config-toggle" aria-hidden="true"></i>
+        <a class="nav-button" id="new-project" title="New Project">
+          <i class="fa-solid fa-folder-plus fa-lg"></i>
+        </a>
+        <a class="nav-button" id="export-strat" title="Export Marked Nodes">
+          <i class="fa-solid fa-download fa-lg"></i>
+        </a>
+        <a id="download" style="display:none"></a>
       </div>
     </div>
   </nav>
@@ -38,37 +50,12 @@
     <!-- panes are appended here -->
   </div>
 
+  <a id="config-toggle" title="Toggle Sidebar">
+    <i class="bars icon" aria-hidden="true"></i>
+  </a>
+
   <div id="config" class="config ui padded grid">
     <div class="ui column">
-
-      <h3 class="label label-info">Project </h3>
-      <div class="content">
-        <div class="preamble">
-          <p class="label inline label-info">Active pane:
-          <p class="label inline label-info" id="selected-pane"></p>
-          </p>
-        </div>
-        <div id="info-box">
-
-        </div>
-
-        <div class="param">
-          <a id="new-project"> New project... </a>
-          <a id="download" style="display:none"></a>
-          <br>
-          <a id="export-strat"> Export marked nodes... </a>
-        </div>
-
-        <div class="param">
-          <p class="label inline label-info"># of panes</p>
-          <input type="number" name="numberOfPanes" id="numberOfPanes" value="5" min="1">
-        </div>
-
-      </div>
-
-      <div class="ui divider"></div>
-
-
       <h3 class="label label-info">Legend </h3>
       <div style="display:flex">
         <div style="float:right">  
@@ -111,6 +98,16 @@
           <p class="legend-p">Other path(s)</p>
         </div>
       </div>
+
+      <div id="info-box">
+
+      </div>
+
+      <div class="param">
+        <p class="label inline label-info"># of panes</p>
+        <input type="number" name="numberOfPanes" id="numberOfPanes" value="5" min="1">
+      </div>
+
     
       <div class="ui divider"></div>
 
@@ -121,7 +118,7 @@
     
       <div class="ui divider"></div>
 
-      <h3 class="label label-info">Graph Settings </h3>
+      <h3 class="label label-info">Node-link Diagram </h3>
       <details class="ui accordion" closed="">
         <summary class="title">
           <i class="dropdown icon left"></i>
@@ -138,14 +135,14 @@
     
       <div class="ui divider"></div>
 
-      <h3 class="label label-info" id="pcp-config-span">Attribute Settings</h3>
+      <h3 class="label label-info" id="pcp-config-span">Parallel Coordinates</h3>
       <div id="pcp-config">
         <!-- layout specific options are appended here-->
       </div>
     
       <div class="ui divider"></div>
 
-      <h3 class="label label-info" id="overview-config-span">Overview Settings</h3>
+      <h3 class="label label-info" id="overview-config-span">Overview</h3>
       <div id="overview-config">
         <!-- layout specific options are appended here-->
       </div>

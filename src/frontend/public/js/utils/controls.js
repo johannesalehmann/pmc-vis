@@ -1,4 +1,5 @@
-import { getPanes, info } from "../views/panes/panes.js";
+import { info, setInfo } from "../main/main.js";
+import { getPanes } from "../views/panes/panes.js";
 import { h, t } from "./utils.js";
 
 import { params as _elk } from "../views/node-link/layout-options/elk.js";
@@ -11,6 +12,7 @@ import {
   setMaxIteration,
   unmarkRecurringNodes,
 } from "../views/node-link/node-link.js";
+
 
 const socket = io();
 
@@ -37,6 +39,9 @@ const layoutTemplates = {
   elk: { value: "elk", name: "ELK", data: _elk },
 };
 
+const spinningIcon = "loading spinner icon trigger-check-prop";
+const triggerIcon = "fa fa-rocket trigger-check-prop";
+
 // updates all graphs active canvas space when a pane resize happens
 $("#config-toggle")?.addEventListener("click", function () {
   $("body").classList.toggle("config-closed");
@@ -49,7 +54,10 @@ $("#config-toggle")?.addEventListener("click", function () {
 // panes and settings rely heavily on this function to work
 // this function is called by every interaction to ensure changes happen to the correct pane
 // therefore, be careful when introducing expensive operations here.
-function setPane(paneId, make = false, force = false) {
+function setPane(paneId, { 
+  make = false, 
+  force = false,
+} = {}) {
   const panes = getPanes();
 
   if (panes[paneId]) {
@@ -334,7 +342,7 @@ function makeSelectionModesDropdown() {
 }
 
 function makeSchedulerPropDropdown() {
-  
+  console.log(info.metadata)
   const options = Object.keys(
     info.metadata['Scheduler'] // only scheduler from the 'details'
   ).map(k => { return { value: k, name: k } });
@@ -393,24 +401,32 @@ function updatePropsValues() {
 }
 
 async function status() {
-  const status = await fetch(`http://localhost:8080/${info.metadata['ID']}/status`, { method: "GET" });
+  const status = await fetch(`http://localhost:8080/${PROJECT}/status`, { method: "GET" });
   const data = await status.json();
-  console.log(data)
+  console.log(data);
   
   return data;
 }
 
-async function triggerModelCheckProperty(props) {
+async function triggerModelCheckProperty(e, propType, props) {
+  
+  e.target.className = spinningIcon;
+  props.forEach(p => {
+    document.getElementById(`trigger-button-${propType}-${p}`).className = spinningIcon;
+  });
+
   fetch(
-    `http://localhost:8080/${info.metadata['ID']}/check?property=${props.join('&property=')}`,
+    `http://localhost:8080/${PROJECT}/check?property=${props.join('&property=')}`,
     { method: "GET" }
   );
   
   let interval = setInterval(async _ => {
     const state = await status(); 
     
-    if (state[0] === 'All tasks finished') {
-      setPane(pane.id, false, true);
+    if (state.messages[0] === 'All tasks finished') {
+      setInfo(state.info);
+      pane.cy.vars['update'].fn();
+      setPane(pane.id, { force: true });
       clearInterval(interval);
     }
   }, 50);
@@ -418,11 +434,14 @@ async function triggerModelCheckProperty(props) {
 }
 
 async function clear() {
-  const request = await fetch(`http://localhost:8080/${info.metadata['ID']}/clear`, { method: "GET" }); 
+  const request = await fetch(`http://localhost:8080/${PROJECT}/clear`, { method: "GET" }); 
   const response = await request.json(); 
 
   if (response.content.startsWith('Cleared database for')) {
-    setPane(pane.id, false, true);
+    console.log('ehre')
+    const state = await status(); 
+    setInfo(state.info);
+    setPane(pane.id, { force: true });
   }
   
   console.log(response)
@@ -461,9 +480,21 @@ function makeDetailCheckboxes() {
   document.getElementById("status").addEventListener('click', _ => status())
 
   Object.keys(options).forEach((k) => {
-    const $button = h("i", { class: "fa fa-rocket trigger-check-prop" });
-    $button.addEventListener('click', _ => triggerModelCheckProperty(Object.keys(options[k].props)));
+    const statuses = Object.values(options[k].metadata).map(a => a.status);
+    const ready = 
+      k !== NAMES.results || 
+      statuses.filter(a => a === STATUS.ready).length === statuses.length;
+    const computing = statuses.filter(a => a === STATUS.computing).length === statuses.length;
 
+    const $button = h("i", { 
+      class: computing ? spinningIcon : triggerIcon, 
+      id: `trigger-button-${k}`
+    });
+
+    if (!ready && !computing) {
+      $button.addEventListener('click', e => triggerModelCheckProperty(e, k, Object.keys(options[k].props)));  
+    }
+    
     const $toggle = h("input", {
       type: "checkbox",
       class: "checkbox-prop",
@@ -473,15 +504,10 @@ function makeDetailCheckboxes() {
       value: k,
     });
 
-    const which = k !== NAMES.results ||  
-      Object.values(options[k].metadata)
-        .map(a => a.status === STATUS.ready)
-        .reduce((a, b) => a && b, true);
-
     const $option_label = h("details", { class: "ui accordion" }, [
       h("summary", { class: "title", style: "display:flex" }, [
         h("i", { class: "dropdown icon left" }, []),
-        which ? 
+        ready ? 
           h("div", { class: "ui small checkbox" }, [$toggle, h("label", { for: `checkbox-${k}` })]) : 
           $button,
         h("p", { class: "prop-text-label-text" }, [t(k)])
@@ -500,8 +526,7 @@ function makeDetailCheckboxes() {
           e.target.checked;
       });
       pane.cy.vars['details'].fn(pane.cy, {
-        update: updatePropsValues(),
-        mode: false,
+        update: updatePropsValues()
       });
     });
     $button.addEventListener("click", (e)=> {
@@ -524,11 +549,14 @@ function makeDetailPropsCheckboxes(options, propType) {
   });
   const meta = pane.cy.vars['details'].value[propType].metadata;
 
-
   Object.keys(props).forEach((propName) => {
     const checked = props[propName];
-    const $button = h("i", { class: "fa fa-rocket trigger-check-prop" });
-    $button.addEventListener('click', _ => triggerModelCheckProperty([propName]));
+    const $button = h("i", { 
+      class: "fa fa-rocket trigger-check-prop",
+      id: `trigger-button-${propType}-${propName}`,
+    });
+
+    $button.addEventListener('click', e => triggerModelCheckProperty(e, propType, [propName]));
     const $toggle = h("input", {
       type: "checkbox",
       class: "checkbox-prop",
@@ -565,8 +593,7 @@ function makeDetailPropsCheckboxes(options, propType) {
 
     $toggle.addEventListener("change", (e) => {
       pane.cy.vars['details'].fn(pane.cy, {
-        update: updatePropsValues(),
-        mode: false,
+        update: updatePropsValues()
       });
     });
 
