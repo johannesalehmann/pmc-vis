@@ -134,7 +134,7 @@ async function renewInfo(cy) {
   cy.nodes().forEach(n => { 
     const id = n.data().id;
     cy.elementMapper.nodes.set(id, n);
-    n.data('details', mapper[id].details);
+    if (mapper[id]) n.data('details', mapper[id].details);
   });
 }
 

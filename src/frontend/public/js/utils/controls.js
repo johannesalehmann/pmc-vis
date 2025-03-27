@@ -425,6 +425,7 @@ async function triggerModelCheckProperty(e, propType, props) {
     
     if (state.messages[0] === 'All tasks finished') {
       setInfo(state.info);
+      pane.cy.vars['update'].fn();
       info.metadata.updating = true;
       setPane(pane.id, { force: true });
       clearInterval(interval);
