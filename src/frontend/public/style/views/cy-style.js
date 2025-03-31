@@ -1,3 +1,5 @@
+import { badges } from './badges.js';
+
 const colors = {
   NODE_COLOR: '#555',
   DARK_TEXT: '#555',
@@ -39,12 +41,6 @@ const selections = {
   },
 };
 
-const badges = {
-  dim: '10px',
-  x: '113%',
-  y: '-50%',
-};
-
 const stylesheet = [
   {
     selector: 'core',
@@ -61,6 +57,7 @@ const stylesheet = [
       'font-size': 10,
       'font-family': 'monospace',
       'text-valign': 'center',
+      'text-margin-y': '0.65px',
       'text-halign': 'center',
       'background-color': colors.NODE_COLOR,
       'text-outline-color': colors.NODE_COLOR,
@@ -71,7 +68,6 @@ const stylesheet = [
       shape: 'rectangle',
       height: 20,
       width: 50,
-
       'background-opacity': 1,
       'border-width': outlines.width,
       'border-color': colors.NODE_COLOR,
@@ -85,8 +81,8 @@ const stylesheet = [
       'background-image-containment': 'over',
       'bounds-expansion': '20px',
       'background-clip': 'none',
-      'background-height': badges.dim,
-      'background-width': badges.dim,
+      'background-height': badges.height,
+      'background-width': badges.width,
       'background-position-x': badges.x,
       'background-position-y': badges.y,
     },

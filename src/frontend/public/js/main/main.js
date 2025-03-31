@@ -25,8 +25,9 @@ window.onresize = () => {
 };
 
 const ww = window.innerWidth;
-if (ww) {
-  document.getElementById('numberOfPanes').value = Math.floor(ww / 200);
+const numberOfPanes = document.getElementById('numberOfPanes');
+if (ww && numberOfPanes) {
+  numberOfPanes.value = Math.floor(ww / 200);
 }
 
 Promise.all([

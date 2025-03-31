@@ -25,7 +25,7 @@
       </div>
 
       <div class="nav-text">
-        <p class="label inline label-info">Active pane:</p>
+        <p class="label inline label-info">active pane:</p>
         <p class="label inline label-info" id="selected-pane"></p>
       </div>
     </div>

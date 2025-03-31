@@ -525,7 +525,7 @@ function spawnPCP(cy, _nodes) {
 function unbindListeners(cy) {
   // clean listeners
   cy.off('tap cxttapstart grabon zoom pan');
-  cy.off('select boxselect tapselect tapunselect dbltap');
+  cy.off('select boxselect box tapselect tapunselect dbltap');
   cy.off('mouseover mousemove mouseout');
   cy.off('tap', 'edge');
   if (cy.ctxmenu) {
@@ -578,6 +578,13 @@ function bindListeners(cy) {
       spawnPCP(cy);
     }
   }, THROTTLE_DEBOUNCE_DELAY));
+
+  cy.on('box', (e) => {
+    if (cy.keyboard?.shiftKey && e.target.selected()) {
+      e.target.unselect();
+      e.target.unselectify();
+    };
+  });
 
   // ensure that selections don't go away when clicking the background once
   cy.on('tap', (e) => {
@@ -1565,7 +1572,9 @@ function ctxmenu(cy) {
 }
 
 function keyboardShortcuts(cy, e) {
+  cy.keyboard = e;
   const modifier = (e.ctrlKey || e.altKey);
+
   cy.nodes().selectify();
 
   // ctrl+z: undo
