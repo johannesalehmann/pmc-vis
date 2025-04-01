@@ -1,13 +1,13 @@
 {
-  "name": "pmc-itl",
-  "displayName": "pmc-itl",
-  "description": "",
+  "name": "editor",
+  "displayName": "editor",
+  "description": "Editor Extension for PMC-Vis",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.98.0"
   },
   "categories": [
-    "Programming Languages"
+    "Other"
   ],
   "activationEvents": [],
   "main": "./extension.js",
@@ -24,6 +24,19 @@
           ".prism"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "props",
+        "aliases": [
+          "pctl",
+          "csl"
+        ],
+        "extensions": [
+          ".props",
+          ".pctl",
+          ".csl"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -31,6 +44,11 @@
         "language": "mdp",
         "scopeName": "source.mdp",
         "path": "./syntaxes/mdp.tmLanguage.json"
+      },
+      {
+        "language": "mdp",
+        "scopeName": "source.props",
+        "path": "./syntaxes/props.tmLanguage.json"
       }
     ],
     "configurationDefaults": {
@@ -73,9 +91,27 @@
       {
         "command": "pmcVis.moveTo",
         "title": "moves window to selected line"
+      },
+      {
+        "command": "pmcVis.uploadModel",
+        "title": "upload"
+      },
+      {
+        "command": "pmcVis.uploadProperty",
+        "title": "upload"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "pmcVis.uploadModel",
+          "when": "editorLangId == mdp"
+        },
+        {
+          "command": "pmcVis.uploadProperty",
+          "when": "editorLangId == props"
+        }
+      ],
       "view/item/context": [
         {
           "command": "stateView.select",
@@ -118,13 +154,13 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/vscode": "^1.98.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/vscode": "^1.85.0",
-    "@vscode/test-cli": "^0.0.4",
-    "@vscode/test-electron": "^2.3.8",
     "eslint": "^8.54.0",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8"
   },
   "dependencies": {
     "cors": "^2.8.5",
