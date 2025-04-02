@@ -297,7 +297,7 @@ const initHTML = _.debounce((cy) =>{
 function spawnGraph(pane, data, params, vars = {}) {
   const elements = {
     nodes: data.nodes.map(d => ({ data: setNeedsHTML(d) })),
-    edges: data.edges.map(d => ({ data: setNeedsHTML(d) })),
+    edges: data.edges.map(d => ({ data: d })),
   };
 
   const cytoscapeInit = {
