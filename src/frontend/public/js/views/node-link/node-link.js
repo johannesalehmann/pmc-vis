@@ -240,12 +240,12 @@ function initHTML(cy) {
       ${aps[CONSTANTS.ap_init]
         ? `<a onclick="selectAP('${CONSTANTS.ap_init}')" title="${CONSTANTS
           .INTERACTIONS
-          .ap_initial
+          .ap_init
           .name} \t (${CONSTANTS
           .INTERACTIONS
-          .ap_initial
+          .ap_init
           .keyboard})">
-          <i class="fa-xs ${CONSTANTS.INTERACTIONS.ap_initial.icon}"></i>
+          <i class="fa-xs ${CONSTANTS.INTERACTIONS.ap_init.icon}"></i>
         </a>` : ''}
       ${aps[CONSTANTS.ap_deadlock]
         ? `<a onclick="selectAP('${CONSTANTS.ap_deadlock}')" title="${CONSTANTS
