@@ -12,6 +12,12 @@ function parallelCoords(pane, data, metadata) {
   let extents = {}; // for preserving brushes on nominals and booleans
   let dimensions;
   let pcpHtml;
+  const bounds = {
+    min: 0,
+    max: 1,
+  };
+  const scale = 2; // canvas resolution scale
+  const stack = 3; // amount of line segments that can be stacked until full opacity
 
   const publicFunctions = {
     destroy: () => {
@@ -42,7 +48,226 @@ function parallelCoords(pane, data, metadata) {
     },
   };
 
+  function updateCountStrings() {
+    const pcp_selection = publicFunctions.getSelection();
+    const count = document.getElementById('count');
+    const json = document.getElementById('json');
+
+    if (count && json) {
+      count.textContent = 'Selected elements: ' + pcp_selection.length;
+      json.textContent = JSON.stringify(pcp_selection, undefined, 2);
+    }
+  }
+
+  function resize(e) {
+    if (
+      e.detail.pane
+      && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)
+    ) {
+      draw(pane, data);
+    }
+  }
+
   function draw(pane, data) {
+    function drawForeground(d) {
+      foreground.strokeStyle = getComputedStyle(div).getPropertyValue(d.color);
+      path(d, foreground);
+    }
+
+    function drawBoundIndicator(dim, selection, ctx) {
+      const color = ctx.strokeStyle;
+      const alpha = ctx.globalAlpha;
+      const width = ctx.lineWidth;
+      ctx.strokeStyle = getComputedStyle(div).getPropertyValue('--pcp-axes-lines');
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 2;
+      let { x, y } = {};
+      if (orient) {
+        x = adjust(resp.scale(dim) + margin.left);
+        y = adjust(resp.axes[dim](selection[1]) + margin.top);
+      } else {
+        x = adjust(resp.axes[dim](selection[0]) + margin.left);
+        y = adjust(resp.scale(dim) + margin.top);
+      }
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = width;
+    }
+
+    // applies effect over duration
+    function transition(g) {
+      return g.transition().duration(500);
+    }
+
+    function checkIfActive(point) {
+      return Array.from(selections).every(([key, [min, max]]) => {
+        const val = metadata.pld[key].type === 'number'
+          ? point[key]
+          : resp.axes[key].mapping[point[key]];
+        return val >= Math.min(min, max) && val <= Math.max(min, max);
+      });
+    }
+
+    function getAxisId(d) {
+      return pane.id + '_axis_' + d;
+    }
+
+    // returns the dimension in x/y or modified in dragging
+    function position(d) {
+      const v = dragging[d];
+      return v === undefined ? resp.scale(d) : v;
+    }
+
+    function checkExceedsStack(line, ctx, ds) {
+      const l0 = line.l0.x + '' + line.l0.y;
+      const l1 = line.l1.x + '' + line.l1.y;
+      ctx.stacks[ds.d0] ||= {};
+      ctx.stacks[ds.d0][ds.d1] ||= {};
+      ctx.stacks[ds.d0][ds.d1][l0] ||= {};
+      ctx.stacks[ds.d0][ds.d1][l0][l1] ||= 0;
+      ctx.stacks[ds.d0][ds.d1][l0][l1] += 1;
+      return ctx.stacks[ds.d0][ds.d1][l0][l1] > stack;
+    }
+
+    function segment(line, ctx, ds) {
+      if (!checkExceedsStack(line, ctx, ds)) {
+        ctx.beginPath();
+        ctx.moveTo(line.l0.x, line.l0.y);
+        ctx.lineTo(line.l1.x, line.l1.y);
+        ctx.stroke();
+        ctx.segments.drawn += 1;
+      } else {
+        ctx.segments.skipped += 1;
+      }
+    }
+
+    function adjust(v) {
+      return scale * v - 1;
+    }
+
+    // returns the path for a given data point
+    // this maps the generated x/y function for each of the data points to every dimension
+    function path(point, ctx) {
+      if (orient) {
+        dimensions.forEach((d1, i) => {
+          if (i > 0) {
+            const d0 = dimensions[i - 1];
+            const l0 = {
+              x: adjust(resp.scale(d0) + margin.left),
+              y: adjust(resp.axes[d0](point[d0]) + margin.top),
+            };
+            const l1 = {
+              x: adjust(resp.scale(d1) + margin.left),
+              y: adjust(resp.axes[d1](point[d1]) + margin.top),
+            };
+            segment({ l0, l1 }, ctx, { d0, d1 });
+          }
+        });
+      } else {
+        dimensions.forEach((d1, i) => {
+          if (i > 0) {
+            const d0 = dimensions[i - 1];
+            const l0 = {
+              x: adjust(resp.axes[d0](point[d0]) + margin.left),
+              y: adjust(resp.scale(d0) + margin.top),
+            };
+            const l1 = {
+              x: adjust(resp.axes[d1](point[d1]) + margin.left),
+              y: adjust(resp.scale(d1) + margin.top),
+            };
+            segment({ l0, l1 }, ctx, { d0, d1 });
+          }
+        });
+      }
+    }
+
+    function brush_start(e) {
+      e.sourceEvent.stopPropagation();
+    }
+
+    // handles a brush event, updates selections
+    function brush({ selection }, key) {
+      if (selection === null || selection[0] === selection[1]) {
+        selections.delete(key);
+      } else {
+        selections.set(key, selection.map(resp.axes[key].invert));
+      }
+
+      drawBrushed();
+      updateCountStrings();
+      dispatchEvent(
+        events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()),
+      );
+    }
+
+    function drawBrushed() {
+      selected = {};
+      [ // clear all canvas
+        foreground,
+        background,
+        highlight,
+      ].forEach(d => {
+        const right = scale * (width + margin.left + margin.right + 10);
+        const bottom = scale * (height + margin.top + margin.bottom + 10);
+        d.clearRect(0, 0, right, bottom);
+        d.stacks = {};
+        d.segments = { drawn: 0, skipped: 0 };
+      });
+
+      // get lines within extents
+      data.map((d) => {
+        if (checkIfActive(d)) {
+          drawForeground(d);
+          selected[d.id] = d;
+        } else {
+          path(d, background);
+        }
+      });
+
+      // console.log(`Foreground drew ${
+      //   foreground.segments.drawn
+      // } and saved ${
+      //   foreground.segments.skipped
+      // } segments`);
+      // console.log(`Background drew ${
+      //   background.segments.drawn
+      // } and saved ${
+      //   background.segments.skipped
+      // } segments`);
+
+      dimensions.forEach(d => {
+        const s = selections.get(d);
+        if (s?.bound) {
+          drawBoundIndicator(d, s, foreground);
+        }
+      });
+    }
+
+    // sorting function by value, used in scales for each numerical dimension
+    function basic_sort(a, b) {
+      return position(a) - position(b);
+    }
+
+    function drawBrushMinMax(data, name, pane, which) {
+      brushes['brush-' + getAxisId(name)].call(d3.brush().clear);
+      const extent = d3.extent(data, (p) => +p[name]);
+      const selection = [extent[bounds[which]], extent[bounds[which]]];
+      selection.bound = which;
+      selections.set(name, selection);
+      drawBrushed();
+      updateCountStrings();
+      dispatchEvent(
+        events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()),
+      );
+    }
+
+    function getPCPID(str) {
+      return str + where.id;
+    }
+
     const paneDiv = document.getElementById(pane.id);
     if (!paneDiv) {
       // after a pane has been destroyed, clean pcp when invoked from an event listener
@@ -56,10 +281,6 @@ function parallelCoords(pane, data, metadata) {
       height: pane.height * pane.split,
       // height: document.getElementById(pane.details).getBoundingClientRect().height,
     };
-
-    function getPCPID(str) {
-      return str + where.id;
-    }
 
     pcpHtml = {
       div: getPCPID('pcp'),
@@ -144,22 +365,17 @@ function parallelCoords(pane, data, metadata) {
 
     d3.select('#' + where.id)
       .selectAll('#' + pcpHtml.fg + ', #' + pcpHtml.bg + ', #' + pcpHtml.hl)
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom);
+      .attr('width', scale * (width + margin.left + margin.right))
+      .attr('height', scale * (height + margin.top + margin.bottom))
+      .style('width', (width + margin.left + margin.right) + 'px')
+      .style('height', (height + margin.top + margin.bottom) + 'px');
 
     const foreground = div.querySelector('#' + pcpHtml.fg).getContext('2d');
     const background = div.querySelector('#' + pcpHtml.bg).getContext('2d');
     const highlight = div.querySelector('#' + pcpHtml.hl).getContext('2d');
 
-    foreground.globalAlpha = 0.5;
-    foreground.lineWidth = 1;
-
     background.strokeStyle = getComputedStyle(div).getPropertyValue('--pcp-bg-stroke');
-    background.globalAlpha = 0.1;
-
     highlight.strokeStyle = getComputedStyle(div).getPropertyValue('--pcp-hover-stroke');
-    highlight.lineWidth = 3;
-    highlight.globalAlpha = 1;
 
     // make the base svg for parallel coordinates
     const svg = d3div
@@ -175,88 +391,89 @@ function parallelCoords(pane, data, metadata) {
     };
 
     // get list of dimensions and create a scale for each, considering the data types.
-    resp.scale.domain(
-      (dimensions = cols.filter((d) => {
-        if (metadata.nominals.includes(d)) {
-          const domain = data.map((p) => p[d]);
-          resp.axes[d] = d3
-            .scalePoint()
-            .domain(domain)
-            .range([0, resp.svg_dims[orient]])
-            .padding(1);
-          const axis = resp.axes[d];
+    dimensions = cols.filter((d) => {
+      if (metadata.nominals.includes(d)) {
+        const domain = data.map((p) => p[d]);
+        resp.axes[d] = d3
+          .scalePoint()
+          .domain(domain)
+          .range([0, resp.svg_dims[orient]])
+          .padding(1);
+        const axis = resp.axes[d];
 
-          axis.linear = d3
-            .scaleLinear()
-            .domain([0, resp.svg_dims[orient]])
-            .range([0, resp.svg_dims[orient]]);
+        axis.linear = d3
+          .scaleLinear()
+          .domain([0, resp.svg_dims[orient]])
+          .range([0, resp.svg_dims[orient]]);
 
-          axis.invert = (pos) => axis.linear(pos);
-          axis.mapping = {};
-          axis.domain().forEach((d) => (axis.mapping[d] = axis(d)));
-          return axis;
-        } else if (metadata.booleans.includes(d)) {
-          resp.axes[d] = d3
-            .scalePoint()
-            .domain([false, true])
-            .range([0, resp.svg_dims[orient]])
-            .padding(1);
-          const axis = resp.axes[d];
+        axis.invert = (pos) => axis.linear(pos);
+        axis.mapping = {};
+        axis.domain().forEach((d) => (axis.mapping[d] = axis(d)));
+        return axis;
+      } else if (metadata.booleans.includes(d)) {
+        resp.axes[d] = d3
+          .scalePoint()
+          .domain([false, true])
+          .range([0, resp.svg_dims[orient]])
+          .padding(1);
+        const axis = resp.axes[d];
 
-          axis.linear = d3
-            .scaleLinear()
-            .domain([0, resp.svg_dims[orient]])
-            .range([0, resp.svg_dims[orient]]);
+        axis.linear = d3
+          .scaleLinear()
+          .domain([0, resp.svg_dims[orient]])
+          .range([0, resp.svg_dims[orient]]);
 
-          axis.invert = (pos) => axis.linear(pos);
-          axis.mapping = {};
-          axis.domain().forEach((d) => (axis.mapping[d] = axis(d)));
-          return axis;
-        } else if (metadata.data_id != d) {
-          // numbers
-          const de = d3.extent(data, (p) => +p[d]);
-          const extent = [metadata.pld[d].min !== 'Infinity' ? metadata.pld[d].min : de[0], metadata.pld[d].max !== 'Infinity' ? metadata.pld[d].max : de[1]];
+        axis.invert = (pos) => axis.linear(pos);
+        axis.mapping = {};
+        axis.domain().forEach((d) => (axis.mapping[d] = axis(d)));
+        return axis;
+      } else if (metadata.data_id != d) {
+        // numbers
+        const de = d3.extent(data, (p) => +p[d]);
+        const extent = [
+          metadata.pld[d].min !== 'Infinity'
+            ? metadata.pld[d].min
+            : de[0],
+          metadata.pld[d].max !== 'Infinity'
+            ? metadata.pld[d].max
+            : de[1],
+        ];
 
-          if (extent[0] === extent[1]) {
-            extent[1] = extent[0] + 1;
-          }
-
-          // start/end on 0 when possible
-          if (extent[0] > 0) {
-            extent[0] = 0;
-          }
-
-          if (extent[1] < 0) {
-            extent[1] = 0;
-          }
-
-          return (resp.axes[d] = d3
-            .scaleLinear()
-            .domain([extent[1], extent[0]])
-            .range([0, resp.svg_dims[orient]]));
+        if (extent[0] === extent[1]) {
+          extent[1] = extent[0] + 1;
         }
-      })),
-    );
 
-    function drawForeground(d) {
-      foreground.strokeStyle = getComputedStyle(div).getPropertyValue(d.color);
-      path(d, foreground);
-    }
+        // start/end on 0 when possible
+        if (extent[0] > 0) {
+          extent[0] = 0;
+        }
 
-    // render full foreground and background
-    data.map((d) => {
-      path(d, background);
-      drawForeground(d);
+        if (extent[1] < 0) {
+          extent[1] = 0;
+        }
+
+        return (resp.axes[d] = d3
+          .scaleLinear()
+          .domain([extent[1], extent[0]])
+          .range([0, resp.svg_dims[orient]]));
+      }
     });
 
-    // hover highlighting: background and cursor area visual indicator
-    // both of these are before fg and bg to not interfere with other events
-    svg
-      .append('rect')
-      .attr('class', 'backgroundRect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('opacity', 0);
+    resp.scale.domain(dimensions);
+
+    [ // setup the drawing layers
+      foreground,
+      background,
+      highlight,
+    ].forEach(ctx => {
+      ctx.globalAlpha = 1 / stack;
+      ctx.lineWidth = scale;
+      ctx.stacks = {};
+    });
+
+    highlight.lineWidth = scale * 3;
+
+    // hover highlighting: cursor area visual indicator
     const cursor_rect = svg
       .append('rect')
       .attr('class', 'cursor-area')
@@ -265,24 +482,6 @@ function parallelCoords(pane, data, metadata) {
     const count_tooltip = svg
       .append('text')
       .attr('class', 'selection-count-tooltip');
-
-    // applies effect over duration
-    function transition(g) {
-      return g.transition().duration(500);
-    }
-
-    function checkIfActive(point) {
-      return Array.from(selections).every(([key, [min, max]]) => {
-        const val = metadata.pld[key].type === 'number'
-          ? point[key]
-          : resp.axes[key].mapping[point[key]];
-        return val >= Math.min(min, max) && val <= Math.max(min, max);
-      });
-    }
-
-    function getAxisId(d) {
-      return pane.id + '_axis_' + d;
-    }
 
     // group element for each dimension and add drag motion
     const g = svg
@@ -296,8 +495,7 @@ function parallelCoords(pane, data, metadata) {
         e.axisName = d; // attaches axis information to the event for context menu
       })
       .attr('transform', (d) => resp.trans[orient] + resp.scale(d) + ')')
-      // axes re-ordering
-      .call(
+      .call( // axes reordering
         d3
           .drag()
           .subject((d) => orient ? { x: resp.scale(d) } : { y: resp.scale(d) })
@@ -337,12 +535,11 @@ function parallelCoords(pane, data, metadata) {
 
     // cursor logic
     svg.on('mousemove', (e) => {
-      highlight.clearRect(
-        0,
-        0,
-        width + margin.left + margin.right + 10,
-        height + margin.top + margin.bottom + 10,
-      );
+      const right = scale * (width + margin.left + margin.right + 10);
+      const bottom = scale * (height + margin.top + margin.bottom + 10);
+      highlight.clearRect(0, 0, right, bottom);
+      highlight.stacks = {};
+      highlight.segments = { drawn: 0, skipped: 0 };
       const mouse = d3.pointer(e); // [x, y]
       const cursor_pad = 20;
 
@@ -409,6 +606,12 @@ function parallelCoords(pane, data, metadata) {
           highlighted.delete(point.id);
         }
       });
+
+      // console.log(`Highlighting layer drew: ${
+      //   highlight.segments.drawn
+      // } and saved ${
+      //   highlight.segments.skipped
+      // } segments`);
 
       countTooltipUpdate(count_tooltip, mouse, highlighted.size);
     });
@@ -477,125 +680,15 @@ function parallelCoords(pane, data, metadata) {
           .on('end', brush); // updates brush if clicked elsewhere on axis
       });
 
-    // returns the dimension in x/y or modified in dragging
-    function position(d) {
-      const v = dragging[d];
-      return v === undefined ? resp.scale(d) : v;
-    }
-
-    // returns the path for a given data point
-    // this maps the generated x/y function for each of the data points to every dimension
-    function path(d, ctx) {
-      ctx.beginPath();
-      if (orient) {
-        dimensions.map((p, i) => {
-          if (i === 0) {
-            ctx.moveTo(
-              resp.scale(p) + margin.left,
-              resp.axes[p](d[p]) + margin.top,
-            );
-          } else {
-            ctx.lineTo(
-              resp.scale(p) + margin.left,
-              resp.axes[p](d[p]) + margin.top,
-            );
-          }
-        });
-      } else {
-        dimensions.map((p, i) => {
-          if (i === 0) {
-            ctx.moveTo(
-              resp.axes[p](d[p]) + margin.left,
-              resp.scale(p) + margin.top,
-            );
-          } else {
-            ctx.lineTo(
-              resp.axes[p](d[p]) + margin.left,
-              resp.scale(p) + margin.top,
-            );
-          }
-        });
-      }
-      ctx.stroke();
-    }
-
-    function brush_start(e) {
-      e.sourceEvent.stopPropagation();
-    }
-
-    // handles a brush event, updates selections
-    function brush({ selection }, key) {
-      if (selection === null || selection[0] === selection[1]) {
-        selections.delete(key);
-      } else {
-        selections.set(key, selection.map(resp.axes[key].invert));
-      }
-
-      drawBrushed();
-      updateCountStrings();
-      dispatchEvent(
-        events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()),
-      );
-    }
-
-    function drawBrushed() {
-      selected = {};
-      // clear all canvas
-      foreground.clearRect(
-        0,
-        0,
-        width + margin.left + margin.right + 10,
-        height + margin.top + margin.bottom + 10,
-      );
-      background.clearRect(
-        0,
-        0,
-        width + margin.left + margin.right + 10,
-        height + margin.top + margin.bottom + 10,
-      );
-      highlight.clearRect(
-        0,
-        0,
-        width + margin.left + margin.right + 10,
-        height + margin.top + margin.bottom + 10,
-      );
-
-      // get lines within extents
-      data.map((d) => {
-        path(d, background);
-
-        if (checkIfActive(d)) {
-          drawForeground(d);
-          selected[d.id] = d;
-        }
-      });
-    }
-
-    // sorting function by value, used in scales for each numerical dimension
-    function basic_sort(a, b) {
-      return position(a) - position(b);
-    }
-
-    function drawBrushMinMax(data, name, pane, min = true) {
-      brushes['brush-' + getAxisId(name)].call(d3.brush().clear);
-      const extent = d3.extent(data, (p) => +p[name]);
-      selections.set(name, [extent[min ? 0 : 1], extent[min ? 0 : 1]]);
-      drawBrushed();
-      updateCountStrings();
-      dispatchEvent(
-        events.LINKED_SELECTION(pane.id, publicFunctions.getSelection()),
-      );
-    }
-
     makeCtxMenu(pane.details, pane, publicFunctions, {
       extras: [
         {
           label: 'Select Minimum',
-          callback: (e) => drawBrushMinMax(data, e.axisName, pane, true),
+          callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'min'),
         },
         {
           label: 'Select Maximum',
-          callback: (e) => drawBrushMinMax(data, e.axisName, pane, false),
+          callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'max'),
         },
       ],
     });
@@ -609,28 +702,8 @@ function parallelCoords(pane, data, metadata) {
     );
   }
 
-  function updateCountStrings() {
-    const pcp_selection = publicFunctions.getSelection();
-    const count = document.getElementById('count');
-    const json = document.getElementById('json');
-
-    if (count && json) {
-      count.textContent = 'Selected elements: ' + pcp_selection.length;
-      json.textContent = JSON.stringify(pcp_selection, undefined, 2);
-    }
-  }
-
   draw(pane, data);
   updateCountStrings();
-
-  function resize(e) {
-    if (
-      e.detail.pane
-      && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)
-    ) {
-      draw(pane, data);
-    }
-  }
 
   return publicFunctions;
 };
