@@ -569,11 +569,11 @@ document.getElementById('export-strat')?.addEventListener('click', () => {
         ) {
           checker.edges.add(edge.data.id);
 
-          if (edge.data.source.startsWith('t_')) {
+          if (edge.data.source.startsWith('t')) {
             checker.sources.add(edge.data.source);
           }
 
-          if (edge.data.target.startsWith('t_')) {
+          if (edge.data.target.startsWith('t')) {
             checker.targets.add(edge.data.target);
           }
         }
@@ -581,7 +581,7 @@ document.getElementById('export-strat')?.addEventListener('click', () => {
 
       paneData.elements.edges.forEach((edge) => {
         if (checker.edges.has(edge.data.id)) {
-          if (edge.data.source.startsWith('t_')) {
+          if (edge.data.source.startsWith('t')) {
             if (checker.targets.has(edge.data.target)) {
               returnable.edges.set(edge.data.id, edge);
             } else {
@@ -589,7 +589,7 @@ document.getElementById('export-strat')?.addEventListener('click', () => {
             }
           }
 
-          if (edge.data.target.startsWith('t_')) {
+          if (edge.data.target.startsWith('t')) {
             if (checker.sources.has(edge.data.target)) {
               returnable.edges.set(edge.data.id, edge);
             } else {

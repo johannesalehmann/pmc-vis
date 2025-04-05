@@ -12,10 +12,7 @@ function parallelCoords(pane, data, metadata) {
   let extents = {}; // for preserving brushes on nominals and booleans
   let dimensions;
   let pcpHtml;
-  const bounds = {
-    min: 0,
-    max: 1,
-  };
+  const bounds = { min: 0, max: 1 };
   const scale = 2; // canvas resolution scale
   const stack = 3; // amount of line segments that can be stacked until full opacity
 
@@ -703,7 +700,6 @@ function parallelCoords(pane, data, metadata) {
   }
 
   draw(pane, data);
-  updateCountStrings();
 
   return publicFunctions;
 };

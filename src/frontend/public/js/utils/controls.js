@@ -320,9 +320,9 @@ function makeParamDropdown(opts) {
 
 function makeSelectionModesDropdown() {
   const modes = {
-    s: { value: 's', name: 'States' },
-    t: { value: 't', name: 'Actions' },
-    's+t': { value: 's+t', name: 'States & Actions' },
+    '.s': { value: '.s', name: 'States' },
+    '.t': { value: '.t', name: 'Actions' },
+    '': { value: '', name: 'States & Actions' },
   };
 
   _makeDropdown(

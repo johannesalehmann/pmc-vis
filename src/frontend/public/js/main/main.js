@@ -1,5 +1,5 @@
 import { spawnPane, getPanes } from '../views/panes/panes.js';
-import { params } from '../views/node-link/layout-options/cola.js';
+import { params } from '../views/node-link/layout-options/elk.js';
 import { spawnGraph } from '../views/node-link/node-link.js';
 import { BACKEND, PROJECT } from '../utils/controls.js';
 import events from '../utils/events.js';
@@ -40,7 +40,7 @@ Promise.all([
   const data = promises[1];
   const nodesIds = data.nodes
     .map((node) => node.id)
-    .filter((id) => !id.includes('t_'));
+    .filter((id) => !id.startsWith('t'));
 
   info.metadata.initial = `#${nodesIds.join(', #')}`;
 

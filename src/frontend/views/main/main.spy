@@ -30,8 +30,6 @@
       </div>
     </div>
 
-  
-
     <div class="nav-wrapper-right">
       <div class="right-buttons"> 
         <a class="nav-button" id="new-project" title="New Project">
@@ -104,14 +102,40 @@
       </div>
 
       <div class="param">
-        <p class="label inline label-info"># of panes</p>
+        <p class="label inline label-info">Max # of panes</p> </br>
         <input type="number" name="numberOfPanes" id="numberOfPanes" value="5" min="1">
       </div>
 
-    
+      <div class="param">
+        <p class="label inline label-info">Max # of nodes per pane</p> </br>
+        <input type="number" name="nodesPerPane" id="nodesPerPane" value="50" min="15">
+      </div>
+
+      <div class="ui negative message">
+        <i class="close icon"></i>
+        <div class="header">
+          TODO: Missing / potential controls: 
+        </div>  
+        <ul>
+          <li>toggle replace alert (popup / modals) with less obtrusive messages (like this one) </li>
+        </ul> 
+      </div>
+
       <div class="ui divider"></div>
 
       <h3 class="label label-info cy-config">Model Settings</h3>
+      
+      <div class="ui negative message">
+        <i class="close icon"></i>
+        <div class="header">
+          TODO: Missing / potential controls: 
+        </div>  
+        <ul>
+          <li>choose what happens to destroyed panes (save in db, save in file, forget) </li>
+          <li>[MUST] select: lens / level-of-detail / abstraction </li>
+        </ul>
+      </div>
+      
       <div id="props-config">
         <!-- layout specific options are appended here-->
       </div>
@@ -119,6 +143,18 @@
       <div class="ui divider"></div>
 
       <h3 class="label label-info">Node-link Diagram </h3>
+      
+      <div class="ui negative message">
+        <i class="close icon"></i>
+        <div class="header">
+          TODO: Missing / potential controls: 
+        </div>  
+        <ul>
+          <li>options to customize the cytoscape style? states, actions, edges, etc. </li>
+          <li>color options</li>
+        </ul>  
+      </div>
+      
       <details class="ui accordion" closed="">
         <summary class="title">
           <i class="dropdown icon left"></i>
@@ -136,6 +172,22 @@
       <div class="ui divider"></div>
 
       <h3 class="label label-info" id="pcp-config-span">Parallel Coordinates</h3>
+
+      <div class="ui negative message">
+        <i class="close icon"></i>
+        <div class="header">
+          TODO: Missing / potential controls: 
+        </div>  
+        <ul>
+          <li>[MUST] button: shortcut to create new scheduler from pcp selection</li>
+          <li>input #: line segment stack amount until full opacity, currently set to 3</li>
+          <li>toggle: orientation (||| vs ☰), currently based on pane dimensions </li>
+          <li>select: shape of the min/max indicator, currently circle (o) </li>
+          <li>input #: canvas resolution scale, currently set to 2 (2x the size of the pane)</li>
+          <li>toggle: show violin plots/histograms</li>
+        </ul> 
+      </div>
+    
       <div id="pcp-config">
         <!-- layout specific options are appended here-->
       </div>
@@ -143,6 +195,18 @@
       <div class="ui divider"></div>
 
       <h3 class="label label-info" id="overview-config-span">Overview</h3>
+
+      <div class="ui negative message">
+        <i class="close icon"></i>
+        <div class="header">
+          TODO: Missing / potential controls: 
+        </div>  
+        <ul>
+          <li>button: reset / sync with overview button</li>
+          <li>button: highlight pane / show more details in overview</li>
+        </ul>   
+      </div>
+      
       <div id="overview-config">
         <!-- layout specific options are appended here-->
       </div>
