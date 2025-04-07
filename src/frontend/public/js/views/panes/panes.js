@@ -36,12 +36,8 @@ function updateHeights() {
 }
 
 function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
-  // if (spawner && panes[spawner] && panes[spawner].spawned) {
-  //     destroyPanes(panes[spawner].spawned);
-  // }
-
-  const panesLength = Object.keys(panes).length;
-  const index = panesLength % colorList.length;
+  const paneKeysBefore = Object.keys(panes);
+  const index = paneKeysBefore.length % colorList.length;
   const backgroundColor = colorList[index];
   const pane = {
     id: id || uid(),
@@ -73,7 +69,7 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
   const div = document.createElement('div');
   div.className = 'cy-s flex-item pane';
   div.id = pane.id;
-  div.style.flex = panesLength + 1;
+  div.style.flex = paneKeysBefore.length + 1;
   div.style.height = pane.height + 'px';
 
   // add the node-link diagram view
@@ -141,8 +137,7 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
   div.appendChild(split_dragbar);
   div.appendChild(details);
 
-  const paneIds = Object.keys(panes);
-  if (paneIds.length > 0) {
+  if (paneKeysBefore.length > 0) {
     if (
       document.getElementById(spawner)
       && newPanePosition?.value === 'insert'
@@ -160,14 +155,27 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
   }
 
   panes[div.id] = pane;
+  const paneKeysAfter = Object.keys(panes);
   if (spawner && panes[spawner]) {
     if (spawner.length > 0) {
       // TODO, eg merged
     }
-    panes[spawner].spawned = div.id; // to remember which pane was created from this one
+    panes[spawner].spawned ||= new Set();
+    panes[spawner].spawned.add(div.id); // remembers which panes were created from this one
   }
 
   enableDragBars();
+  const numberOfPanes = document.getElementById('numberOfPanes');
+
+  if (paneKeysAfter.length > numberOfPanes.value) {
+    destroyPanes(
+      panes[paneKeysAfter[1]].id, // skip the first pane
+      {
+        firstOnly: true,
+        pre: true,
+      },
+    );
+  }
   dispatchEvent(events.RESIZE_ALL);
 
   return pane;
@@ -426,13 +434,13 @@ function updatePanes(newPanesData) {
 }
 
 // recursively destroy every pane starting from an id
-function destroyPanes(firstId, firstOnly = false) {
+function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
   const pane = document.getElementById(firstId);
 
   if (pane) {
-    if (panes[firstId] && panes[firstId].spawned) {
+    if (panes[firstId] && panes[firstId].spawned.size > 0) {
       if (!firstOnly) {
-        destroyPanes(panes[firstId].spawned);
+        panes[firstId].spawned.forEach(p => destroyPanes(p));
       }
     }
 
@@ -446,12 +454,14 @@ function destroyPanes(firstId, firstOnly = false) {
 
     const newKeys = Object.keys(panes);
     newKeys.forEach((k) => {
-      if (panes[k].spawned === firstId) {
-        panes[k].spawned = undefined;
-      }
+      panes[k].spawned?.delete(firstId);
     });
-    setPane(panes[newKeys[newKeys.length - 1]].id);
-    dispatchEvent(events.RESIZE_ALL);
+
+    if (!pre) {
+      setPane(panes[newKeys[newKeys.length - 1]].id);
+      dispatchEvent(events.RESIZE_ALL);
+    }
+
     socket.emit('pane removed', firstId);
   }
 }

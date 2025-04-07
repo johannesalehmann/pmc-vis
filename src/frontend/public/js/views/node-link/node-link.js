@@ -1392,7 +1392,7 @@ function handleMergePane() {
 function handleDeletePane() {
   if (selectedPanesData && selectedPanesData.selectedPanes.length > 0) {
     selectedPanesData.selectedPanes.forEach((pane) => {
-      destroyPanes(pane.paneId, true);
+      destroyPanes(pane.paneId, { firstOnly: true });
     });
   }
 }
@@ -1656,7 +1656,7 @@ function ctxmenu(cy) {
               denyButtonText: 'Remove All From Selected',
             }).then((result) => {
               if (result.isConfirmed) {
-                destroyPanes(getPanes()[cy.paneId].id, true);
+                destroyPanes(getPanes()[cy.paneId].id, { firstOnly: true });
               } else if (result.isDenied) {
                 destroyPanes(getPanes()[cy.paneId].id);
               }

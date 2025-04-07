@@ -3,6 +3,7 @@
 
 import { setPane } from '../../utils/controls.js';
 import events from '../../utils/events.js';
+import { fixed } from '../../utils/utils.js';
 import makeCtxMenu from './ctx-menu.js';
 
 function parallelCoords(pane, data, metadata) {
@@ -14,7 +15,7 @@ function parallelCoords(pane, data, metadata) {
   let pcpHtml;
   const bounds = { min: 0, max: 1 };
   const scale = 2; // canvas resolution scale
-  const stack = 3; // amount of line segments that can be stacked until full opacity
+  const stack = 5; // amount of line segments that can be stacked until full opacity
 
   const publicFunctions = {
     destroy: () => {
@@ -119,14 +120,14 @@ function parallelCoords(pane, data, metadata) {
     }
 
     function checkExceedsStack(line, ctx, ds) {
-      const l0 = line.l0.x + '' + line.l0.y;
-      const l1 = line.l1.x + '' + line.l1.y;
+      const l0 = fixed(line.l0.x) + '' + fixed(line.l0.y);
+      const l1 = fixed(line.l1.x) + '' + fixed(line.l1.y);
       ctx.stacks[ds.d0] ||= {};
       ctx.stacks[ds.d0][ds.d1] ||= {};
       ctx.stacks[ds.d0][ds.d1][l0] ||= {};
       ctx.stacks[ds.d0][ds.d1][l0][l1] ||= 0;
       ctx.stacks[ds.d0][ds.d1][l0][l1] += 1;
-      return ctx.stacks[ds.d0][ds.d1][l0][l1] > stack;
+      return ctx.stacks[ds.d0][ds.d1][l0][l1] > ctx.stack;
     }
 
     function segment(line, ctx, ds) {
@@ -464,11 +465,13 @@ function parallelCoords(pane, data, metadata) {
       highlight,
     ].forEach(ctx => {
       ctx.globalAlpha = 1 / stack;
-      ctx.lineWidth = scale;
+      ctx.lineWidth = scale * 2;
       ctx.stacks = {};
+      ctx.stack = stack;
     });
-
-    highlight.lineWidth = scale * 3;
+    highlight.stack = 1;
+    highlight.globalAlpha = 1;
+    highlight.lineWidth = scale * 4;
 
     // hover highlighting: cursor area visual indicator
     const cursor_rect = svg

@@ -117,6 +117,7 @@
           TODO: Missing / potential controls: 
         </div>  
         <ul class="list">
+          <li>choose what happens to destroyed panes (save in db, save in file, forget) </li>
           <li>toggle replace alert (popup / modals) with less obtrusive messages (like this one) </li>
         </ul> 
       </div>
@@ -131,7 +132,6 @@
           TODO: Missing / potential controls: 
         </div>  
         <ul class="list">
-          <li>choose what happens to destroyed panes (save in db, save in file, forget) </li>
           <li>[MUST] select: lens / level-of-detail / abstraction </li>
         </ul>
       </div>

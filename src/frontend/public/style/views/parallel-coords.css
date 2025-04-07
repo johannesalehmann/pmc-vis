@@ -1,31 +1,12 @@
 @import '../colors.css';
 
-svg text {
-  font-size: 12px;
-}
-
-.background,
-.background path {
-  fill: none;
-  stroke: var(--pcp-bg-stroke);
-  opacity: 1;
-  shape-rendering: optimizeQuality;
-}
-
-/*.foreground,*/
-.foreground path {
-  fill: none;
-  opacity: 1;
-  /*stroke: var(--pcp-primary); /* set dynamically */
-}
-
 .cursor-area {
   opacity: 0.5;
   fill: var(--pcp-bubble-cursor-color);
 }
 
 .selection-count-tooltip {
-  fill: black
+  fill: black;
 }
 
 path.highlighted-path {
@@ -36,32 +17,32 @@ path.highlighted-path {
 .brush .extent {
   fill-opacity: .3;
   stroke: var(--pcp-bubble-cursor-color);
-  shape-rendering: optimizeQuality;
 }
 
 .axis line,
 .axis path {
   fill: none;
   stroke: var(--pcp-axes-lines);
-  shape-rendering: optimizeQuality;
 }
 
 .axis text {
   fill: var(--pcp-text-fill);
-  /*text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;*/
   cursor: move;
 }
 
-/*canvas */
-
-canvas,
-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.detail-inspector {
+.detail-inspector { 
   width: 100%;
   position: absolute;
+
+  canvas, svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    path {
+      shape-rendering: geometricPrecision;
+    }
+    text {
+      font-size: 12px;
+    }
+  }
 }
