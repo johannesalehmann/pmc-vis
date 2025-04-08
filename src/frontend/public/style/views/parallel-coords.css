@@ -1,5 +1,3 @@
-@import '../colors.css';
-
 .cursor-area {
   opacity: 0.5;
   fill: var(--pcp-bubble-cursor-color);

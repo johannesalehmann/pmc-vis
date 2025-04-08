@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="/libs/fomantic-ui-css/semantic.min.css">
 <link rel="stylesheet" href="/libs/@fortawesome/fontawesome-free/css/all.min.css">
 
+<link rel="stylesheet" href="/style/colors.css">
 <link rel="stylesheet" href="/style/cy-custom-extensions/ctx-menu.css">
 <link rel="stylesheet" href="/style/main.css">
 <link rel="stylesheet" href="/style/widgets/ctx-menu.css">

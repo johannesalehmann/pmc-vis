@@ -26,7 +26,7 @@ import {
   PROJECT,
   BACKEND,
 } from '../../utils/controls.js';
-import { parallelCoords } from '../parallel-coords/parallel-coords.js';
+import { parallelCoords } from '../attributes/parallel-coords.js';
 import { ndl_to_pcp } from '../format.js';
 import { CONSTANTS } from '../../utils/names.js';
 import events from '../../utils/events.js';

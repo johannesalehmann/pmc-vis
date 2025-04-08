@@ -5,6 +5,7 @@ import { setPane } from '../../utils/controls.js';
 import events from '../../utils/events.js';
 import { fixed } from '../../utils/utils.js';
 import makeCtxMenu from './ctx-menu.js';
+import { violin } from './violin.js';
 
 function parallelCoords(pane, data, metadata) {
   const selections = new Map(); // stores dimension -> brush selection
@@ -483,7 +484,7 @@ function parallelCoords(pane, data, metadata) {
       .append('text')
       .attr('class', 'selection-count-tooltip');
 
-    // group element for each dimension and add drag motion
+    // group element for each dimension (axis) and add drag motion
     const g = svg
       .selectAll('.dimension')
       .data(dimensions)
@@ -619,7 +620,14 @@ function parallelCoords(pane, data, metadata) {
     // axes and title.
     g.append('g')
       .attr('class', 'axis')
-      .each((d) => d3.select(`#${getAxisId(d)} > .axis`).call(axis.scale(resp.axes[d])))
+      .each(dim => {
+        const axis_g = d3
+          .select(`#${getAxisId(dim)} > .axis`)
+          .call(axis.scale(resp.axes[dim]));
+        violin(axis_g, {
+          orient, resp, name: dim, data: data.map((d) => d[dim]),
+        });
+      })
       .append('text')
       .attr('text-anchor', resp.anchor[orient])
       .attr('transform', resp.title[orient])

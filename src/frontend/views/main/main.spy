@@ -117,6 +117,7 @@
           TODO: Missing / potential controls: 
         </div>  
         <ul class="list">
+          <li>buttons to pan/zoom/maximize/minimize/remove panes (in the graph part of the pane)</li>
           <li>choose what happens to destroyed panes (save in db, save in file, forget) </li>
           <li>toggle replace alert (popup / modals) with less obtrusive messages (like this one) </li>
         </ul> 
@@ -150,9 +151,14 @@
           TODO: Missing / potential controls: 
         </div>  
         <ul class="list">
-          <li>options to customize the cytoscape style? states, actions, edges, etc. </li>
-          <li>color options</li>
-        </ul>  
+          <li>[COULD] options to customize the cytoscape style? states, actions, edges, etc. </li>
+          <li>[COULD] save defaults of 
+            <p>src\frontend\public\style\views\cy-style.js</p>
+            <p>src\frontend\public\js\utils\names.js</p>
+            <p>and .css colors</p>
+            <p>export settings bar values</p>
+          </li>
+        </ul>
       </div>
       
       <details class="ui accordion" closed="">

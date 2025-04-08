@@ -2,16 +2,16 @@ import { info, setInfo } from '../main/main.js';
 import { getPanes } from '../views/panes/panes.js';
 import { h, t } from './utils.js';
 
-import { params as _elk } from '../views/node-link/layout-options/elk.js';
-import { params as _dagre } from '../views/node-link/layout-options/dagre.js';
-import { params as _klay } from '../views/node-link/layout-options/klay.js';
-import { params as _cola } from '../views/node-link/layout-options/cola.js';
+import { params as _elk } from '../views/graph/layout-options/elk.js';
+import { params as _dagre } from '../views/graph/layout-options/dagre.js';
+import { params as _klay } from '../views/graph/layout-options/klay.js';
+import { params as _cola } from '../views/graph/layout-options/cola.js';
 import { CONSTANTS } from './names.js';
 import {
   markRecurringNodes,
   setMaxIteration,
   unmarkRecurringNodes,
-} from '../views/node-link/node-link.js';
+} from '../views/graph/node-link.js';
 
 const socket = io();
 
