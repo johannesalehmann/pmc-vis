@@ -44,3 +44,9 @@ path.highlighted-path {
     }
   }
 }
+
+.axis-violin, .axis-histogram {
+  stroke: none;
+  fill: #000;
+  opacity: 0.5;
+}

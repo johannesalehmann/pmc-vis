@@ -88,9 +88,41 @@ function parallelCoords(pane, data, metadata) {
         x = adjust(resp.axes[dim](selection[0]) + margin.left);
         y = adjust(resp.scale(dim) + margin.top);
       }
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.stroke();
+
+      if (metadata.bounds_indicator === 'o') {
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+
+      if (metadata.bounds_indicator === '><') {
+        const t = 7;
+        const pl = 4;
+        const pr = pl + 1;
+
+        ctx.beginPath();
+
+        if (orient) {
+          ctx.moveTo(x - t - pl, y - t);
+          ctx.lineTo(x - pl, y);
+          ctx.lineTo(x - t - pl, y + t);
+
+          ctx.moveTo(x + t + pr, y - t);
+          ctx.lineTo(x + pr, y);
+          ctx.lineTo(x + t + pr, y + t);
+        } else {
+          ctx.moveTo(x - t, y - t - pl);
+          ctx.lineTo(x, y - pl);
+          ctx.lineTo(x + t, y - t - pl);
+
+          ctx.moveTo(x - t, y + t + pr);
+          ctx.lineTo(x, y + pr);
+          ctx.lineTo(x + t, y + t + pr);
+        }
+
+        ctx.stroke();
+      }
+
       ctx.strokeStyle = color;
       ctx.globalAlpha = alpha;
       ctx.lineWidth = width;

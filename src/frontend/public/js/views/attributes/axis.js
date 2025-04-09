@@ -1,12 +1,33 @@
 // adapted from https://observablehq.com/@ssiegmund/violin-plot-playground
 
+function getArea(orient, scale, max, apperture) {
+  const s = d3
+    .scaleLinear()
+    .domain([-max, max])
+    .range([-apperture, apperture]);
+
+  const area = d3.area();
+
+  if (orient) {
+    area.y(d => scale(d[0]))
+      .x0(d => s(-d[1]))
+      .x1(d => s(d[1]));
+  } else {
+    area.x(d => scale(d[0]))
+      .y0(d => s(-d[1]))
+      .y1(d => s(d[1]));
+  }
+
+  return area;
+}
+
 function violin(svg, {
   orient, resp, name, data,
 } = {}) {
   const scale = resp.axes[name];
-  const apperture = 5;
+  const apperture = 10;
   const bandwidth = 0.3;
-  const thds = scale.ticks(20);
+  const thds = scale.ticks(40);
 
   function kde(kernel, thds) {
     return (V) => thds.map((t) => [t, d3.mean(V, (d) => kernel(t - d))]);
@@ -17,75 +38,45 @@ function violin(svg, {
   }
 
   const density = kde(epanechnikov(bandwidth), thds);
+  const values = density(data);
+  const max = d3.max(values.map(d => d[1]));
+  const area = getArea(orient, scale, max, apperture);
 
-  const d_values = density(data);
-  const d_max = d3.max(d_values.map(d => d[1]));
-
-  const ds = d3 // density scale
-    .scaleLinear()
-    .domain([-d_max, d_max])
-    .range([-apperture, apperture]);
-
-  const area = d3.area();
-  if (orient) {
-    area.y(d => scale(d[0]))
-      .x0(d => ds(-d[1]))
-      .x1(d => ds(d[1]));
-  } else {
-    area.x(d => scale(d[0]))
-      .y0(d => ds(-d[1]))
-      .y1(d => ds(d[1]));
-  }
   area.curve(d3.curveCatmullRom);
 
   svg.append('path')
-    .datum(d_values)
+    .datum(values)
+    .attr('d', area)
     .style('stroke', 'none')
     .style('fill', '#000')
-    .style('opacity', 0.1)
-    .attr('d', area);
+    .style('opacity', 0.1);
 }
 
 function histogram(svg, {
   orient, resp, name, data,
 } = {}) {
   const scale = resp.axes[name];
-  const apperture = 15;
-  const ticks = scale.ticks(50);
+  const apperture = 25;
+  const ticks = scale.ticks(scale.range()[1]);
 
-  function frequencies(ticks) {
-    return (V) => ticks.map(
-      (t, i) => [t, V.filter(d => i > 0 ? bins[i - 1] > d && d >= t : d >= t).length],
+  function frequencies(ts) {
+    return (V) => ts.map(
+      (t, i) => [t, V.filter(d => i > 0 ? ts[i - 1] > d && d >= t : d >= t).length],
     );
   }
 
-  const bins = frequencies(ticks);
-  const h_values = bins(data);
-  const h_max = d3.max(h_values.map(d => d[1]));
+  const values = frequencies(ticks)(data);
+  const max = d3.max(values.map(d => d[1]));
+  const area = getArea(orient, scale, max, apperture);
 
-  const hs = d3 // histogram scale
-    .scaleLinear()
-    .domain([-h_max, h_max])
-    .range([-apperture, apperture]);
-
-  const harea = d3.area();
-  if (orient) {
-    harea.y(d => scale(d[0]))
-      .x0(d => hs(-d[1]))
-      .x1(d => hs(d[1]));
-  } else {
-    harea.x(d => scale(d[0]))
-      .y0(d => hs(-d[1]))
-      .y1(d => hs(d[1]));
-  }
-  harea.curve(d3.curveStep);
+  area.curve(d3.curveStep);
 
   svg.append('path')
-    .datum(h_values)
+    .datum(values)
+    .attr('d', area)
     .style('stroke', 'none')
-    .style('fill', '#000')
-    .style('opacity', 0.5)
-    .attr('d', harea);
+    .style('fill', 'red')
+    .style('opacity', 0.5);
 }
 
 export { violin, histogram };

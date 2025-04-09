@@ -1821,15 +1821,15 @@ function setPublicVars(cy, preset) {
       fn: toggleFullSync,
     },
     'pcp-bounds-indicator': {
-      value: 'circle',
+      value: '><',
       fn: undefined,
     },
     'pcp-violins': {
-      value: false,
+      value: true,
       fn: undefined,
     },
     'pcp-histograms': {
-      value: true,
+      value: false,
       fn: undefined,
     },
     update: {
