@@ -55,6 +55,8 @@ public class Project implements Namespace{
     private final String TABLE_SCHED;
 
     public final boolean debug;
+    public final long cuddMaxMem;
+    public final int numIterations;
     private final String rootDir;
 
     private final TreeMap<String, Object> info;
@@ -75,6 +77,10 @@ public class Project implements Namespace{
 
     private boolean built = false;
 
+    public static Project reset(Project original) throws Exception {
+        return new Project(original.id, original.rootDir, original.taskManager, original.database, original.cuddMaxMem, original.numIterations, original.debug);
+    }
+
     public Project(String id, String rootDir, TaskManager taskManager, Database database, PRISMServerConfiguration config) throws Exception {
         this(id, rootDir, taskManager, database, config.getCUDDMaxMem(), config.getIterations(), config.getDebug());
     }
@@ -83,6 +89,8 @@ public class Project implements Namespace{
         this.id = id;
         this.taskManager = taskManager;
         this.debug = debug;
+        this.cuddMaxMem = cuddMaxMem;
+        this.numIterations = numIterations;
         this.rootDir = rootDir;
         this.info = new TreeMap<>();
 
