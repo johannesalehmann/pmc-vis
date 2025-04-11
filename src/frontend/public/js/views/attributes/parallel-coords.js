@@ -703,7 +703,7 @@ function parallelCoords(pane, data, metadata) {
         const axis_g = d3
           .select(`#${getAxisId(dim)} > .axis`)
           .call(axis.scale(resp.axes[dim]));
-        
+
         if (pane.cy.vars['pcp-vs'].value) {
           violin(axis_g, {
             orient, resp, name: dim, data: data.map((d) => d[dim]),
