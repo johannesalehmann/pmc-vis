@@ -626,10 +626,6 @@ function spawnPCP(cy) {
       booleans: props.filter(k => pld[k].type === 'boolean'),
       numbers: props.filter(k => pld[k].type === 'number'),
       pld,
-      bounds_indicator: cy.vars['pcp-bounds-indicator'].value,
-      violins: cy.vars['pcp-violins'].value,
-      histograms: cy.vars['pcp-histograms'].value,
-      freqs: cy.vars['pcp-discreet-freqs'].value,
     },
   );
 
@@ -901,6 +897,16 @@ function updateNewPanePosition(cy, prop) {
 
 function toggleFullSync(cy, prop) {
   cy.vars['fullSync'].value = prop;
+}
+
+function togglePCPFlag(cy, prop, name) {
+  cy.vars[name].value = prop;
+  cy.pcp.redraw();
+}
+
+function updateBoundsIndicator(cy, prop) {
+  cy.vars['pcp-bi'].value = prop;
+  cy.pcp.redraw();
 }
 
 function selectBasedOnAP(cy, e, ap) {
@@ -1821,21 +1827,21 @@ function setPublicVars(cy, preset) {
       value: true,
       fn: toggleFullSync,
     },
-    'pcp-bounds-indicator': {
+    'pcp-bi': { // bounds-indicator
       value: '><',
-      fn: undefined,
+      fn: updateBoundsIndicator,
     },
-    'pcp-violins': {
+    'pcp-vs': { // violin plots
       value: false,
-      fn: undefined,
+      fn: (cy, prop) => togglePCPFlag(cy, prop, 'pcp-vs'),
     },
-    'pcp-histograms': {
+    'pcp-hs': { // histograms
       value: true,
-      fn: undefined,
+      fn: (cy, prop) => togglePCPFlag(cy, prop, 'pcp-hs'),
     },
-    'pcp-discreet-freqs': {
+    'pcp-dfs': { // discreet frequencies
       value: false,
-      fn: undefined,
+      fn: (cy, prop) => togglePCPFlag(cy, prop, 'pcp-dfs'),
     },
     update: {
       value: CONSTANTS.STATUS.ready,

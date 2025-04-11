@@ -188,9 +188,7 @@
           <li>[MUST] button: shortcut to create new scheduler from pcp selection</li>
           <li>input #: line segment stack amount until full opacity, currently set to 3</li>
           <li>toggle: orientation (||| vs ☰), currently based on pane dimensions </li>
-          <li>select: shape of the min/max indicator, currently circle (o) </li>
           <li>input #: canvas resolution scale, currently set to 2 (2x the size of the pane)</li>
-          <li>toggle: show violin plots/histograms</li>
         </ul> 
       </div>
     

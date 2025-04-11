@@ -48,6 +48,9 @@ function parallelCoords(pane, data, metadata) {
         return returnable;
       });
     },
+    redraw: () => {
+      draw(pane, data);
+    },
   };
 
   function updateCountStrings() {
@@ -66,6 +69,7 @@ function parallelCoords(pane, data, metadata) {
       e.detail.pane
       && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)
     ) {
+      console.log('drawing...');
       draw(pane, data);
     }
   }
@@ -92,13 +96,13 @@ function parallelCoords(pane, data, metadata) {
         y = adjust(resp.scale(dim) + margin.top);
       }
 
-      if (metadata.bounds_indicator === 'o') {
+      if (pane.cy.vars['pcp-bi'].value === 'o') {
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, 2 * Math.PI);
         ctx.stroke();
       }
 
-      if (metadata.bounds_indicator === '><') {
+      if (pane.cy.vars['pcp-bi'].value === '><') {
         const t = 7;
         const pl = 4;
         const pr = pl + 1;
@@ -277,7 +281,7 @@ function parallelCoords(pane, data, metadata) {
       // } segments`);
 
       dimensions.forEach(d => {
-        if (metadata.freqs) {
+        if (pane.cy.vars['pcp-dfs'].value) {
           frequencies(d3.select(`#${getAxisId(d)} > .axis`), {
             counts, name: d, orient,
           });
@@ -668,12 +672,12 @@ function parallelCoords(pane, data, metadata) {
         const axis_g = d3
           .select(`#${getAxisId(dim)} > .axis`)
           .call(axis.scale(resp.axes[dim]));
-        if (metadata.violins) {
+        if (pane.cy.vars['pcp-vs'].value) {
           violin(axis_g, {
             orient, resp, name: dim, data: data.map((d) => d[dim]),
           });
         }
-        if (metadata.histograms) {
+        if (pane.cy.vars['pcp-hs'].value) {
           histogram(axis_g, {
             orient, resp, name: dim, data: data.map((d) => d[dim]),
           });
@@ -739,18 +743,18 @@ function parallelCoords(pane, data, metadata) {
           .on('end', brush); // updates brush if clicked elsewhere on axis
       });
 
-    // makeCtxMenu(pane.details, pane, publicFunctions, {
-    //   extras: [
-    //     {
-    //       label: 'Select Minimum',
-    //       callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'min'),
-    //     },
-    //     {
-    //       label: 'Select Maximum',
-    //       callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'max'),
-    //     },
-    //   ],
-    // });
+    makeCtxMenu(pane.details, pane, publicFunctions, {
+      extras: [
+        {
+          label: 'Select Minimum',
+          callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'min'),
+        },
+        {
+          label: 'Select Maximum',
+          callback: (e) => drawBrushMinMax(data, e.axisName, pane, 'max'),
+        },
+      ],
+    });
 
     removeEventListener('paneResize', resize, true);
     addEventListener('paneResize', resize, true);

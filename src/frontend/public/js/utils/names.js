@@ -20,6 +20,13 @@ const CONSTANTS = {
     all_finished: 'All tasks finished',
   },
 
+  CONTROLS: {
+    fullSync: 'Automatically synchronize selections',
+    'pcp-vs': 'Axis Violin Plots',
+    'pcp-hs': 'Axis Histograms',
+    'pcp-dfs': 'Axis Value Frequencies',
+  },
+
   INTERACTIONS: {
     expand1: {
       name: 'Expand Once',

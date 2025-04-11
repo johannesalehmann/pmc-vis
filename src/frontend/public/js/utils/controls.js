@@ -145,7 +145,9 @@ function createControllers(params) {
   makeDetailCheckboxes();
   makeAppendDropdown();
   makeSelectionModesDropdown();
-  makeFullSyncToggle();
+  $props_config.appendChild(
+    makeToggle('fullSync'),
+  );
 
   // graph view settings
   $graph_config.innerHTML = '';
@@ -670,27 +672,84 @@ function _makeDropdown(options, value, fn, id, name, where) {
   $select.addEventListener('change', update);
 }
 
+function makeBoundIndicatorDropdown() {
+  const options = {
+    append: { value: '><', name: '> <' },
+    insert: { value: 'o', name: 'o' },
+  };
+
+  _makeDropdown(
+    Object.values(options),
+    pane.cy.vars['pcp-bi'].value,
+    (value) => {
+      pane.cy.vars['pcp-bi'].fn(pane.cy, value);
+    },
+    'pcp-bound-indicator',
+    'Indicator of Min/Max Selections',
+    $pcp_config,
+  );
+}
+
 function makePCPSettings() {
   $pcp_config.innerHTML = '';
+
+  $pcp_config.appendChild(
+    makeToggle('pcp-hs'),
+  );
+  $pcp_config.appendChild(
+    makeToggle('pcp-dfs'),
+  );
+  $pcp_config.appendChild(
+    makeToggle('pcp-vs'),
+  );
+
+  makeBoundIndicatorDropdown();
+
   const countPrinter = h('div', { class: 'content' });
-  countPrinter.innerHTML = `<pre id="count" style="height: 20px; font-size: 10px">${
-    pane.cy.pcp
-      ? 'Selected elements: ' + pane.cy.pcp.getSelection().length
-      : null
-  }</pre>`;
+  countPrinter.innerHTML = `<pre 
+    id="count" 
+    style="
+      height: 20px; 
+      font-size: 10px"
+    >${
+      pane.cy.pcp
+        ? 'Selected elements: ' + pane.cy.pcp.getSelection().length
+        : null
+    }</pre>`;
   $pcp_config.appendChild(countPrinter);
 
   const jsonPrinter = h('div', { class: 'content' });
-  jsonPrinter.innerHTML = `<pre id="json" style="max-height: 500px; overflow-y:auto; font-size: 10px">${
-    pane.cy.pcp
-      ? JSON.stringify(pane.cy.pcp.getSelection(), undefined, 2)
-      : null
-  }</pre>`;
-  const $label = h('details', { class: 'ui accordion' }, [h('summary', { class: 'title' }, [h('i', { class: 'dropdown icon left' }, []), t('Selection Printout')]), jsonPrinter]);
+  jsonPrinter.innerHTML = `<pre 
+    id="json" 
+    style="
+      max-height: 500px; 
+      overflow-y:auto; 
+      font-size: 10px"
+    >${
+      pane.cy.pcp
+        ? JSON.stringify(pane.cy.pcp.getSelection(), undefined, 2)
+        : null
+    }</pre>`;
+  const $label = h(
+    'details',
+    { class: 'ui accordion' },
+    [
+      h(
+        'summary',
+        { class: 'title' },
+        [h('i', { class: 'dropdown icon left' }, []), t('Selection Printout')],
+      ),
+      jsonPrinter,
+    ],
+  );
   $pcp_config.appendChild($label);
 
   const $buttons = h('div', { class: 'buttons param' }, []);
-  const $buttonExport = h('button', { class: 'ui button' }, [h('span', {}, [t('Export Selection')])]);
+  const $buttonExport = h(
+    'button',
+    { class: 'ui button' },
+    [h('span', {}, [t('Export Selection')])],
+  );
 
   $buttons.appendChild($buttonExport);
 
@@ -752,12 +811,14 @@ function makeAppendDropdown() {
   );
 }
 
-function makeFullSyncToggle() {
-  const param = 'fullSync';
+function makeToggle(param) {
   const value = pane.cy.vars[param].value;
   const id = `checkbox-${param}`;
 
-  const $label = h('label', { class: 'label label-default', for: id }, [t('Automatically synchronize selections')]);
+  const $label = h('label', {
+    class: 'label label-default',
+    for: id,
+  }, [t(CONSTANTS.CONTROLS[param])]);
   const $param = h('div', {
     class: 'param ui small checkbox',
     style: 'display: flex',
@@ -775,11 +836,11 @@ function makeFullSyncToggle() {
   $param.appendChild($label);
 
   const update = (e) => {
-    pane.cy.vars['fullSync'].fn(pane.cy, e.target.checked);
+    pane.cy.vars[param].fn(pane.cy, e.target.checked);
   };
 
   $toggle.addEventListener('change', update);
-  $props_config.appendChild($param);
+  return $param;
 }
 
 function makeOverviewSettings() {
