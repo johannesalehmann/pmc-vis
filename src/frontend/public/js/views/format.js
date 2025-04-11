@@ -1,3 +1,5 @@
+import { info } from '../main/main.js';
+
 function ndl_to_pcp(data, prop) {
   const returnable = { pl: [], pld: {} }; // polylines, polyline data
 
@@ -8,6 +10,8 @@ function ndl_to_pcp(data, prop) {
     };
 
     Object.keys(prop).forEach((p) => {
+      if (!info.types[p].includes(d.type)) return;
+
       Object.keys(prop[p].props).forEach((e) => {
         if (prop[p].props[e]) {
           polyline[e] = d.details[p][e];

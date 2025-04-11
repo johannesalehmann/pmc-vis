@@ -440,7 +440,9 @@ function parallelCoords(pane, data, metadata) {
     // get list of dimensions and create a scale for each, considering the data types.
     dimensions = cols.filter((d) => {
       if (metadata.nominals.includes(d)) {
-        const domain = data.map((p) => p[d]);
+        const domain = data
+          .map((p) => p[d])
+          .filter(d => d); // filter undefined
         resp.axes[d] = d3
           .scalePoint()
           .domain(domain)

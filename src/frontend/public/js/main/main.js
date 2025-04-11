@@ -4,20 +4,24 @@ import { spawnGraph } from '../views/graph/node-link.js';
 import { BACKEND, PROJECT } from '../utils/controls.js';
 import events from '../utils/events.js';
 
-const info = {}; // singleton
+const info = {
+  details: {},
+}; // singleton
 
 function setInfo(newInfo) {
   Object.keys(newInfo).forEach(k => {
     info[k] = newInfo[k];
   });
-
-  info.metadata ||= {};
-
-  info.metadata.ID = info.ID;
-  info.metadata.Scheduler = info.Scheduler;
-
-  delete info.ID;
-  delete info.Scheduler;
+  info.details = {};
+  info.types = {};
+  ['s', 't'].forEach(type => {
+    Object.keys(info[type]).forEach(k => {
+      info.details[k] = info[type][k];
+      const t = info.types[k];
+      info.types[k] = t ? t + '+' + type : type;
+    });
+    delete info[type];
+  });
 }
 
 window.onresize = () => {
@@ -36,16 +40,15 @@ Promise.all([
 ]).then((promises) => {
   const newInfo = promises[0].info;
   setInfo(newInfo);
-
   const data = promises[1];
   const nodesIds = data.nodes
     .map((node) => node.id)
     .filter((id) => !id.startsWith('t'));
 
-  info.metadata.initial = `#${nodesIds.join(', #')}`;
+  info.initial = `#${nodesIds.join(', #')}`;
 
   if (document.getElementById('project-id')) {
-    document.getElementById('project-id').innerHTML = info.metadata.ID;
+    document.getElementById('project-id').innerHTML = info.id;
   }
 
   const firstPaneId = 'pane-0';

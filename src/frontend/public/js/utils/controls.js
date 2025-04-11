@@ -81,7 +81,7 @@ function setPane(paneId, { make = false, force = false } = {}) {
     document.getElementById('selected-pane').innerHTML = paneId;
     document.getElementById(pane.id).classList.add('active-pane');
     if (
-      info.metadata.updating
+      info.updating
       && pane.cy.vars['update'].value === CONSTANTS.STATUS.missing
     ) {
       pane.cy.vars['update'].fn();
@@ -322,9 +322,9 @@ function makeParamDropdown(opts) {
 
 function makeSelectionModesDropdown() {
   const modes = {
-    '.s': { value: '.s', name: 'States' },
-    '.t': { value: '.t', name: 'Actions' },
-    '': { value: '', name: 'States & Actions' },
+    s: { value: 's', name: 'States' },
+    t: { value: 't', name: 'Actions' },
+    's+t': { value: 's+t', name: 'States & Actions' },
   };
 
   _makeDropdown(
@@ -332,6 +332,7 @@ function makeSelectionModesDropdown() {
     pane.cy.vars['mode'].value,
     (value) => {
       pane.cy.vars['mode'].fn(pane.cy, value);
+      createControllers(pane.cy.params);
     },
     'selection-mode',
     'Selection mode',
@@ -341,7 +342,7 @@ function makeSelectionModesDropdown() {
 
 function makeSchedulerPropDropdown() {
   const options = Object.keys(
-    info.metadata['Scheduler'], // only scheduler from the 'details'
+    info, // only scheduler from the 'details'
   ).map((k) => {
     return { value: k, name: k };
   });
@@ -424,7 +425,7 @@ async function triggerModelCheckProperty(e, propType, props) {
 
     if (state.messages[0] === CONSTANTS.MESSAGES.all_finished) {
       setInfo(state.info);
-      info.metadata.updating = true;
+      info.updating = true;
       setPane(pane.id, { force: true });
       clearInterval(interval);
     }
@@ -462,8 +463,6 @@ function makeDetailCheckboxes() {
   $param.innerHTML = '';
   $param.appendChild($label);
 
-  const options = pane.cy.vars['details'].value;
-
   $props_config.insertAdjacentHTML(
     'beforeend',
     `<div class="buttons param"> 
@@ -477,6 +476,8 @@ function makeDetailCheckboxes() {
   );
   document.getElementById('clear').addEventListener('click', () => clear());
   document.getElementById('status').addEventListener('click', () => status());
+  const options = pane.cy.vars['details'].value;
+  const mode = pane.cy.vars['mode'].value;
 
   Object.keys(options).forEach((k) => {
     const statuses = Object.values(options[k].metadata).map((a) => a.status);
@@ -504,7 +505,11 @@ function makeDetailCheckboxes() {
       value: k,
     });
 
-    const $option_label = h('details', { class: 'ui accordion' }, [
+    if (mode !== 's+t') {
+      if (!info.types[k].includes(mode)) return;
+    }
+
+    const $option_label = h('details', { class: 'ui accordion', id: `details-${k}` }, [
       h('summary', { class: 'title', style: 'display:flex' }, [
         h('i', { class: 'dropdown icon left' }, []),
         ready

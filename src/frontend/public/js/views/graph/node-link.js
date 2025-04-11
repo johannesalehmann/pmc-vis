@@ -205,10 +205,10 @@ async function expandGraph(cy, nodes, onLayoutStopFn) {
 
   const limit = document.getElementById('nodesPerPane').value;
   const m = cy.vars['mode'].value;
-  const incoming = new Set(data.nodes.filter(n => ['', '.' + n.type].includes(m)
+  const incoming = new Set(data.nodes.filter(n => m.includes(n.type)
     && !cy.elementMapper.nodes.get(n.id)).map(n => n.id));
 
-  if (cy.$(`node${m}`).length + incoming.size > limit) {
+  if (cy.$(`node${m === 's+t' ? '' : '.' + m}`).length + incoming.size > limit) {
     Swal.fire({
       title: 'Too many nodes in this pane!',
       text: `The new total amount of nodes exceeds your set limit of ${limit}.`,
@@ -603,7 +603,7 @@ function getPreviousInPath(cy, sourceNodeId) {
 
 function spawnPCP(cy) {
   const m = cy.vars['mode'].value;
-  const s = cy.$(`node${m}:selected`).map(n => n.data());
+  const s = cy.$(`node${m === 's+t' ? '' : '.' + m}:selected`).map(n => n.data());
 
   const { pl, pld } = ndl_to_pcp(
     {
@@ -736,6 +736,8 @@ function bindListeners(cy) {
       const $links = [];
       const details = cy.vars['details'].value;
       Object.keys(details).forEach(d => {
+        if (!g.details[d]) return;
+
         const show = details[d].all
           || Object.values(
             details[d].props,
@@ -757,7 +759,9 @@ function bindListeners(cy) {
         }
       });
 
-      makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
+      if ($links.length > 0) {
+        makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
+      }
     }
   });
 
@@ -790,23 +794,23 @@ function selectifyByMode(cy) {
   cy.nodes().selectify();
 
   const mode = cy.vars['mode'].value;
-  if (mode === '.s') {
+  if (mode === 's') {
     cy.$('node.t').unselectify();
-  } else if (mode === '.t') {
+  } else if (mode === 't') {
     cy.$('node.s').unselectify();
   }
 }
 
 // functions called from other to set variables (see setPublicVars below)
-function setSelectMode(cy, mode = '.s') {
+function setSelectMode(cy, mode) {
   cy.vars['mode'].value = mode;
   cy.startBatch();
   cy.nodes().unselect();
   // adjust selection styles
-  if (mode === '.s') { // states
+  if (mode === 's') { // states
     cy.style().selector('core').css({ 'selection-box-color': colors.SELECTED_NODE_COLOR });
     cy.$('node.t').unselectify();
-  } else if (mode === '.t') { // actions / transitions
+  } else if (mode === 't') { // actions / transitions
     cy.style().selector('core').css({ 'selection-box-color': colors.SECONDARY_SELECTION });
     cy.$('node.s').unselectify();
   } else { // both
@@ -825,7 +829,7 @@ function setUpdateState(cy) {
   Object.keys(props).forEach(k => {
     if (decided) return;
 
-    if (info[CONSTANTS.results][k].status !== CONSTANTS.STATUS.ready) {
+    if (info.details[CONSTANTS.results][k].status !== CONSTANTS.STATUS.ready) {
       cy.vars['update'].value = CONSTANTS.STATUS.missing;
       decided = true;
     }
@@ -838,7 +842,7 @@ function setUpdateState(cy) {
 
 function updateDetailsToShow(cy, { update }) {
   const props = {};
-  const details = structuredClone(info);
+  const details = structuredClone(info.details);
 
   let init = true;
   if (update) {
@@ -874,10 +878,10 @@ function updateDetailsToShow(cy, { update }) {
     Object.keys(details[d]).forEach(p => {
       const iv = truthVal || (
         d === CONSTANTS.results
-        && info[d][p].status === CONSTANTS.STATUS.ready
+        && info.details[d][p].status === CONSTANTS.STATUS.ready
       );
       props[d].props[p] = init ? iv : update[d].props[p];
-      props[d].metadata[p] = info[d] ? info[d][p] : undefined;
+      props[d].metadata[p] = info.details[d] ? info.details[d][p] : undefined;
     });
   });
 
@@ -912,7 +916,7 @@ function updateBoundsIndicator(cy, prop) {
 function selectBasedOnAP(cy, e, ap) {
   e && e.preventDefault();
 
-  if (info.metadata.initial !== '#') {
+  if (info.initial !== '#') {
     cy.nodes().deselect();
     const states = cy.nodes('.s')
       .filter(d => d.data().details[CONSTANTS.atomicPropositions][ap]);
@@ -1063,7 +1067,7 @@ async function exportCy(cy, selection) {
           .elements
           .nodes
           .filter(node => setSelect.has(node.data.id)
-            || !['', '.' + node.data.type].includes(m));
+            || !m.includes(node.data.type));
 
         setSelect = new Set(paneData.elements.nodes.map(d => d.data.id));
 
@@ -1808,7 +1812,7 @@ function setPublicVars(cy, preset) {
       fn: _.throttle(keyboardShortcuts, THROTTLE_DEBOUNCE_DELAY),
     },
     mode: {
-      value: '.s',
+      value: 's',
       fn: setSelectMode,
     },
     details: {
@@ -1862,7 +1866,7 @@ function setPublicVars(cy, preset) {
 
   // call functions that need to be init
   if (Object.keys(preset).length === 0) {
-    setSelectMode(cy);
+    setSelectMode(cy, cy.vars['mode'].value);
     updateDetailsToShow(cy, { update: false });
     updateScheduler(cy, '_none_');
   } else {
