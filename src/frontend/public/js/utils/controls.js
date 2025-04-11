@@ -12,7 +12,6 @@ import {
   setMaxIteration,
   unmarkRecurringNodes,
 } from '../views/graph/node-link.js';
-import events from './events.js';
 
 const socket = io();
 
