@@ -6,11 +6,9 @@ import events from '../utils/events.js';
 
 const info = {
   details: {},
-  observer: new ResizeObserver(() => {
-    const panes = getPanes();
-    Object.keys(panes).forEach(pane => {
-      panes[pane].cy.fit();
-    });
+  observer: new ResizeObserver((ms) => {
+    const panes = getPanes(); // TODO: move panes to be part of this object?
+    ms.forEach(m => panes[m.target.pane].cy.fit());
   }),
 }; // singleton
 

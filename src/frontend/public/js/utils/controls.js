@@ -76,6 +76,7 @@ function setPane(paneId, { make = false, force = false } = {}) {
       makeLayout(pane.cy.params);
       pane.cy._layout.pon('layoutstop', () => {
         const d = document.querySelector(`#${pane.id}  canvas`);
+        d.pane = pane.id;
         info.observer.observe(d);
       });
       pane.cy._layout.run();
