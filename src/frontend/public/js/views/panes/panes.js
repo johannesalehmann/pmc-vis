@@ -514,10 +514,6 @@ addEventListener('resize', () => {
   });
 });
 
-addEventListener('fit-all', () => {
-  Object.keys(panes).forEach((pane) => panes[pane].cy.fit());
-});
-
 addEventListener('global-action', (e) => {
   if (e.detail.action === 'propagate') {
     Object.keys(tracker).forEach((k) => {
