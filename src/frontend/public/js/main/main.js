@@ -6,6 +6,12 @@ import events from '../utils/events.js';
 
 const info = {
   details: {},
+  observer: new ResizeObserver(() => {
+    const panes = getPanes();
+    Object.keys(panes).forEach(pane => {
+      panes[pane].cy.fit();
+    });
+  }),
 }; // singleton
 
 function setInfo(newInfo) {

@@ -603,13 +603,14 @@ function getPreviousInPath(cy, sourceNodeId) {
 
 function spawnPCP(cy) {
   const m = cy.vars['mode'].value;
-  const s = cy.$(`node${m === 's+t' ? '' : '.' + m}:selected`).map(n => n.data());
+  const selector = m === 's+t' ? '' : '.' + m;
+  const s = cy.$(`node${selector}:selected`).map(n => n.data());
 
   const { pl, pld } = ndl_to_pcp(
     {
       nodes: s.length > 0 ? s
         : console.warn('tried to spawn PCP without any selection, using full nodeset')
-        || cy.$(`node${m}`).map(n => n.data()),
+        || cy.$(`node${selector}`).map(n => n.data()),
     },
     cy.vars['details'].value,
   );

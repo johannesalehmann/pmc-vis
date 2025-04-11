@@ -10,6 +10,7 @@ const socket = io();
 
 const panes = {}; // governs the pane-based exploration
 const tracker = {}; // keeps track of already seen nodes, marks, etc.
+
 // let width;
 let height;
 const maxheight = () => height - MIN_SIZE * 2;
@@ -176,8 +177,8 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
       },
     );
   }
-  dispatchEvent(events.RESIZE_ALL);
 
+  dispatchEvent(events.RESIZE_ALL);
   return pane;
 }
 
@@ -511,6 +512,10 @@ addEventListener('resize', () => {
     document.getElementById(panes[pane].container).style.height = height * (1 - panes[pane].split) + 'px';
     document.getElementById(panes[pane].details).style.height = height * panes[pane].split + 'px';
   });
+});
+
+addEventListener('fit-all', () => {
+  Object.keys(panes).forEach((pane) => panes[pane].cy.fit());
 });
 
 addEventListener('global-action', (e) => {

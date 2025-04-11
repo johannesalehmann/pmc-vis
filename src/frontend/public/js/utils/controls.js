@@ -12,6 +12,7 @@ import {
   setMaxIteration,
   unmarkRecurringNodes,
 } from '../views/graph/node-link.js';
+import events from './events.js';
 
 const socket = io();
 
@@ -74,6 +75,10 @@ function setPane(paneId, { make = false, force = false } = {}) {
 
     if (make) {
       makeLayout(pane.cy.params);
+      pane.cy._layout.pon('layoutstop', () => {
+        const d = document.querySelector(`#${pane.id}  canvas`);
+        info.observer.observe(d);
+      });
       pane.cy._layout.run();
     }
 
@@ -619,7 +624,6 @@ function makeLayoutDropdown() {
       makeLayout(params, true);
       createControllers(params);
       pane.cy._layout.run();
-      pane.cy.fit();
     },
     'select-layout',
     'Layout',

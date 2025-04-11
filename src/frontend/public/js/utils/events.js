@@ -4,6 +4,7 @@ const events = {
       pane: 'all',
     },
   }),
+  FIT_ALL: new CustomEvent('fit-all'),
   GLOBAL_PROPAGATE: new CustomEvent('global-action', {
     detail: {
       action: 'propagate',

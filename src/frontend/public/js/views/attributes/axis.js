@@ -63,7 +63,7 @@ function histogram(svg, {
   const ds = data.map(d => nominal ? +resp.axes[name].mapping[d] : scale(d)).sort();
   const dom = scale.domain().map(d => scale(d));
 
-  const pad = 1;
+  const pad = 0;
   const maxd = d3.max(dom) + pad;
   const step = maxd / amount;
   let i = d3.min(dom) - pad;

@@ -69,7 +69,6 @@ function parallelCoords(pane, data, metadata) {
       e.detail.pane
       && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)
     ) {
-      console.log('drawing...');
       draw(pane, data);
     }
   }
