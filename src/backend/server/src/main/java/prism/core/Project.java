@@ -599,7 +599,7 @@ public class Project implements Namespace{
     public Graph getGraph() {
         if (!built) {
             try {
-                return modelParser.getGetGraph();
+                return modelParser.getGraph();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

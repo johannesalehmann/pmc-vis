@@ -27,6 +27,7 @@ public class ModelParser {
 
     private final VarList varList;
     private final long maxStateIndex;
+    private List<parser.State> initials;
 
     public ModelParser(Project project, ModulesFile modulesFile, boolean debug) {
         this.project = project;
@@ -61,6 +62,11 @@ public class ModelParser {
         }
         project.getInfo().setStateEntry(Namespace.OUTPUT_REWARDS, info);
         project.getInfo().setTransitionEntry(Namespace.OUTPUT_REWARDS, info);
+        try {
+            buildInitialStateObjects();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String normalizeStateName(String stateDescription) {
@@ -195,7 +201,7 @@ public class ModelParser {
         return Prism.parseSingleExpressionString(expression);
     }
 
-    public List<parser.State> getInitialStateObjects() throws Exception {
+    public void buildInitialStateObjects() throws Exception {
         List<parser.State> initials = new ArrayList<>();
 
         if (modulesFile.getInitialStates() != null) {
@@ -208,8 +214,7 @@ public class ModelParser {
         } else {
             initials.add(modulesFile.getDefaultInitialState());
         }
-
-        return initials;
+        this.initials = initials;
     }
 
     public long stateIdentifier(parser.State state) {
@@ -363,7 +368,7 @@ public class ModelParser {
     // Output Functions
 
     public Graph getInitialNodes() throws Exception {
-        List<parser.State> initialStates = this.getInitialStateObjects();
+        List<parser.State> initialStates = this.initials;
         List<prism.api.State> states = new ArrayList<>();
 
         for (parser.State state : initialStates) {
@@ -373,8 +378,8 @@ public class ModelParser {
         return new Graph(project, states, new ArrayList<>());
     }
 
-    public Graph getGetGraph() throws Exception {
-        List<parser.State> states = this.getInitialStateObjects();
+    public Graph getGraph() throws Exception {
+        List<parser.State> states = this.initials;
         List<parser.State> visited = new ArrayList<>();
 
         List<prism.api.State> outStates = new ArrayList<>();
