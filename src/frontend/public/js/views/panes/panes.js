@@ -1,7 +1,6 @@
 import { setPane } from '../../utils/controls.js';
 import { colorList } from '../../utils/utils.js';
 import { CONSTANTS } from '../../utils/names.js';
-import events from '../../utils/events.js';
 import makeCtxMenu from './ctx-menu.js';
 
 const MIN_FLEX_GROW = 0.005;
@@ -388,7 +387,7 @@ function enableSplitDragBars() {
     };
     d.ondblclick = null;
     if (d && d.previousElementSibling && d.parentElement) {
-      makeCtxMenu(d, d.previousElementSibling, panes[d.parentElement.id]);
+      makeCtxMenu(d, d.previousElementSibling); // pane is: panes[d.parentElement.id]
     }
   });
 }

@@ -63,15 +63,6 @@ function parallelCoords(pane, data, metadata) {
     }
   }
 
-  function resize(e) {
-    if (
-      e.detail.pane
-      && (e.detail.pane === 'all' || e.detail.pane.id === pane.id)
-    ) {
-      draw(pane, data);
-    }
-  }
-
   function draw(pane, data) {
     function drawForeground(d, count = false) {
       foreground.strokeStyle = getComputedStyle(div).getPropertyValue(d.color);

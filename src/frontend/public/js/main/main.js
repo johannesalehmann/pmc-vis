@@ -2,7 +2,6 @@ import { spawnPane, getPanes } from '../views/panes/panes.js';
 import { params } from '../views/graph/layout-options/elk.js';
 import { spawnGraph } from '../views/graph/node-link.js';
 import { BACKEND, PROJECT } from '../utils/controls.js';
-import events from '../utils/events.js';
 
 const info = {
   details: {},

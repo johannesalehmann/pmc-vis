@@ -1,8 +1,7 @@
-import events from '../../utils/events.js';
 import { resizeSplit } from './panes.js';
 import PureContextMenu from '/libs/pure-context-menu/pure-context-menu.js';
 
-function makeCtxMenu(bar, div, pane) {
+function makeCtxMenu(bar, div) {
   const items = [
     {
       label: 'Maximize Graph',
