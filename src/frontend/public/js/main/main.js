@@ -8,8 +8,8 @@ const info = {
   observer: new ResizeObserver((ms) => {
     const panes = getPanes(); // TODO: move panes to be part of this object?
     ms.forEach(m => {
-      panes[m.target.pane].cy.fit();
-      panes[m.target.pane].cy.pcp.redraw();
+      panes[m.target.pane]?.cy?.fit();
+      panes[m.target.pane]?.cy?.pcp.redraw();
     });
   }),
 }; // singleton
