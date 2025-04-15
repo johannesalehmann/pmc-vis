@@ -44,6 +44,8 @@ const triggerIcon = 'fa fa-rocket trigger-check-prop';
 $('#config-toggle')?.addEventListener('click', () => {
   $('body').classList.toggle('config-closed');
   $('#config-toggle').classList.toggle('icon-inactive');
+  $('#config-toggle i').classList.toggle('fa-chevron-right');
+  $('#config-toggle i').classList.toggle('fa-chevron-left');
   if (pane && pane.cy) {
     pane.cy.resize();
   }

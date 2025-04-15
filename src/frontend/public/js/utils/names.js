@@ -54,13 +54,15 @@ const CONSTANTS = {
 
     // ctrl+i: select initial states
     ap_init: {
+      type: 'Initial State',
       name: 'Select Initial States',
-      icon: 'fa-regular fa-circle-play',
+      icon: 'fa-solid fa-right-from-bracket',
       description: 'Selects initial states on the current pane, if any exist. This is based on the atomic proposition "init".',
       keyboard: 'Ctrl+I',
     },
     // ctrl+d: select deadlock states
     ap_deadlock: {
+      type: 'Deadlock State',
       name: 'Select Deadlock States',
       icon: 'fa-solid fa-rotate-left',
       description: 'Selects deadlock states on the current pane, if any exist. This is based on the atomic proposition "deadlock".',
@@ -68,6 +70,7 @@ const CONSTANTS = {
     },
     // ctrl+e: select end states
     ap_end: {
+      type: 'End State',
       name: 'Select End States',
       icon: 'fa-solid fa-flag-checkered',
       description: 'Selects end states on the current pane, if any exist. This is based on the atomic proposition "finished".',

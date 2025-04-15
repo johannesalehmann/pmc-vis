@@ -280,11 +280,23 @@ const initHTML = _.debounce((cy) =>{
     // .keyboard})"
     return `<div style="position: relative; padding-top:${padding}px" id="${cy.paneId}-${data.id}">
       ${aps[CONSTANTS.ap_init]
-        ? `<p> <i class="fa-xs ${CONSTANTS.INTERACTIONS.ap_init.icon}"></i> </p>` : ''}
+        ? `<p> <i class="fa-xs ${
+          CONSTANTS.INTERACTIONS.ap_init.icon
+        }" title="${
+          CONSTANTS.INTERACTIONS.ap_init.type
+        }"></i> </p>` : ''}
       ${aps[CONSTANTS.ap_deadlock]
-        ? `<p> <i class="fa-xs ${CONSTANTS.INTERACTIONS.ap_deadlock.icon}"></i> </p>` : ''}
+        ? `<p> <i class="fa-xs ${
+          CONSTANTS.INTERACTIONS.ap_deadlock.icon
+        } title="${
+          CONSTANTS.INTERACTIONS.ap_deadlock.type
+        }"></i> </p>` : ''}
       ${aps[CONSTANTS.ap_end]
-        ? `<p> <i class="fa-xs ${CONSTANTS.INTERACTIONS.ap_end.icon}"></i> </p>` : ''}
+        ? `<p> <i class="fa-xs ${
+          CONSTANTS.INTERACTIONS.ap_end.icon
+        } title="${
+          CONSTANTS.INTERACTIONS.ap_end.type
+        }"></i> </p>` : ''}
     </div>`;
   }
 

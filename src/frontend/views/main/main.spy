@@ -49,7 +49,7 @@
   </div>
 
   <a id="config-toggle" title="Toggle Sidebar">
-    <i class="bars icon" aria-hidden="true"></i>
+    <i class="icon fa-solid fa-chevron-right" aria-hidden="true"></i>
   </a>
 
   <div id="config" class="config ui padded grid">
