@@ -64,7 +64,7 @@ const CONSTANTS = {
     ap_deadlock: {
       type: 'Deadlock State',
       name: 'Select Deadlock States',
-      icon: 'fa-solid fa-rotate-left',
+      icon: 'fa-solid fa-rotate-right',
       description: 'Selects deadlock states on the current pane, if any exist. This is based on the atomic proposition "deadlock".',
       keyboard: 'Ctrl+D',
     },

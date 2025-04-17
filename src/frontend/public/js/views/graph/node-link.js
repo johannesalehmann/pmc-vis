@@ -270,34 +270,14 @@ const initHTML = _.debounce((cy) =>{
   function apsfn(cy, data, padding) {
     const aps = data.details[CONSTANTS.atomicPropositions];
 
-    // onclick="selectAP('${CONSTANTS....}')"
-    // title="${CONSTANTS
-    // .INTERACTIONS
-    // .ap_deadlock
-    // .name} \t (${CONSTANTS
-    // .INTERACTIONS
-    // .ap_deadlock
-    // .keyboard})"
-    return `<div style="position: relative; padding-top:${padding}px" id="${cy.paneId}-${data.id}">
-      ${aps[CONSTANTS.ap_init]
-        ? `<p> <i class="fa-xs ${
-          CONSTANTS.INTERACTIONS.ap_init.icon
-        }" title="${
-          CONSTANTS.INTERACTIONS.ap_init.type
-        }"></i> </p>` : ''}
-      ${aps[CONSTANTS.ap_deadlock]
-        ? `<p> <i class="fa-xs ${
-          CONSTANTS.INTERACTIONS.ap_deadlock.icon
-        } title="${
-          CONSTANTS.INTERACTIONS.ap_deadlock.type
-        }"></i> </p>` : ''}
-      ${aps[CONSTANTS.ap_end]
-        ? `<p> <i class="fa-xs ${
-          CONSTANTS.INTERACTIONS.ap_end.icon
-        } title="${
-          CONSTANTS.INTERACTIONS.ap_end.type
-        }"></i> </p>` : ''}
-    </div>`;
+    let html = '';
+    Object.keys(info.badges).forEach(ap => {
+      if (aps[CONSTANTS[ap]]) {
+        html += info.badges[ap];
+      }
+    });
+
+    return `<div style="position: relative; padding-top:${padding}px" id="${cy.paneId}-${data.id}">${html}</div>`;
   }
 
   cy.nodeHtmlLabel([

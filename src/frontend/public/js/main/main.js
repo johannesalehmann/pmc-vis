@@ -2,6 +2,7 @@ import { spawnPane, getPanes } from '../views/panes/panes.js';
 import { params } from '../views/graph/layout-options/elk.js';
 import { spawnGraph } from '../views/graph/node-link.js';
 import { BACKEND, PROJECT } from '../utils/controls.js';
+import { CONSTANTS } from '../utils/names.js';
 
 const info = {
   details: {},
@@ -13,6 +14,14 @@ const info = {
     });
   }),
 }; // singleton
+
+function getDefaultBadge(name) {
+  return `<i class="fa-xs ${
+    CONSTANTS.INTERACTIONS[name].icon
+  }" title="${
+    CONSTANTS.INTERACTIONS[name].type
+  }"></i>`;
+}
 
 function setInfo(newInfo) {
   Object.keys(newInfo).forEach(k => {
@@ -27,6 +36,23 @@ function setInfo(newInfo) {
       info.types[k] = t ? t + '+' + type : type;
     });
     delete info[type];
+  });
+
+  info.badges = {
+    ap_init: getDefaultBadge('ap_init'),
+    ap_deadlock: getDefaultBadge('ap_deadlock'),
+    ap_end: getDefaultBadge('ap_end'),
+  };
+
+  Object.keys(info.badges).forEach(ap => {
+    const userSelected = info.details[CONSTANTS.atomicPropositions][CONSTANTS[ap]];
+    if (userSelected) {
+      if (userSelected.icon) {
+        info.badges[ap] = `<i class="fa-xs ${userSelected.identifier}" title="${CONSTANTS.INTERACTIONS[ap].type}"></i>`;
+      } else {
+        info.badges[ap] = `<p title="${CONSTANTS.INTERACTIONS[ap].type}">${userSelected.identifier}</p>`;
+      }
+    }
   });
 }
 
