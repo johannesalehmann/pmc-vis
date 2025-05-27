@@ -71,7 +71,7 @@ function histogram(svg, {
   const values = [];
   while (i < maxd) {
     // console.log(`bin ${i}, ${i + step}`);
-    if (maxd < i + (step * 2)) { // last
+    if (maxd < i + (step + 1)) { // last
       values.push([
         i,
         ds.filter(d => d >= i).length,
