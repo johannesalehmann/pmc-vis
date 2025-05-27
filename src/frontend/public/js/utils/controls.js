@@ -349,10 +349,11 @@ function makeSelectionModesDropdown() {
 
 function makeSchedulerPropDropdown() {
   const options = Object.keys(
-    info, // only scheduler from the 'details'
-  ).map((k) => {
+    info.scheduler, // only scheduler from the 'details'
+  ).map(k => {
     return { value: k, name: k };
-  });
+  }).filter(m => info.scheduler[m.name] === 'ready');
+
   options.push({ value: '_none_', name: 'No scheduler' });
 
   _makeDropdown(

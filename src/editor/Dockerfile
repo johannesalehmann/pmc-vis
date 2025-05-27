@@ -27,6 +27,7 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 COPY . editor/
 WORKDIR /home/codeuser/editor
 RUN sed -i 's/localhost/host.docker.internal/g' src/constants.js
+RUN npm install
 RUN vsce package
 
 ENV VSCODE_PROXY_URI=
