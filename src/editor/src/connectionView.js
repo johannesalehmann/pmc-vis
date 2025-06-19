@@ -20,13 +20,18 @@ class ConnectionViewProvider {
         }
 
         this._openProjects.push(new ConnectionItem(id));
-        vscode.workspace.fs.createDirectory(vscode.Uri.parse(`virtual:/${id}`))
-        this.refresh()
+        vscode.workspace.fs.createDirectory(vscode.Uri.parse(`virtual:/${id}`));
+        this.refresh();
     }
 
     removeProject(projectID) {
         this._openProjects = this._openProjects.filter(item => item._projectID != projectID);
-        this.refresh()
+        this.refresh();
+    }
+
+    removeProjects() {
+        this._openProjects = [];
+        this.refresh();
     }
 
     getChildren(element) {

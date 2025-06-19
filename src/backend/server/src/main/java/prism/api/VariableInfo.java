@@ -34,6 +34,7 @@ public class VariableInfo implements Namespace {
             case "number":
                 return Type.TYPE_NUMBER;
             case "boolean":
+            case "bool":
                 return Type.TYPE_BOOL;
             case "string":
             case "complex":

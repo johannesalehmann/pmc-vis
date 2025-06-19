@@ -82,6 +82,11 @@
         "icon": "$(diff-insert)"
       },
       {
+        "command": "connectionView.reset",
+        "title": "Reset Editor",
+        "icon": "$(extensions-clear-search-results)"
+      },
+      {
         "command": "connectionView.upload",
         "title": "Upload Current File to PMC-Vis",
         "icon": "$(file-add)"
@@ -105,6 +110,10 @@
       "view/title": [
         {
           "command": "connectionView.connect",
+          "group": "navigation"
+        },
+        {
+          "command": "connectionView.reset",
           "group": "navigation"
         }
       ],

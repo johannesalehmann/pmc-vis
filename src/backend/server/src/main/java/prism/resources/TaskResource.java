@@ -157,7 +157,7 @@ public class TaskResource extends Resource {
 
         //Check whether we overwrite the model file. Remove Project and delete file if this is the case.
         File modelFile = new File(uploadModel);
-        boolean newProject = modelFile.exists();
+        boolean newProject = !modelFile.exists();
 
         try {
             //Write new File

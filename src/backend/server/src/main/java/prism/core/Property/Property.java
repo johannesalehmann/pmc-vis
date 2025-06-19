@@ -52,6 +52,8 @@ public abstract class Property implements Namespace {
 
         if (project.getDatabase().question(String.format("SELECT name FROM pragma_table_info('%s') WHERE name = '%s'", project.getStateTableName(), this.getPropertyCollumn()))) {
             this.newMaximum();
+            this.scheduler = Scheduler.loadScheduler(this.getName(), this.id);
+            project.addScheduler(scheduler);
             alreadyChecked = true;
             info.put(this.name, this.getPropertyInfo());
         }else{

@@ -37,9 +37,6 @@ public class Probability extends Property{
     @Override
     public VariableInfo modelCheck() throws PrismException {
         if (alreadyChecked) {
-            this.scheduler = Scheduler.loadScheduler(this.getName(), this.id);
-            project.addScheduler(scheduler);
-
             return this.getPropertyInfo();
         }
 
