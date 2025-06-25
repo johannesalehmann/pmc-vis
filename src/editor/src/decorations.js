@@ -84,7 +84,22 @@ const varDecoration = vscode.window.createTextEditorDecorationType({
 });
 
 class Decorator {
-    constructor(text) {
+    constructor() {
+        this._constantDef = new Map();
+        this._formulaDef = new Map();
+        this._variableDef = new Map();
+
+        this._constantLoc = new Map();
+        this._formulaLoc = new Map();
+        this._variableLoc = new Map();
+
+        this._state = new Map();
+        this._projectID = null;
+    }
+
+    parseDocument(activeEditor) {
+        const text = activeEditor.document.getText();
+
         this._constantDef = new Map();
         this._formulaDef = new Map();
         this._variableDef = new Map();
@@ -98,6 +113,14 @@ class Decorator {
         this.parseVariables(text);
     }
 
+    register(id) {
+        this._projectID = id;
+    }
+
+    checkRegistration(id) {
+        return this._projectID == id;
+    }
+
     matchVars(state) {
         for (let key in state.variables) {
             if (!this._variableDef.has(key)) {
@@ -107,22 +130,31 @@ class Decorator {
         return true;
     }
 
-    updateInfo(state, activeEditor) {
-
-        if (!activeEditor || !state) {
-            activeEditor.setDecorations(allowedActionDecoration, []);
-            activeEditor.setDecorations(blockedActionDecoration, []);
-            activeEditor.setDecorations(partiallyBlockedActionDecoration, []);
-            activeEditor.setDecorations(varDecoration, []);
-            return;
+    updateStates(states, id) {
+        if (states.length == 1) {
+            this._state.set(id, states[0]);
+            console.log(this._state);
         }
+        if (states.length > 1) {
+            this._state.set(id, states[0]);
+            console.log(this._state);
+            vscode.window.showInformationMessage("More then one state selected");
+        }
+    }
 
-        if (!this.matchVars(state)) {
+    updateInfo(activeEditor) {
+
+        const state = this._state.get(this._projectID);
+
+        console.log(state);
+        console.log(this._projectID);
+
+        if (!state || !this.matchVars(state)) {
+            console.log("fail")
             activeEditor.setDecorations(allowedActionDecoration, []);
             activeEditor.setDecorations(blockedActionDecoration, []);
             activeEditor.setDecorations(partiallyBlockedActionDecoration, []);
             activeEditor.setDecorations(varDecoration, []);
-            vscode.window.showInformationMessage(`States did not match up with document specification. Did you link the right project?`)
             return;
         }
 
@@ -219,7 +251,7 @@ class Decorator {
         activeEditor.setDecorations(varDecoration, varDeco);
     }
 
-    //Gathers all ction guards in the document
+    //Gathers all action guards in the document
     gatherInformation(document, state) {
         const modules = [];
         const enabledActionsGlobal = new Map();

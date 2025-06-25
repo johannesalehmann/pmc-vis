@@ -300,7 +300,7 @@ public class ModelChecker implements Namespace {
                             Choice<Double> choice = transitionList.getChoice(j);
                             String actionName = choice.getModuleOrAction();
 
-                            String t_id = project.getModelParser().transitionIdentifier(s, choice).toString();
+                            String t_id = project.getModelParser().transitionIdentifier(s, j).toString();
 
                             Map<String, Double> probabilities = new HashMap<>();
 
@@ -326,7 +326,7 @@ public class ModelChecker implements Namespace {
                             }
                         }
                     }
-                } catch (SQLException e) {
+                }  catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
             } catch (Exception e) {

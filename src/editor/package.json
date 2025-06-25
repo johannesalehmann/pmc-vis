@@ -87,6 +87,11 @@
         "icon": "$(extensions-clear-search-results)"
       },
       {
+        "command": "connectionView.fill",
+        "title": "Fill Editor",
+        "icon": "$(extensions-refresh)"
+      },
+      {
         "command": "connectionView.upload",
         "title": "Upload Current File to PMC-Vis",
         "icon": "$(file-add)"
@@ -114,6 +119,10 @@
         },
         {
           "command": "connectionView.reset",
+          "group": "navigation"
+        },
+        {
+          "command": "connectionView.fill",
           "group": "navigation"
         }
       ],

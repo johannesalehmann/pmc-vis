@@ -315,16 +315,10 @@ public class ModelParser {
         return state;
     }
 
-    public BigInteger transitionIdentifier(parser.State outState, Choice<Double> choice) {
+    public BigInteger transitionIdentifier(parser.State outState, int choice_identifier) {
         BigInteger index = stateIdentifier(outState);
 
-        int minValue = -modulesFile.getNumModules();
-        int value = choice.getModuleOrActionIndex();
-        if (value > 0) {
-            value -= 1;
-        }
-
-        return index.add(this.maxStateIndex.multiply(BigInteger.valueOf(value - minValue)));
+        return index.add(this.maxStateIndex.multiply(BigInteger.valueOf(choice_identifier)));
     }
 
     private prism.api.State convertApiState(parser.State state) throws Exception {
@@ -349,8 +343,8 @@ public class ModelParser {
         return new prism.api.State(stateidentifier.toString(), state.toString(), variables, project.getLabelMap(state), rewards, new TreeMap<>());
     }
 
-    private Transition convertApiTransition(parser.State out, Choice<Double> choice, Map<parser.State, Double> distribution) throws Exception {
-        BigInteger identifier = transitionIdentifier(out, choice);
+    private Transition convertApiTransition(parser.State out, int choice_index, Choice<Double> choice, Map<parser.State, Double> distribution) throws Exception {
+        BigInteger identifier = transitionIdentifier(out, choice_index);
 
         int numRewards = modulesFile.getNumRewardStructs();
         List<String> rewardNames = modulesFile.getRewardStructNames();
@@ -414,7 +408,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
 
-                transitions.add(convertApiTransition(state, choice, probabilities));
+                transitions.add(convertApiTransition(state, i, choice, probabilities));
             }
         }
         return new Graph(project, outStates, transitions);
@@ -448,7 +442,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
                 if (contained) {
-                    transitions.add(convertApiTransition(state, choice, probabilities));
+                    transitions.add(convertApiTransition(state, i, choice, probabilities));
                 }
             }
         }
@@ -481,7 +475,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
 
-                transitions.add(convertApiTransition(state, choice, probabilities));
+                transitions.add(convertApiTransition(state, i, choice, probabilities));
             }
         }
         return new Graph(project, outStates, transitions);
@@ -514,7 +508,7 @@ public class ModelParser {
                     probabilities.put(target, probability);
                 }
 
-                transitions.add(convertApiTransition(state, choice, probabilities));
+                transitions.add(convertApiTransition(state, i, choice, probabilities));
             }
         }
 

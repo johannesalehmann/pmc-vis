@@ -18,10 +18,12 @@ const int machine3_power_2 = 3;
 const int machine3_power_3 = 4;
 const int machine3_power_4 = 4;
 
+const int max_charge = 2;
+
 init
   ( 
     (load1 = 0) & (load2 = 0) & (load3 = 0) & 
-    !used1 & !used2 & !used3 & 
+    !used1 & !used2 & !used3 & (charge = 2) &
     (phase = 0) & (time = 0) & (
       ((power1 = 1) & (power2 = 1) & (power3 = 1)) | 
       ((power1 = 2) & (power2 = 2) & (power3 = 2)) | 
@@ -36,15 +38,19 @@ endinit
 // Forces the model to assign jobs to machines if still possible
 global block_end: bool;  
 
-// Allows machines to run on half power if possible for the assigned job
-global energy_saving: bool;
+global battery_enabled: bool;
 
 module job1
   load1: [0..max_load];
 
   [run_1_1] load1 <= power1 -> (load1'=0);
+  [run_1_1] battery_enabled & (load1 > power1) & (load1 <= (power1 + charge)) -> (load1'=0);
+
   [run_2_1] load1 <= power2 -> (load1'=0);
+  [run_2_1] battery_enabled & (load1 > power2) & (load1 <= (power2 + charge)) -> (load1'=0);
+
   [run_3_1] load1 <= power3 -> (load1'=0);
+  [run_3_1] battery_enabled & (load1 > power3) & (load1 <= (power3 + charge)) -> (load1'=0);
   
   [generate_1] (load1=0) -> (1/4) : (load1'= 1) + (1/4) : (load1'= 2) + (1/4) : (load1'= 3) + (1/4) : (load1'= 4);
   [reset] true ->  (load1'=0);
@@ -82,12 +88,59 @@ module machine3 = machine1 [
   run_1_1 = run_3_1, run_1_2 = run_3_2, run_1_3 = run_3_3
 ] endmodule
 
+module battery
+  charge: [0..max_charge];
+
+  [run_1_1] battery_enabled & (load1 > power1) & (load1 <= (power1 + charge)) -> (charge'=max((charge-(load1-power1)), 0));
+  [run_1_1] battery_enabled & ((load1 <= power1) | (load1 > (power1 + charge))) -> true;
+  [run_1_1] !battery_enabled -> true;
+
+  [run_1_2] battery_enabled & (load2 > power1) & (load2 <= (power1 + charge)) -> (charge'=max((charge-(load2-power1)), 0));
+  [run_1_2] battery_enabled & ((load2 <= power1) | (load2 > (power1 + charge))) -> true;
+  [run_1_2] !battery_enabled -> true;
+
+  [run_1_3] battery_enabled & (load3 > power1) & (load3 <= (power1 + charge)) -> (charge'=max((charge-(load3-power1)), 0));
+  [run_1_3] battery_enabled & ((load3 <= power1) | (load3 > (power1 + charge))) -> true;
+  [run_1_3] !battery_enabled -> true;
+
+  [run_2_1] battery_enabled & (load1 > power2) & (load1 <= (power2 + charge)) -> (charge'=max((charge-(load1-power2)), 0));
+  [run_2_1] battery_enabled & ((load1 <= power2) | (load1 > (power2 + charge))) -> true;
+  [run_2_1] !battery_enabled -> true;
+
+  [run_2_2] battery_enabled & (load2 > power2) & (load2 <= (power2 + charge)) -> (charge'=max((charge-(load2-power2)), 0));
+  [run_2_2] battery_enabled & !((load2 <= power2) | (load2 > (power2 + charge))) -> true;
+  [run_2_2] !battery_enabled -> true;
+
+  [run_2_3] battery_enabled & (load3 > power2) & (load3 <= (power2 + charge)) -> (charge'=max((charge-(load3-power2)), 0));
+  [run_2_3] battery_enabled & ((load3 <= power2) | (load3 > (power2 + charge))) -> true;
+  [run_2_3] !battery_enabled -> true;
+  
+  [run_3_1] battery_enabled & (load1 > power3) & (load1 <= (power3 + charge)) -> (charge'=max((charge-(load1-power3)), 0));
+  [run_3_1] battery_enabled & ((load1 <= power3) | (load1 > (power3 + charge))) -> true;
+  [run_3_1] !battery_enabled -> true;
+
+  [run_3_2] battery_enabled & (load2 > power3) & (load2 <= (power3 + charge)) -> (charge'=max((charge-(load2-power3)), 0));
+  [run_3_2] battery_enabled & ((load2 <= power3) | (load2 > (power3 + charge))) -> true;
+  [run_3_2] !battery_enabled -> true;
+
+  [run_3_3] battery_enabled & (load3 > power3) & (load3 <= (power3 + charge)) -> (charge'=max((charge-(load3-power3)), 0));
+  [run_3_3] battery_enabled & ((load3 <= power3) | (load3 > (power3 + charge))) -> true;
+  [run_3_3] !battery_enabled -> true;
+
+
+endmodule
+
 formula open_jobs = ((load1 > 0)? 1 : 0) + ((load2 > 0)? 1 : 0) + ((load3 > 0)? 1 : 0);
 formula open_load = load1 + load2 + load3;
 
-formula job_possible_1 = (load1 > 0) & ((!used1 & (load1 <= power1))| (!used2 & (load1 <= power2)) | (!used3 & (load1 <= power3)) );
-formula job_possible_2 = (load2 > 0) & ((!used1 & (load2 <= power1))| (!used2 & (load2 <= power2)) | (!used3 & (load2 <= power3)) );
-formula job_possible_3 = (load3 > 0) & ((!used1 & (load3 <= power1))| (!used2 & (load3 <= power2)) | (!used3 & (load3 <= power3)) );
+formula job_possible_1 = (load1 > 0) & (((!used1 & (load1 <= power1))| (!used2 & (load1 <= power2)) | (!used3 & (load1 <= power3)) ) | (battery_enabled & job_possible_charged_1));
+formula job_possible_2 = (load2 > 0) & (((!used1 & (load2 <= power1))| (!used2 & (load2 <= power2)) | (!used3 & (load2 <= power3)) ) | (battery_enabled & job_possible_charged_2));
+formula job_possible_3 = (load3 > 0) & (((!used1 & (load3 <= power1))| (!used2 & (load3 <= power2)) | (!used3 & (load3 <= power3)) ) | (battery_enabled & job_possible_charged_3));
+
+formula job_possible_charged_1 = ((!used1 & (load1 <= power1 + charge))| (!used2 & (load1 <= power2 + charge))| (!used3 & (load1 <= power3 + charge)));
+formula job_possible_charged_2 = ((!used1 & (load2 <= power1 + charge))| (!used2 & (load2 <= power2 + charge))| (!used3 & (load2 <= power3 + charge)));
+formula job_possible_charged_3 = ((!used1 & (load3 <= power1 + charge))| (!used2 & (load3 <= power2 + charge))| (!used3 & (load3 <= power3 + charge)));
+
 formula jobs_possible = job_possible_1 | job_possible_2 | job_possible_3;
 
 module timer
@@ -129,28 +182,28 @@ rewards "loads"
 endrewards
 
 rewards "cost"
-  [run_1_1] (energy_saving) & (power1/2 >= load1) : power1/2;
-  [run_1_2] (energy_saving) & (power1/2 >= load2) : power1/2;
-  [run_1_3] (energy_saving) & (power1/2 >= load3) : power1/2;
+  [run_1_1] (!battery_enabled) : power1;
+  [run_1_2] (!battery_enabled) : power1;
+  [run_1_3] (!battery_enabled) : power1;
 
-  [run_2_1] (energy_saving) & (power2/2 >= load1) : power2/2;
-  [run_2_2] (energy_saving) & (power2/2 >= load2) : power2/2;
-  [run_2_3] (energy_saving) & (power2/2 >= load3) : power2/2;
+  [run_2_1] (!battery_enabled) : power2;
+  [run_2_2] (!battery_enabled) : power2;
+  [run_2_3] (!battery_enabled) : power2;
 
-  [run_3_1] (energy_saving) & (power3/2 >= load1) : power3/2;
-  [run_3_2] (energy_saving) & (power3/2 >= load2) : power3/2;
-  [run_3_3] (energy_saving) & (power3/2 >= load3) : power3/2;
+  [run_3_1] (!battery_enabled) : power3;
+  [run_3_2] (!battery_enabled) : power3;
+  [run_3_3] (!battery_enabled) : power3;
 
-  [run_1_1] (!energy_saving) : power1;
-  [run_1_2] (!energy_saving) : power1;
-  [run_1_3] (!energy_saving) : power1;
+  [run_1_1] (battery_enabled) : 2*power1;
+  [run_1_2] (battery_enabled) : 2*power1;
+  [run_1_3] (battery_enabled) : 2*power1;
 
-  [run_2_1] (!energy_saving) : power2;
-  [run_2_2] (!energy_saving) : power2;
-  [run_2_3] (!energy_saving) : power2;
+  [run_2_1] (battery_enabled) : 2*power2;
+  [run_2_2] (battery_enabled) : 2*power2;
+  [run_2_3] (battery_enabled) : 2*power2;
 
-  [run_3_1] (!energy_saving) : power3;
-  [run_3_2] (!energy_saving) : power3;
-  [run_3_3] (!energy_saving) : power3;
+  [run_3_1] (battery_enabled) : 2*power3;
+  [run_3_2] (battery_enabled) : 2*power3;
+  [run_3_3] (battery_enabled) : 2*power3;
 endrewards
 

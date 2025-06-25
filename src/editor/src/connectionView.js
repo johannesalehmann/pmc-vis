@@ -8,6 +8,7 @@ class ConnectionViewProvider {
 
     constructor() {
         this._openProjects = [];
+        this._decorator = new decorations.Decorator();
 
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -21,6 +22,26 @@ class ConnectionViewProvider {
 
         this._openProjects.push(new ConnectionItem(id));
         vscode.workspace.fs.createDirectory(vscode.Uri.parse(`virtual:/${id}`));
+        this.refresh();
+    }
+
+    async addExistingProjects() {
+        await fetch(`http://${constants.ADRESS}:8080/0/projects`, {
+            method: 'GET'
+        }).then(
+            result => result.json()
+        ).then(
+            // @ts-ignore
+            data => data.forEach(file => {
+                this._openProjects.push(new ConnectionItem(file));
+                vscode.workspace.fs.createDirectory(vscode.Uri.parse(`virtual:/${file}`));
+            })
+        ).catch(
+            error => {
+                vscode.window.showErrorMessage("Failed to Connect to PMC-Vis.\nIs the backend running?\n\n" + error)
+                return false;
+            } // Handle the error response object
+        );
         this.refresh();
     }
 
@@ -53,6 +74,41 @@ class ConnectionViewProvider {
     async refresh() {
         await Promise.all(this._openProjects.map(async project => await project.refresh()))
         this._onDidChangeTreeData.fire(undefined);
+    }
+
+    updateText(document) {
+        console.log("updateText");
+        const activeEditor = vscode.window.activeTextEditor;
+
+        if (activeEditor) {
+            if (document == null) {
+                document = activeEditor.document;
+            }
+
+            if (document === activeEditor.document) {
+                if (document.languageId == "mdp" && document.uri.scheme == "virtual") {
+                    const project = document.uri.path.split("/")[1];
+
+                    this._decorator.register(project);
+                    this._decorator.parseDocument(activeEditor);
+                    this._decorator.updateInfo(activeEditor);
+                }
+            }
+        }
+    }
+
+    updateState(id, states) {
+        console.log("updateState");
+        this._decorator.updateStates(states, id);
+
+        const activeEditor = vscode.window.activeTextEditor;
+
+        if (activeEditor) {
+            const document = activeEditor.document;
+            if (document.languageId == "mdp" && document.uri.scheme == "virtual" && id == this._decorator._projectID) {
+                this._decorator.updateInfo(activeEditor);
+            }
+        }
     }
 
     async uploadFile(element) {

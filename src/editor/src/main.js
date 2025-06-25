@@ -32,14 +32,17 @@ function activate(context) {
 	// @ts-ignore
 	context.subscriptions.push(vscode.workspace.registerFileSystemProvider(VirtualFileSystemProvider.uri(), fileSystemProvider, { isCaseSensitive: true }))
 
+	connectionProvider = new ConnectionViewProvider();
+	fileSystemProvider.watchSave(connectionProvider);
+	connectionProvider.addExistingProjects();
+
 	//Start an internal server to listen to pmc-vis
+
 	app.use(express.json());
 	app.post(`/:id/update`, (req, res) => {
 		const id = req.params.id;
-		// if (activeStateProvider.checkRegistration(id)) {
-		// 	const states = filterState(req.body);
-		// 	activeStateProvider.refresh(states);
-		// }
+		const states = filterState(req.body);
+		connectionProvider.updateState(id, states)
 		res.send("ok");
 	})
 	app.listen(port, () => {
@@ -48,34 +51,26 @@ function activate(context) {
 		console.log(message);
 	})
 
-	connectionProvider = new ConnectionViewProvider();
-	fileSystemProvider.watchSave(connectionProvider);
-
-	//register All commands using global variables initialized in openDocument()
-	//context.subscriptions.push(vscode.window.registerTreeDataProvider("stateView", activeStateProvider));
-	//context.subscriptions.push(vscode.commands.registerCommand('pmcVis.connect', connectToPMCVis));
-	//context.subscriptions.push(vscode.commands.registerCommand('pmcVis.moveTo', item => moveTo(item)));
-	//context.subscriptions.push(vscode.commands.registerCommand('stateView.select', item => activeStateProvider.selectState(item)));
-	//context.subscriptions.push(vscode.commands.registerCommand('stateView.unselect', item => activeStateProvider.unselectState(item)));
-	//context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(openDocument));
 	//Commands for backend communication
 	context.subscriptions.push(vscode.window.registerTreeDataProvider("connectionView", connectionProvider));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.connect', () => connectionProvider.addProject()))
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.reset', () => connectionProvider.removeProjects()))
+	context.subscriptions.push(vscode.commands.registerCommand('connectionView.fill', () => connectionProvider.addExistingProjects()))
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.upload', item => connectionProvider.uploadFile(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.front', item => connectionProvider.openFrontend(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.openDocument', item => connectionProvider.openDocument(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
-	//context.subscriptions.push(vscode.window.registerCustomEditorProvider(ConnectionFileEditorProvider.register()));
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
+	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
 
 }
 
-// function openDocument() {
-// 	let activeEditor = vscode.window.activeTextEditor;
-// 	if (activeEditor) {
-// 		activeStateProvider.reconstruct(activeEditor);
-// 	}
-// }
+function resetWorkspace(document) {
+	let activeEditor = vscode.window.activeTextEditor;
+	if (activeEditor) {
+		connectionProvider.updateText(document);
+	}
+}
 
 // async function connectToPMCVis() {
 // 	const id = await vscode.window.showInputBox();
@@ -88,6 +83,7 @@ function activate(context) {
 //Here we describe the structure of the global state object
 function filterState(data) {
 	data = data.map(d => {
+		console.log(d)
 		const vars = d.details["Variable Values"]
 		Object.keys(vars).forEach(k => vars[k] = vars[k].value);
 

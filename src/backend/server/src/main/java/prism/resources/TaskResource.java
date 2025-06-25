@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -406,5 +407,24 @@ public class TaskResource extends Resource {
         }
 
         return ok(new Message(String.format("Cleared database for project %s", projectID)));
+    }
+
+    @Path("/projects")
+    @GET
+    @Operation(summary = "Returns all open projects", description = "Returns the ids of all currently stored projects")
+    public Response getProjects(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID
+    ) {
+        List<String> projectIDs = new ArrayList<>();
+
+        for (File file : Objects.requireNonNull(new File(rootDir).listFiles())) {
+            String fileName = file.getName();
+            if (file.isDirectory()) {
+                projectIDs.add(fileName);
+            }
+        }
+        projectIDs.sort(String::compareTo);
+        return ok(projectIDs);
     }
 }
