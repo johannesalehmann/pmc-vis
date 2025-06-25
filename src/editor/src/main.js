@@ -84,9 +84,7 @@ function resetWorkspace(document) {
 function filterState(data) {
 	data = data.map(d => {
 		console.log(d)
-		const vars = d.details["Variable Values"]
-		Object.keys(vars).forEach(k => vars[k] = vars[k].value);
-
+		const vars = d.details["Variable Values"];
 		return {
 			id: d.id,
 			type: d.type,
