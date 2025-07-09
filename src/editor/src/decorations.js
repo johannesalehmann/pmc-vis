@@ -10,8 +10,10 @@ const grey = "#f2f2f2";
 //RegExpressions used
 const constantRegExp = /^\s*const\s+(int|bool)\s+(\w+)\s*=\s*(.+?)\s*;$/
 const formulaRegExp = /^\s*formula\s+(\w+)\s*=\s*(.+?)\s*;$/
-const variableDefRegExp = /^\s*(\w+)\s*:\s*(?:\[\s*(\w+)\s*\.\.\s*(\w+)\s*\]|bool)(\s*init\s+(\w+))?\s*;$/
-const variableRegExp = /^\s*(\w+)\s*:\s*(?:\[\s*(\w+)\s*\.\.\s*(\w+)\s*\]|bool)(\s*init\s+(\w+))?\s*;$/gm
+const variableDefRegExp = /^\s*(?:\s*global)?\s*(\w+)\s*:\s*(?:(?:\[\s*(\w+)\s*\.\.\s*(\w+)\s*\])|(?:bool))(?:\s*init\s+(?:\w+))?\s*;\s*$/
+const variableRegExp = /^\s*(?:\s*global)?\s*(\w+)\s*:\s*(?:(?:\[\s*(\w+)\s*\.\.\s*(\w+)\s*\])|(?:bool))(?:\s*init\s+(?:\w+))?\s*;\s*$/gm
+const renameRegExp = /(\w+)\s*=\s*(\w+)/
+
 const actionRegExp = /\[(.*)\]\s*(.*)\s*->(.*?);/gm
 const moduleRegExp = /module (.*?)$(.*?)endmodule/gms
 
@@ -111,6 +113,7 @@ class Decorator {
         this.parseConstants(text);
         this.parseFormulas(text);
         this.parseVariables(text);
+        this._parseRenamings(text);
     }
 
     register(id) {
@@ -122,11 +125,16 @@ class Decorator {
     }
 
     matchVars(state) {
+        console.log("matching")
+        console.log(this._variableDef)
         for (let key in state.variables) {
+            console.log(key)
             if (!this._variableDef.has(key)) {
+                console.log("not matched")
                 return false;
             }
         }
+        console.log("matched")
         return true;
     }
 
@@ -138,7 +146,7 @@ class Decorator {
         if (states.length > 1) {
             this._state.set(id, states[0]);
             console.log(this._state);
-            vscode.window.showInformationMessage("More then one state selected");
+            vscode.window.showInformationMessage("More then one state selected, highlighting a random one");
         }
     }
 
@@ -302,7 +310,6 @@ class Decorator {
                     maxV = 1;
                 }
 
-
                 const current = state.variables[varName];
 
                 variables.set(varName, {
@@ -430,6 +437,53 @@ class Decorator {
                 this._variableLoc.set(matched_v[1], i);
             }
         }
+    }
+
+    _parseRenameBlock(text) {
+
+        const match = text.match(/module\s+\w+\s*=\s*\w+\s*\[([^\]]*?)\]/);
+
+        if (match == null) {
+            return []
+        }
+
+        const interior = match[1].replace(/(\r\n|\n|\r)/gm, "").trim()
+        const rest = text.replace(match[0], "")
+        let blocks = [interior].concat(this._parseRenameBlock(rest));
+        return blocks;
+    }
+
+    _parseRenamings(text) {
+        const renameArea = this._parseRenameBlock(text)
+
+        //gather all declerations
+        for (let i = 0; i < renameArea.length; i++) {
+            const fields = renameArea[i].split(/,/);
+            for (let j = 0; j < fields.length; j++) {
+                const field = fields[j];
+                const matched_r = field.match(renameRegExp)
+                if (matched_r != null) {
+                    const existingField = matched_r[1]
+                    const newField = matched_r[2]
+                    if (this._variableDef.has(existingField)) {
+                        this._variableDef.set(newField, this._variableDef.get(existingField));
+                        this._variableLoc.set(newField, this._variableLoc.get(existingField));
+                        continue;
+                    }
+                    if (this._formulaDef.has(existingField)) {
+                        this._formulaDef.set(newField, this._formulaDef.get(existingField));
+                        this._formulaLoc.set(newField, this._formulaLoc.get(existingField));
+                        continue;
+                    }
+                    if (this._constantDef.has(existingField)) {
+                        this._constantDef.set(newField, this._constantDef.get(existingField));
+                        this._constantLoc.set(newField, this._constantLoc.get(existingField));
+                        continue;
+                    }
+                }
+            }
+        }
+        return;
     }
 }
 
