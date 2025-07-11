@@ -77,7 +77,6 @@ class ConnectionViewProvider {
     }
 
     updateText(document) {
-        console.log("updateText");
         const activeEditor = vscode.window.activeTextEditor;
 
         if (activeEditor) {
@@ -98,7 +97,6 @@ class ConnectionViewProvider {
     }
 
     updateState(id, states) {
-        console.log("updateState");
         this._decorator.updateStates(states, id);
 
         const activeEditor = vscode.window.activeTextEditor;
@@ -283,7 +281,6 @@ class ConnectionItem extends vscode.TreeItem {
         if (this.contextValue = "File") {
             const workspace = vscode.workspace.workspaceFolders;
             const defaultPath = workspace ? `${workspace[0].uri.path}/${String(this.label)}` : String(this.label)
-            console.log(defaultPath);
             vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(defaultPath) }).then(
                 async uri => {
                     if (uri) {

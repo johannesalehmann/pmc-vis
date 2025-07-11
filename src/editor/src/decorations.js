@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+// @ts-ignore
 const mathjs = require('mathjs');
 
 //Color used in Decorations
@@ -15,7 +16,7 @@ const variableRegExp = /^\s*(?:\s*global)?\s*(\w+)\s*:\s*(?:(?:\[\s*(\w+)\s*\.\.
 const renameRegExp = /(\w+)\s*=\s*(\w+)/
 
 const actionRegExp = /\[(.*)\]\s*(.*)\s*->(.*?);/gm
-const moduleRegExp = /module (.*?)$(.*?)endmodule/gms
+const moduleRegExp = /module\s+(\w*)(?:\s*=\s*(\w+))?(.*?)endmodule/gms
 
 const allowedActionDecoration = vscode.window.createTextEditorDecorationType({
     borderWidth: '1px',
@@ -125,27 +126,20 @@ class Decorator {
     }
 
     matchVars(state) {
-        console.log("matching")
-        console.log(this._variableDef)
         for (let key in state.variables) {
-            console.log(key)
             if (!this._variableDef.has(key)) {
-                console.log("not matched")
                 return false;
             }
         }
-        console.log("matched")
         return true;
     }
 
     updateStates(states, id) {
         if (states.length == 1) {
             this._state.set(id, states[0]);
-            console.log(this._state);
         }
         if (states.length > 1) {
             this._state.set(id, states[0]);
-            console.log(this._state);
             vscode.window.showInformationMessage("More then one state selected, highlighting a random one");
         }
     }
@@ -154,11 +148,7 @@ class Decorator {
 
         const state = this._state.get(this._projectID);
 
-        console.log(state);
-        console.log(this._projectID);
-
         if (!state || !this.matchVars(state)) {
-            console.log("fail")
             activeEditor.setDecorations(allowedActionDecoration, []);
             activeEditor.setDecorations(blockedActionDecoration, []);
             activeEditor.setDecorations(partiallyBlockedActionDecoration, []);
@@ -181,6 +171,7 @@ class Decorator {
 
             let module = modules[0];
             for (const m of modules) {
+                // @ts-ignore
                 if (m.startPosition.isBefore(startPos) & m.startPosition.isAfter(module.startPosition)) {
                     module = m;
                 }
@@ -190,6 +181,7 @@ class Decorator {
             const actionName = match[1];
 
             const openLocal = action.enabled;
+            // @ts-ignore
             const openGlobal = actions.get(actionName);
 
             const hovermessage = new vscode.MarkdownString(`Extended Guard:  \n  `, true);
@@ -270,13 +262,35 @@ class Decorator {
         while ((matchModule = moduleRegExp.exec(document.getText()))) {
             const mPos = document.positionAt(matchModule.index);
             const name = matchModule[1];
-            const text = matchModule[2];
+            const altName = matchModule[2];
+            let textContent = matchModule[3];
+
+            if (altName != null) {
+                const replacements = textContent.replace(/[|]/, "").split(",");
+
+                const originalModule = modules.filter(module => {
+                    return module.name == altName
+                })
+
+                textContent = originalModule[0].text;
+
+                for (let j = 0; j < replacements.length; j++) {
+                    const field = replacements[j];
+                    const matched_r = field.match(renameRegExp)
+                    if (matched_r != null) {
+                        const existingField = matched_r[1]
+                        const newField = matched_r[2]
+
+                        textContent = textContent.replaceAll(existingField, newField);
+                    }
+                }
+            }
 
             const actions = new Map();
             const enabledActions = new Map();
             let match;
 
-            while ((match = actionRegExp.exec(text))) {
+            while ((match = actionRegExp.exec(textContent))) {
                 const startLine = document.positionAt(matchModule.index + name.length + 8 + match.index).line;
                 const action = match[1];
                 const guard = this.fillExpression(match[2]);
@@ -298,7 +312,7 @@ class Decorator {
 
             const variables = new Map();
 
-            while ((match = variableRegExp.exec(text))) {
+            while ((match = variableRegExp.exec(textContent))) {
                 const varName = match[1];
                 let minV;
                 let maxV;
@@ -326,7 +340,8 @@ class Decorator {
                 actions: actions,
                 variables: variables,
                 enabledActions: enabledActions,
-                startPosition: mPos
+                startPosition: mPos,
+                text: textContent
             })
 
             //Combine module enabled Information in order to determine general availability

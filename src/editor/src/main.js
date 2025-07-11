@@ -83,7 +83,6 @@ function resetWorkspace(document) {
 //Here we describe the structure of the global state object
 function filterState(data) {
 	data = data.map(d => {
-		console.log(d)
 		const vars = d.details["Variable Values"];
 		return {
 			id: d.id,
