@@ -77,19 +77,19 @@ io.on('connection', (socket) => {
   // });
 
   socket.on('pane added', (data) => {
-    io.emit('handle pane added', data);
+    io.emit('pane added', data);
   });
 
   socket.on('pane removed', (data) => {
-    io.emit('handle pane removed', data);
+    io.emit('pane removed', data);
   });
 
   socket.on('overview node clicked', (data) => {
-    io.emit('handle overview node clicked', data);
+    io.emit('overview node clicked', data);
   });
 
   socket.on('overview nodes selected', (data) => {
-    io.emit('handle overview nodes selected', data);
+    io.emit('overview nodes selected', data);
   });
 
   socket.on('handle selection', (data) => {
@@ -97,15 +97,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('duplicate pane ids', (data) => {
-    io.emit('handle duplicate pane ids', data);
+    io.emit('duplicate pane ids', data);
   });
 
   socket.on('active pane', (data) => {
-    io.emit('handle active pane', data);
+    io.emit('active pane', data);
   });
 
   socket.on('reset pane-node markings', (data) => {
-    io.emit('handle reset pane-node markings', data);
+    io.emit('reset pane-node markings', data);
   });
 
   socket.on('disconnect', () => {

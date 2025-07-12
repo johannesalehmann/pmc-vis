@@ -3,7 +3,7 @@ services:
   node:
     build: frontend/
     ports:
-      - "3000:3000"
+      - "3000:5173"
     depends_on:
       - server
   server:
