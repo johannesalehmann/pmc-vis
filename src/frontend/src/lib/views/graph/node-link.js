@@ -343,6 +343,8 @@ function spawnGraph(pane, data, params, vars = {}) {
     cy.endBatch();
 
     initControls(cy);
+
+    selectAll(cy);
     spawnPCP(cy);
     dispatchEvent(events.GLOBAL_PROPAGATE);
     return cy;
@@ -1611,6 +1613,12 @@ function ctxmenu(cy) {
   });
 }
 
+function selectAll(cy) {
+  const m = cy.vars['mode'].value;
+  const selector = m === 's+t' ? '' : '.' + m;
+  cy.$(`node${selector}`).select();
+}
+
 function keyboardShortcuts(cy, e) {
   cy.keyboard = e;
   const modifier = (e.ctrlKey || e.altKey);
@@ -1632,7 +1640,7 @@ function keyboardShortcuts(cy, e) {
   // ctrl+a: select all nodes
   if (e.keyCode === 65 && modifier) {
     e.preventDefault();
-    cy.nodes().select();
+    selectAll(cy);
     if (cy.vars['pcp-auto-sync'].value) {
       spawnPCP(cy);
     }
