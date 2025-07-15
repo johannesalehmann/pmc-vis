@@ -191,13 +191,16 @@ function createPaneControls(pane) {
   buttons.style.width = 0;
   buttons.style.backgroundColor = pane.backgroundColor + '50';
 
+  const setting = document.getElementById('bestPathLength');
+  const l = setting ? setting.value : CONSTANTS.INTERACTIONS.expandN.default;
+
   buttons.innerHTML = `<div class="ui blue bottom attached icon buttons">
         <button class="ui button" id="${pane.id}-expand1"
             title="${CONSTANTS.INTERACTIONS.expand1.name} \t (${CONSTANTS.INTERACTIONS.expand1.keyboard})">
             <i class="${CONSTANTS.INTERACTIONS.expand1.icon}" aria-hidden="true"></i>
         </button>
         <button class="ui button" id="${pane.id}-expandN"
-            title="${CONSTANTS.INTERACTIONS.expandN.name} \t (${CONSTANTS.INTERACTIONS.expandN.keyboard})">
+            title="${CONSTANTS.INTERACTIONS.expandN.name(l)} \t (${CONSTANTS.INTERACTIONS.expandN.keyboard})">
             <i class="${CONSTANTS.INTERACTIONS.expandN.icon}" aria-hidden="true"></i>
         </button>
         <button class="ui button" id="${pane.id}-mark"

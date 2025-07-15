@@ -1393,6 +1393,9 @@ function initControls(cy) {
 }
 
 function ctxmenu(cy) {
+  const setting = document.getElementById('bestPathLength');
+  const l = setting ? setting.value : CONSTANTS.INTERACTIONS.expandN.default;
+
   cy.ctxmenu = cy.contextMenus({
     menuItems: [
       // node specific
@@ -1427,11 +1430,11 @@ function ctxmenu(cy) {
       }, */
       {
         id: 'expand-best-path',
-        content: CONSTANTS.INTERACTIONS.expandN.name,
+        content: CONSTANTS.INTERACTIONS.expandN.name(l),
         tooltipText: `${CONSTANTS
           .INTERACTIONS
           .expandN
-          .description} \t (${CONSTANTS
+          .description(l)} \t (${CONSTANTS
           .INTERACTIONS
           .expandN
           .keyboard})`,

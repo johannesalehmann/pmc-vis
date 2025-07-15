@@ -37,9 +37,10 @@ const CONSTANTS = {
       keyboard_pane: 'Ctrl+Enter',
     },
     expandN: {
-      name: 'Expand N',
+      name: (num) => `Expand ${num} steps`,
+      default: 5,
       icon: 'fa-solid fa-angles-right',
-      description: 'Expands n levels from the selected node(s)',
+      description: (num) => `Expands ${num} levels from the selected node(s)`,
       keyboard: 'Shift+Enter', // not implemented
       keyboard_pane: 'Shift+Ctrl+Enter', // not implemented
     },

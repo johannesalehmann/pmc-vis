@@ -380,6 +380,18 @@ function makeSchedulerPropDropdown() {
   const update = (e) => {
     const value = e.target.value;
     setMaxIteration(value);
+    document.getElementById(`${pane.id}-expandN`).title = `${
+      CONSTANTS.INTERACTIONS.expandN.name(value)
+    } \t (${
+      CONSTANTS.INTERACTIONS.expandN.keyboard
+    })`;
+    const ctxmenu = document.getElementById('expand-best-path');
+    ctxmenu.title = `${
+      CONSTANTS.INTERACTIONS.expandN.description(value)
+    } \t (${
+      CONSTANTS.INTERACTIONS.expandN.keyboard
+    })`;
+    ctxmenu.innerHTML = CONSTANTS.INTERACTIONS.expandN.name(value);
   };
   $numberInput.addEventListener('input', update);
 
