@@ -9,5 +9,5 @@ RUN npm install
 # COPY --from=node /web/dist /usr/share/nginx/html
 # RUN rm /usr/share/nginx/html/50x.html
 
-EXPOSE 5173
+EXPOSE 3000
 ENTRYPOINT ["npm", "run", "dev", "--", "--host"]

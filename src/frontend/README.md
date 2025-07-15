@@ -2,10 +2,11 @@ Requirements:
 - NodeJS v. 20+: `https://nodejs.org/en/download/package-manager`
 
 How to run: 
-- install using `npm install`
-- run using `npm start`. Enables http://localhost:3000/ that can be opened in the browser. 
+- `npm install` brings all dependencies. 
+- `npm run dev` enables http://localhost:3000/ that can be opened in the browser. 
+- `npm run build` creates static files on `/dist`. 
 
-Developing: 
-- the `server.js` file specifies API calls that can be used to connect separate microservices. 
-- files under `\frontend\public` are loaded on the client browser, the rest runs on the server side. 
-
+Development: 
+- we're moving towards a static website (no server).
+- currently, only cross-tab communication (`socket.io`) needs a server (see `vite.config.ts`). 
+- all src are in `/src`, but the html is at `./` (see `index.html`, `/overview`)

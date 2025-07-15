@@ -859,7 +859,7 @@ function makeOverviewSettings() {
     [h('span', {}, [t('Show Overview Window')])],
   );
   $buttonOverview.addEventListener('click', async () => {
-    window.open('/overview', 'New Window', 'width=800,height=600');
+    window.open('/overview/', 'New Window', 'width=800,height=600');
   });
   $overview_config.appendChild($buttonOverview);
 }
