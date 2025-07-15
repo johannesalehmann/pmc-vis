@@ -64,6 +64,10 @@ if (ww && numberOfPanes) {
   numberOfPanes.value = Math.floor(ww / 200);
 }
 
+if (import.meta.env.VITE_HIDE_TODOS) {
+  document.querySelectorAll('.to-do').forEach(el => el.remove());
+}
+
 Promise.all([
   fetch(`${BACKEND}/${PROJECT}/status`).then(r => r.json()), fetch(`${BACKEND}/${PROJECT}/initial`).then(r => r.json()),
   // fetch(BACKEND + PROJECT).then((res) => res.json()), // requests entire dataset
