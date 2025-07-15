@@ -154,9 +154,6 @@ function createControllers(params) {
   makeDetailCheckboxes();
   makeAppendDropdown();
   makeSelectionModesDropdown();
-  $props_config.appendChild(
-    makeToggle('fullSync'),
-  );
 
   // graph view settings
   $graph_config.innerHTML = '';
@@ -707,6 +704,12 @@ function makeBoundIndicatorDropdown() {
 function makePCPSettings() {
   $pcp_config.innerHTML = '';
 
+  $pcp_config.appendChild(
+    makeToggle('pcp-auto-sync'),
+  );
+  $pcp_config.appendChild(
+    makeToggle('pcp-refine'),
+  );
   $pcp_config.appendChild(
     makeToggle('pcp-hs'),
   );

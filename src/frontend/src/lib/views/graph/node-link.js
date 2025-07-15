@@ -192,7 +192,7 @@ async function expandGraph(cy, nodes, onLayoutStopFn) {
     bindListeners(cy);
     setStyles(cy);
     initHTML(cy);
-
+    spawnPCP(cy);
     const nodesIds = data.nodes
       .map((node) => node.id)
       .filter((id) => !id.startsWith('t'));
@@ -656,7 +656,9 @@ function bindListeners(cy) {
   });
 
   cy.on('boxselect tapselect tapunselect', _.debounce(() => {
-    spawnPCP(cy);
+    if (cy.vars['pcp-auto-sync'].value) {
+      spawnPCP(cy);
+    }
   }, THROTTLE_DEBOUNCE_DELAY));
 
   cy.on('box', (e) => {
@@ -863,7 +865,7 @@ function updateNewPanePosition(cy, prop) {
 }
 
 function toggleFullSync(cy, prop) {
-  cy.vars['fullSync'].value = prop;
+  cy.vars['pcp-auto-sync'].value = prop;
 }
 
 function togglePCPFlag(cy, prop, name) {
@@ -887,7 +889,7 @@ function selectBasedOnAP(cy, e, ap) {
     if (states.length > 0) {
       states.select();
 
-      if (cy.vars['fullSync'].value) {
+      if (cy.vars['pcp-auto-sync'].value) {
         spawnPCP(cy);
       }
     }
@@ -1623,7 +1625,7 @@ function keyboardShortcuts(cy, e) {
   if (e.keyCode === 65 && modifier) {
     e.preventDefault();
     cy.nodes().select();
-    if (cy.vars['fullSync'].value) {
+    if (cy.vars['pcp-auto-sync'].value) {
       spawnPCP(cy);
     }
   }
@@ -1660,7 +1662,7 @@ function keyboardShortcuts(cy, e) {
       const ids = sources.map(src => getPreviousInPath(cy, src.data().id).prev).flat();
       const parents = cy.nodes(ids.length > 0 ? '#' + ids.join(', #') : '');
       parents.select();
-      if (cy.vars['fullSync'].value) {
+      if (cy.vars['pcp-auto-sync'].value) {
         spawnPCP(cy);
       }
     }
@@ -1687,7 +1689,7 @@ function keyboardShortcuts(cy, e) {
         nextBests.select();
       }
 
-      if (cy.vars['fullSync'].value) {
+      if (cy.vars['pcp-auto-sync'].value) {
         spawnPCP(cy);
       }
     }
@@ -1790,13 +1792,17 @@ function setPublicVars(cy, preset) {
       value: 'end',
       fn: updateNewPanePosition,
     },
-    fullSync: {
+    'pcp-auto-sync': {
       value: true,
       fn: toggleFullSync,
     },
     'pcp-bi': { // bounds-indicator
       value: '><',
       fn: updateBoundsIndicator,
+    },
+    'pcp-refine': { // violin plots
+      value: false,
+      fn: (cy, prop) => togglePCPFlag(cy, prop, 'pcp-refine'),
     },
     'pcp-vs': { // violin plots
       value: false,
@@ -1837,7 +1843,7 @@ function setPublicVars(cy, preset) {
     updateDetailsToShow(cy, { update: preset['details'].value });
     updateScheduler(cy, preset['scheduler'].value);
     updateNewPanePosition(cy, preset['panePosition'].value);
-    toggleFullSync(cy, preset['fullSync']);
+    toggleFullSync(cy, preset['pcp-auto-sync']);
   }
   setUpdateState(cy);
 }

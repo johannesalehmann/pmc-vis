@@ -132,7 +132,12 @@ function parallelCoords(pane, data, metadata) {
     }
 
     function checkIfActive(point) {
-      if (!selections.size && !point._selected) {
+      const refine = !pane.cy.vars['pcp-refine'].value;
+      if (refine) {
+        if (!point._selected) {
+          return false;
+        }
+      } else if (!selections.size && !point._selected) {
         return false;
       }
 

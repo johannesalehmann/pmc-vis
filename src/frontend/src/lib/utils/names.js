@@ -21,10 +21,11 @@ const CONSTANTS = {
   },
 
   CONTROLS: {
-    fullSync: 'Automatically synchronize selections',
+    'pcp-auto-sync': 'Automatically synchronize selections',
     'pcp-vs': 'Axis Violin Plots',
     'pcp-hs': 'Axis Histograms',
     'pcp-dfs': 'Axis Value Frequencies',
+    'pcp-refine': 'Brushes overwrite graph selection',
   },
 
   INTERACTIONS: {
