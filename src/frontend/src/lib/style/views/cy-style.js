@@ -54,7 +54,7 @@ const stylesheet = [
     },
   },
   {
-    selector: 'node',
+    selector: 'node, edge',
     style: {
       'overlay-opacity': 0,
     },
