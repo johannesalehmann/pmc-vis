@@ -10,6 +10,7 @@ const express = require('express');
 const cors = require('cors');
 const { ConnectionViewProvider } = require('./connectionView.js');
 const { VirtualFileSystemProvider } = require('./virtualFile.js');
+const { Communication } = require('./communication.js')
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -51,6 +52,8 @@ function activate(context) {
 		console.log(message);
 	})
 
+	const comm = new Communication();
+
 	//Commands for backend communication
 	context.subscriptions.push(vscode.window.registerTreeDataProvider("connectionView", connectionProvider));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.connect', () => connectionProvider.addProject()))
@@ -62,6 +65,8 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
+
+	comm.send("Test")
 
 }
 

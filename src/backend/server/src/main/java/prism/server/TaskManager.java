@@ -37,18 +37,21 @@ public class TaskManager implements Executor, Managed {
     public AtomicBoolean refreshing = new AtomicBoolean();
 
     private final HttpClient httpClient;
+    private final SocketServer socketServer;
 
     private final Map<String, Project> activeProjects;
 
-    public TaskManager(HttpClient httpClient) {
+    public TaskManager(HttpClient httpClient, SocketServer socketServer) {
         this.executor = Executors.newSingleThreadExecutor();
         this.httpClient = httpClient;
+        this.socketServer = socketServer;
         this.activeProjects = new HashMap<>();
     }
 
     public TaskManager() {
         this.executor = Executors.newSingleThreadExecutor();
         this.httpClient = null;
+        this.socketServer = null;
         this.activeProjects = new HashMap<>();
     }
 

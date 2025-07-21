@@ -26,6 +26,10 @@ public class PRISMServerConfiguration extends Configuration {
 
     private String editorUrl = "http://localhost:3001";
 
+    private int socketPort = 8081;
+
+    private String socketHost = "localhost";
+
     @Valid
     @NotNull
     private JerseyClientConfiguration jerseyClient = new JerseyClientConfiguration();
@@ -122,6 +126,26 @@ public class PRISMServerConfiguration extends Configuration {
     @JsonProperty
     public void setEditorUrl(String editorUrl) {
         this.editorUrl = editorUrl;
+    }
+
+    @JsonProperty
+    public int getSocketPort() {
+        return socketPort;
+    }
+
+    @JsonProperty
+    public void setSocketPort(int socketPort) {
+        this.socketPort = socketPort;
+    }
+
+    @JsonProperty
+    public String getSocketHost() {
+        return socketHost;
+    }
+
+    @JsonProperty
+    public void setSocketHost(String socketHost) {
+        this.socketHost = socketHost;
     }
 
 }

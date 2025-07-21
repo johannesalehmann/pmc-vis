@@ -1,0 +1,30 @@
+package prism.server;
+
+import com.corundumstudio.socketio.*;
+
+public class SocketServer {
+    public SocketServer(PRISMServerConfiguration configuration) {
+        Configuration config = new Configuration();
+        config.setPort(configuration.getSocketPort());
+        config.setHostname(configuration.getSocketHost());
+
+        SocketIOServer server = new SocketIOServer(config);
+
+        server.addConnectListener(
+                (client) -> {
+                    System.out.println("Client has Connected!");
+                });
+
+        server.addDisconnectListener(
+                (client) -> {
+                    System.out.println("Client has Disconnected!");
+                });
+
+        server.addEventListener("MESSAGE", String.class,
+                (client, message, ackRequest) -> {
+                    System.out.println("Client said: " + message);
+                });
+
+        server.start();
+    }
+}
