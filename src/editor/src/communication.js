@@ -4,7 +4,7 @@ const constants = require("./constants.js");
 class Communication {
 
     constructor() {
-        const address = `http://${constants.ADRESS}:8081`
+        const address = `http://${constants.ADRESS}:8082`
 
         this._socket = io(address);
 
@@ -17,10 +17,14 @@ class Communication {
         this._socket.on("disconnect", (reason, details) => {
             console.log(reason)
         })
+
+        this._socket.on(constants.EVENT_STATUS, (data) => {
+            console.log(data)
+        })
     }
 
-    send(message) {
-        this._socket.emit("MESSAGE", message)
+    send(event, data) {
+        this._socket.emit(event, data)
     }
 }
 
