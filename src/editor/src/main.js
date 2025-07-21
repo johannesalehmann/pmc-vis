@@ -63,10 +63,10 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.front', item => connectionProvider.openFrontend(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.openDocument', item => connectionProvider.openDocument(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
-	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { comm.send("MESSAGE", "Test"); resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
 
-	comm.send("Test")
+	comm.send("MESSAGE", "Test")
 
 }
 

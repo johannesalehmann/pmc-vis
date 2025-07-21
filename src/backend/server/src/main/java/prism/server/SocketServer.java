@@ -16,6 +16,8 @@ public class SocketServer implements AutoCloseable {
 
         server = new SocketIOServer(config);
 
+        boolean excludeSender = true;
+
         server.addConnectListener(
                 (client) -> {
                     System.out.println("Client has Connected!");
@@ -26,9 +28,20 @@ public class SocketServer implements AutoCloseable {
                     System.out.println("Client has Disconnected!");
                 });
 
-        server.addEventListener("MESSAGE", String.class,
-                (client, message, ackRequest) -> {
-                    System.out.println("Client said: " + message);
+        //Equivalent to server.on()
+        server.addEventListener("MESSAGE", Object.class,
+                (client, data, ackRequest) -> {
+                    //print the data
+                    System.out.println("Client said: " + data.toString());
+                    if(excludeSender){
+                        //socket.broadcast("event", data)
+                        server.getBroadcastOperations().sendEvent("MESSAGE", client, data);
+                    }else{
+                        //server.emit("event", data)
+                        server.getBroadcastOperations().sendEvent("MESSAGE", data);
+                    }
+
+
                 });
 
         server.start();

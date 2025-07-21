@@ -20,6 +20,10 @@ class Communication {
         this._socket.on(constants.EVENT_STATUS, (data) => {
             console.log(data)
         })
+
+        this._socket.on("MESSAGE", (data) => {
+            console.log(data)
+        })
     }
 
     send(event, data) {
