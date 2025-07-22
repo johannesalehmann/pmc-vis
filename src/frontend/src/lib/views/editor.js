@@ -1,29 +1,13 @@
 import { socket } from './imports/import-socket.js';
-let editorSelectionTimeout;
-let connectionTest = true;
 
 function handleEditorSelection(event, cy) {
-  socket.emit('MESSAGE', 'yo');
-  clearTimeout(editorSelectionTimeout);
-  if (connectionTest) {
-    editorSelectionTimeout = setTimeout(async () => {
-      const name = document.getElementById('project-id').innerHTML;
-      const content = cy.$('node.s:selected').map((n) => n.data());
-
-      fetch(`http://localhost:3001/${name}/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(content),
-      }).catch(() => {
-        console.warn(
-          "failed to reach editor at 3001, won't try again until page reload",
-        );
-        connectionTest = false;
-      });
-    }, 200); // if updates are too frequent, this value may be updated.
-  }
+  socket.emit('STATE_SELECTED', {
+    id: document.getElementById('project-id').innerHTML,
+    states: cy.$('node.s:selected').map((n) => n.data()),
+  }, (err, resp) => {
+    if (err) console.error(err);
+    if (resp) console.log(resp);
+  });
 }
 
 export { handleEditorSelection };
