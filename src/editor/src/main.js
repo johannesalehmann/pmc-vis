@@ -1,4 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
+
+import { constants } from 'buffer';
+
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 
@@ -6,15 +9,16 @@ const vscode = require('vscode');
 const token = require("./tokens.js");
 
 //Basic internal server setup
-const express = require('express');
-const cors = require('cors');
+// const express = require('express');
+// const cors = require('cors');
 const { ConnectionViewProvider } = require('./connectionView.js');
 const { VirtualFileSystemProvider } = require('./virtualFile.js');
 const { Communication } = require('./communication.js')
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-const port = 3001;
+const { EVENT_STATE } = require('./constants.js')
+// const app = express();
+// app.use(cors());
+// app.use(express.json({ limit: '50mb' }));
+// const port = 3001;
 
 let connectionProvider;
 
@@ -39,18 +43,18 @@ function activate(context) {
 
 	//Start an internal server to listen to pmc-vis
 
-	app.use(express.json());
-	app.post(`/:id/update`, (req, res) => {
-		const id = req.params.id;
-		const states = filterState(req.body);
-		connectionProvider.updateState(id, states)
-		res.send("ok");
-	})
-	app.listen(port, () => {
-		const message = `Listening to PMC-Vis on port ${port}`;
-		vscode.window.showInformationMessage(message);
-		console.log(message);
-	})
+	// app.use(express.json());
+	// app.post(`/:id/update`, (req, res) => {
+	// 	const id = req.params.id;
+	// 	const states = filterState(req.body);
+	// 	connectionProvider.updateState(id, states)
+	// 	res.send("ok");
+	// })
+	// app.listen(port, () => {
+	// 	const message = `Listening to PMC-Vis on port ${port}`;
+	// 	vscode.window.showInformationMessage(message);
+	// 	console.log(message);
+	// })
 
 	const comm = new Communication();
 
@@ -63,10 +67,10 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.front', item => connectionProvider.openFrontend(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.openDocument', item => connectionProvider.openDocument(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
-	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { comm.send("MESSAGE", "Test"); resetWorkspace(null) }));
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
 
-	comm.send("MESSAGE", "Test")
+	comm.register(EVENT_STATE, update_state)
 
 }
 
@@ -75,6 +79,11 @@ function resetWorkspace(document) {
 	if (activeEditor) {
 		connectionProvider.updateText(document);
 	}
+}
+
+function update_state(id, body) {
+	const states = filterState(body)
+	connectionProvider.updateState(id, states)
 }
 
 // async function connectToPMCVis() {

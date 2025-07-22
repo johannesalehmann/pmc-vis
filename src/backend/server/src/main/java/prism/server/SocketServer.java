@@ -9,6 +9,8 @@ public class SocketServer implements AutoCloseable {
 
     private SocketIOServer server;
 
+    private final String EVENT_STATE_SELECTED = "STATE_SELECTED";
+
     public SocketServer(PRISMServerConfiguration configuration)  {
         Configuration config = new Configuration();
         config.setPort(configuration.getSocketPort());
@@ -40,8 +42,19 @@ public class SocketServer implements AutoCloseable {
                         //server.emit("event", data)
                         server.getBroadcastOperations().sendEvent("MESSAGE", data);
                     }
+                });
 
-
+        server.addEventListener(EVENT_STATE_SELECTED, Object.class,
+                (client, data, ackRequest) -> {
+                    //print the data
+                    System.out.println("Client said: " + data.toString());
+                    if(excludeSender){
+                        //socket.broadcast("event", data)
+                        server.getBroadcastOperations().sendEvent(EVENT_STATE_SELECTED, client, data);
+                    }else{
+                        //server.emit("event", data)
+                        server.getBroadcastOperations().sendEvent(EVENT_STATE_SELECTED, data);
+                    }
                 });
 
         server.start();
