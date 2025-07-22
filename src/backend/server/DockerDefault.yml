@@ -1,7 +1,5 @@
 pathTemplate: volume
 debug: false
-frontendUrl: http://host.docker.internal:3000
-editorUrl: http://host.docker.internal:3001
 
 logging:
 

@@ -22,10 +22,6 @@ public class PRISMServerConfiguration extends Configuration {
 
     private String initModel = "0";
 
-    private String frontendUrl = "http://localhost:3000";
-
-    private String editorUrl = "http://localhost:3001";
-
     private int socketPort = 8082;
 
     private String socketHost = "0.0.0.0";
@@ -106,26 +102,6 @@ public class PRISMServerConfiguration extends Configuration {
     @JsonProperty("jerseyClient")
     public void setJerseyClientConfiguration(JerseyClientConfiguration jerseyClient) {
         this.jerseyClient = jerseyClient;
-    }
-
-    @JsonProperty
-    public String getFrontendUrl() {
-        return frontendUrl;
-    }
-
-    @JsonProperty
-    public String getEditorUrl() {
-        return editorUrl;
-    }
-
-    @JsonProperty
-    public void setFrontendUrl(String frontendUrl) {
-        this.frontendUrl = frontendUrl;
-    }
-
-    @JsonProperty
-    public void setEditorUrl(String editorUrl) {
-        this.editorUrl = editorUrl;
     }
 
     @JsonProperty

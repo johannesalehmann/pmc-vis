@@ -38,7 +38,6 @@ RUN code-server --install-extension PMC-VIS-0.0.1.vsix
 WORKDIR /home/codeuser/editor
 
 # Expose port for Code-Server
-EXPOSE 3001
 EXPOSE 3002
 
 # Start Code-Server on container launch
