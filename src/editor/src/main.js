@@ -15,10 +15,6 @@ const { ConnectionViewProvider } = require('./connectionView.js');
 const { VirtualFileSystemProvider } = require('./virtualFile.js');
 const { Communication } = require('./communication.js')
 const constants = require("./constants.js");
-// const app = express();
-// app.use(cors());
-// app.use(express.json({ limit: '50mb' }));
-// const port = 3001;
 
 let connectionProvider;
 
@@ -41,20 +37,6 @@ function activate(context) {
 	fileSystemProvider.watchSave(connectionProvider);
 	connectionProvider.addExistingProjects();
 
-	//Start an internal server to listen to pmc-vis
-
-	// app.use(express.json());
-	// app.post(`/:id/update`, (req, res) => {
-	// 	const id = req.params.id;
-	// 	const states = filterState(req.body);
-	// 	connectionProvider.updateState(id, states)
-	// 	res.send("ok");
-	// })
-	// app.listen(port, () => {
-	// 	const message = `Listening to PMC-Vis on port ${port}`;
-	// 	vscode.window.showInformationMessage(message);
-	// 	console.log(message);
-	// })
 	let communicationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 	const comm = new Communication(communicationStatus);
 
@@ -74,7 +56,6 @@ function activate(context) {
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
 
 	comm.register(constants.EVENT_STATE, update_state);
-
 }
 
 function resetWorkspace(document) {
@@ -84,9 +65,9 @@ function resetWorkspace(document) {
 	}
 }
 
-function update_state(id, body) {
-	const states = filterState(body)
-	connectionProvider.updateState(id, states)
+function update_state(data) {
+	const states = filterState(data.states)
+	connectionProvider.updateState(data.id, states)
 }
 
 // async function connectToPMCVis() {
