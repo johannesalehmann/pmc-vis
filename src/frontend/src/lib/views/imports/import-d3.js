@@ -1,5 +1,5 @@
 import {
-  extent, scalePoint, scaleLinear, axisTop, axisLeft, pointer, drag, brushX, brushY,
+  extent, scalePoint, scaleLinear, axisTop, axisLeft, pointer, drag, brushX, brushY, brush,
 } from 'd3';
 import { select, selectAll } from 'd3-selection';
 import { transition } from 'd3-transition';
@@ -16,6 +16,7 @@ const d3 = {
   drag,
   brushX,
   brushY,
+  brush,
 };
 
 transition();
