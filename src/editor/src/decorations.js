@@ -202,7 +202,7 @@ class Decorator {
                 } else {
                     const blockingModules = openGlobal[1].map(item => {
                         const module = modules[item];
-                        return `[${module.name}](command:pmcVis.moveTo?${module.startPosition.line})`;
+                        return `[${module.name}](command:moveTo?${module.startPosition.line})`;
                     }).join(",");
                     hovermessage.appendMarkdown(`\n\nBlocked by the following modules:  \n  ${blockingModules}`);
                     const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hovermessage };
@@ -226,7 +226,7 @@ class Decorator {
                 const startPos = document.positionAt(match.index);
                 const endPos = document.positionAt(match.index + match[0].length);
                 const hoverMessage = new vscode.MarkdownString();
-                hoverMessage.appendMarkdown(`[${key}](command:pmcVis.moveTo?${this._variableLoc.get(key)}) = ${state.variables[key]}`);
+                hoverMessage.appendMarkdown(`[${key}](command:moveTo?${this._variableLoc.get(key)}) = ${state.variables[key]}`);
                 hoverMessage.isTrusted = true;
                 const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hoverMessage };
                 varDeco.push(decoration);
@@ -239,7 +239,7 @@ class Decorator {
                 const startPos = document.positionAt(match.index);
                 const endPos = document.positionAt(match.index + match[0].length);
                 const hoverMessage = new vscode.MarkdownString();
-                hoverMessage.appendMarkdown(`[${match[0]}](command:pmcVis.moveTo?${this._formulaLoc.get(match[0])})==${formEval}`);
+                hoverMessage.appendMarkdown(`[${match[0]}](command:moveTo?${this._formulaLoc.get(match[0])})==${formEval}`);
                 hoverMessage.appendMarkdown(`  \n  Expanded Formula: ${definition}`);
                 hoverMessage.isTrusted = true;
                 const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hoverMessage };
@@ -251,7 +251,7 @@ class Decorator {
                 const startPos = document.positionAt(match.index);
                 const endPos = document.positionAt(match.index + match[0].length);
                 const hoverMessage = new vscode.MarkdownString();
-                hoverMessage.appendMarkdown(`[${match[0]}](command:pmcVis.moveTo?${this._constantLoc.get(match[0])})=${definition}`);
+                hoverMessage.appendMarkdown(`[${match[0]}](command:moveTo?${this._constantLoc.get(match[0])})=${definition}`);
                 hoverMessage.isTrusted = true;
                 const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hoverMessage };
                 varDeco.push(decoration);

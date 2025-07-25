@@ -113,6 +113,10 @@
         "command": "connectionView.saveAsLocalFile",
         "title": "Save File on Local Filesystem",
         "icon": "$(save-as)"
+      },
+      {
+        "command": "moveTo",
+        "title": "Move to line in current active Window"
       }
     ],
     "menus": {

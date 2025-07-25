@@ -69,6 +69,7 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.front', item => connectionProvider.openFrontend(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.openDocument', item => connectionProvider.openDocument(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
+	context.subscriptions.push(vscode.commands.registerCommand('moveTo', item => moveTo(item)))
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
 
@@ -112,12 +113,12 @@ function filterState(data) {
 	return data;
 }
 
-// function moveTo(line) {
-// 	let activeEditor = vscode.window.activeTextEditor;
-// 	if (activeEditor) {
-// 		activeEditor.revealRange(new vscode.Range(line, 0, line + 10, 0), vscode.TextEditorRevealType.InCenter);
-// 	}
-// }
+function moveTo(line) {
+	let activeEditor = vscode.window.activeTextEditor;
+	if (activeEditor) {
+		activeEditor.revealRange(new vscode.Range(line, 0, line + 10, 0), vscode.TextEditorRevealType.InCenter);
+	}
+}
 
 // This method is called when your extension is deactivated
 function deactivate() { }
