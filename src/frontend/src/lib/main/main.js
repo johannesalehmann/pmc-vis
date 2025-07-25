@@ -93,11 +93,6 @@ const interval = setInterval(async () => {
   }
 }, 50);
 
-document.getElementById('test').addEventListener('click', () => {
-  console.log('testo');
-  start();
-});
-
 async function start() {
   const data = await socket.emitWithAck('MC_STATUS', PROJECT);
   setInfo(data.info);
