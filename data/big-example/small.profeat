@@ -1,4 +1,4 @@
-const int num_servers = 3;
+const int num_servers = 2;
 
 const int num_modes = 2;
 
@@ -8,7 +8,7 @@ const int num_tasks = 2;
 
 const int max_load = 3;
 
-const int max_time = 5;
+const int max_time = 2;
 
 //---------------formulas-------------------------
 

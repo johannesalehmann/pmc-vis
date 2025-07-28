@@ -24,7 +24,7 @@ const int num_tasks = 2;
 
 const int num_types = 2;
 
-label "all_done" = _system_system_core_phases = 0 & (_system_tasks_task_0_load = 0 & _system_tasks_task_1_load = 0);
+label "success" = _system_system_core_phases = 0 & (_system_tasks_task_0_load = 0 & _system_tasks_task_1_load = 0) & (_PMC_time_t != 0);
 
 label "always_finish" = _system_system_core_phases != 0 | _system_tasks_task_0_load = 0 & _system_tasks_task_1_load = 0;
 
