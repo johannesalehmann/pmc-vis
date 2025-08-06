@@ -80,7 +80,7 @@ public interface Namespace {
 
     String LABEL_END = "end";
 
-    String DEFAULT_STYLE =  "init:fa-solid fa-arrow-right\n" +
+    String DEFAULT_STYLE =  "init:fa-solid fa-right-from-bracket\n" +
                             "deadlock:fa-solid fa-rotate-right";
 
     String ENTRY_C_BLANK = "__BLANK__";
