@@ -181,6 +181,7 @@ public class TaskManager implements Executor, Managed {
     public void resetProject(String projectID) throws Exception {
         this.clearDatabase(projectID);
         Project resetProject = Project.reset(activeProjects.get(projectID));
+        socketServer.send(Namespace.EVENT_RESET, projectID);
         activeProjects.put(projectID, resetProject);
     }
 

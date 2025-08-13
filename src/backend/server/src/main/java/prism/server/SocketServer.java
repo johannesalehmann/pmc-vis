@@ -27,8 +27,6 @@ public class SocketServer implements AutoCloseable {
 
         server = new SocketIOServer(config);
 
-
-
         server.addConnectListener(
                 (client) -> {
                     logger.info("Client has Connected!");

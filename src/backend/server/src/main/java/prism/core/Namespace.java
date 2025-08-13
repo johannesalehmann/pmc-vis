@@ -99,6 +99,8 @@ public interface Namespace {
 
     String EVENT_STATUS = "MC_STATUS";
 
+    String EVENT_RESET = "MODEL_RESET";
+
     static String getLanguage(String filename){
         String language = filename.substring(filename.lastIndexOf(".") + 1);
         switch (language){
