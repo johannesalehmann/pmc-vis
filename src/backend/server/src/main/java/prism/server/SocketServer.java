@@ -52,6 +52,14 @@ public class SocketServer implements AutoCloseable {
                 });
 
         this.addEventBroadcast(EVENT_STATE_SELECTED);
+        this.addEventBroadcast("pane added");
+        this.addEventBroadcast("pane removed");
+        this.addEventBroadcast("overview node clicked");
+        this.addEventBroadcast("overview nodes selected");
+        this.addEventBroadcast("handle selection");
+        this.addEventBroadcast("duplicate pane ids");
+        this.addEventBroadcast("active pane");
+        this.addEventBroadcast("reset pane-node markings");
     }
 
     public void addEventBroadcast(String event) {
