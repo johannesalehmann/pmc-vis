@@ -5,9 +5,9 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Batch;
 import org.jdbi.v3.core.statement.PreparedBatch;
-import org.jdbi.v3.core.statement.Query;
+import prism.server.TaskManager;
 
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +37,9 @@ public class Database{
     Direct SQL PersistentQuery Functions. Use with caution
      */
     public void execute(String qry) throws SQLException {
+        execute(qry, debug);
+    }
+    public void execute(String qry, boolean debug) throws SQLException {
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -46,6 +49,10 @@ public class Database{
     }
 
     public void executeBatch(List<String> qrys) {
+        executeBatch(qrys, debug);
+    }
+
+    public void executeBatch(List<String> qrys, boolean debug) {
         try(Handle handle = jdbi.open()){
             long time = System.currentTimeMillis();
             if (debug){
@@ -64,6 +71,10 @@ public class Database{
     }
 
     public void insertBatch(String head, List<String> ... collumns) {
+        insertBatch(head, debug, collumns);
+    }
+
+    public void insertBatch(String head, boolean debug, List<String> ... collumns) {
         try(Handle handle = jdbi.open()){
             long time = System.currentTimeMillis();
             if (debug){
@@ -84,6 +95,10 @@ public class Database{
     }
 
     public prism.db.Batch createBatch(String statement, int arguments){
+        return createBatch(statement, arguments, debug);
+    }
+
+    public prism.db.Batch createBatch(String statement, int arguments, boolean debug){
         Handle h = jdbi.open();
         return new prism.db.Batch(h, statement, arguments, getMaxBatchSize(), debug);
     }
@@ -93,8 +108,11 @@ public class Database{
     //        return handle.createQuery(qry);
     //    }
     //}
-
     public <T> Optional<T> executeLookupQuery(String qry, Class<T> returnType){
+        return executeLookupQuery(qry, returnType, debug);
+    }
+
+    public <T> Optional<T> executeLookupQuery(String qry, Class<T> returnType, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -104,6 +122,10 @@ public class Database{
     }
 
     public Optional<Map<String, Object>> executeLookupQuery(String qry){
+        return executeLookupQuery(qry, debug);
+    }
+
+    public Optional<Map<String, Object>> executeLookupQuery(String qry, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -113,6 +135,10 @@ public class Database{
     }
 
     public <T> Optional<T> executeLookupQuery(String qry, RowMapper<T> mapper){
+        return executeLookupQuery(qry, mapper, debug);
+    }
+
+    public <T> Optional<T> executeLookupQuery(String qry, RowMapper<T> mapper, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -122,6 +148,10 @@ public class Database{
     }
 
     public List<Map<String, Object>> executeCollectionQuery(String qry){
+        return executeCollectionQuery(qry, debug);
+    }
+
+    public List<Map<String, Object>> executeCollectionQuery(String qry, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -131,6 +161,10 @@ public class Database{
     }
 
     public <T> List<T> executeCollectionQuery(String qry, Class<T> returnType){
+        return executeCollectionQuery(qry, returnType, debug);
+    }
+
+    public <T> List<T> executeCollectionQuery(String qry, Class<T> returnType, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -140,6 +174,10 @@ public class Database{
     }
 
     public <T> List<T> executeCollectionQuery(String qry, RowMapper<T> mapper){
+        return executeCollectionQuery(qry, mapper, debug);
+    }
+
+    public <T> List<T> executeCollectionQuery(String qry, RowMapper<T> mapper, boolean debug){
         if (debug){
             System.out.println("EXECUTE: " + qry);
         }
@@ -149,11 +187,19 @@ public class Database{
     }
 
     public  PersistentQuery openQuery(String qry) {
+        return openQuery(qry, debug);
+    }
+
+    public  PersistentQuery openQuery(String qry, boolean debug) {
         Handle h = jdbi.open();
         return new PersistentQuery(h, qry, debug);
     }
 
     public boolean question(String qry){
+        return question(qry, debug);
+    }
+
+    public boolean question(String qry, boolean debug){
         if (debug){
             System.out.println("EXISTS: " + qry);
         }

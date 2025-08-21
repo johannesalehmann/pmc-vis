@@ -16,7 +16,7 @@ RUN git clone https://github.com/prismmodelchecker/prism prism
 
 WORKDIR /home/prismServer/prism/prism
 
-RUN git checkout 03c6c15
+RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
 
 WORKDIR /home/prismServer/prism/prism
 
@@ -35,6 +35,7 @@ RUN mvn package
 
 RUN sed -i 's/\r$//' bin/run && chmod +x bin/run
 
-ENTRYPOINT ["bin/run", "server", "PRISMDefault.yml"]
+ENTRYPOINT ["bin/run", "server", "DockerDefault.yml"]
 
 EXPOSE 8080
+EXPOSE 8082

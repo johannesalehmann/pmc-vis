@@ -2,6 +2,7 @@ package prism.server;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
+import io.dropwizard.client.JerseyClientConfiguration;
 import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
@@ -15,9 +16,19 @@ public class PRISMServerConfiguration extends Configuration {
 
     private boolean debug = false;
 
-    private String memory = String.format("%dm", Math.round(getRuntime().maxMemory() / (1024 * 1024)));
+    private long memory = Math.round(getRuntime().maxMemory() / (1024 * 1024));
 
     private int iterations = 50000;
+
+    private String initModel = "0";
+
+    private int socketPort = 8082;
+
+    private String socketHost = "0.0.0.0";
+
+    @Valid
+    @NotNull
+    private JerseyClientConfiguration jerseyClient = new JerseyClientConfiguration();
 
     @Valid
     @NotNull
@@ -34,12 +45,12 @@ public class PRISMServerConfiguration extends Configuration {
     }
 
     @JsonProperty
-    public String getCUDDMaxMem() {
+    public long getCUDDMaxMem() {
         return memory;
     }
 
     @JsonProperty
-    public void setCUDDMaxMem(String memory) {
+    public void setCUDDMaxMem(long memory) {
         this.memory = memory;
     }
 
@@ -51,6 +62,16 @@ public class PRISMServerConfiguration extends Configuration {
     @JsonProperty
     public void setIterations(int iterations) {
         this.iterations = iterations;
+    }
+
+    @JsonProperty
+    public String getInitModel() {
+        return initModel;
+    }
+
+    @JsonProperty
+    public void setInitModel(String initModel) {
+        this.initModel = initModel;
     }
 
     @JsonProperty
@@ -71,6 +92,36 @@ public class PRISMServerConfiguration extends Configuration {
     @JsonProperty("database")
     public DataSourceFactory getDataSourceFactory() {
         return database;
+    }
+
+    @JsonProperty("jerseyClient")
+    public JerseyClientConfiguration getJerseyClientConfiguration() {
+        return jerseyClient;
+    }
+
+    @JsonProperty("jerseyClient")
+    public void setJerseyClientConfiguration(JerseyClientConfiguration jerseyClient) {
+        this.jerseyClient = jerseyClient;
+    }
+
+    @JsonProperty
+    public int getSocketPort() {
+        return socketPort;
+    }
+
+    @JsonProperty
+    public void setSocketPort(int socketPort) {
+        this.socketPort = socketPort;
+    }
+
+    @JsonProperty
+    public String getSocketHost() {
+        return socketHost;
+    }
+
+    @JsonProperty
+    public void setSocketHost(String socketHost) {
+        this.socketHost = socketHost;
     }
 
 }

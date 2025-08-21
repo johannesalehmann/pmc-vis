@@ -1,0 +1,189 @@
+{
+  "name": "PMC-VIS",
+  "displayName": "PMC-VIS",
+  "description": "Editor Extension for PMC-Vis",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onFileSystem:virtual"
+  ],
+  "main": "./src/main.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "mdp",
+        "aliases": [
+          "PRISM",
+          "mdp"
+        ],
+        "extensions": [
+          ".mdp",
+          ".prism"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "props",
+        "aliases": [
+          "pctl",
+          "csl"
+        ],
+        "extensions": [
+          ".props",
+          ".pctl",
+          ".csl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mdp",
+        "scopeName": "source.mdp",
+        "path": "./syntaxes/mdp.tmLanguage.json"
+      },
+      {
+        "language": "mdp",
+        "scopeName": "source.props",
+        "path": "./syntaxes/props.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[mdp]": {
+        "editor.semanticHighlighting.enabled": true
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "PMC-VisViewContainer",
+          "title": "PMC-Vis",
+          "icon": "$(checklist)"
+        }
+      ]
+    },
+    "views": {
+      "PMC-VisViewContainer": [
+        {
+          "id": "connectionView",
+          "name": "Projects"
+        },
+        {
+          "id": "stateView",
+          "name": "States"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "connectionView.connect",
+        "title": "Connect to new Project",
+        "icon": "$(diff-insert)"
+      },
+      {
+        "command": "connectionView.reset",
+        "title": "Reset Editor",
+        "icon": "$(extensions-clear-search-results)"
+      },
+      {
+        "command": "connectionView.fill",
+        "title": "Fill Editor",
+        "icon": "$(extensions-refresh)"
+      },
+      {
+        "command": "connectionView.upload",
+        "title": "Upload Current File to PMC-Vis",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "connectionView.front",
+        "title": "Open Graph-View in Browser",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "connectionView.openDocument",
+        "title": "Open Document from Backend"
+      },
+      {
+        "command": "connectionView.saveAsLocalFile",
+        "title": "Save File on Local Filesystem",
+        "icon": "$(save-as)"
+      },
+      {
+        "command": "moveTo",
+        "title": "Move to line in current active Window"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "connectionView.connect",
+          "group": "navigation",
+          "when": "view == connectionView"
+        },
+        {
+          "command": "connectionView.reset",
+          "group": "navigation",
+          "when": "view == connectionView"
+        },
+        {
+          "command": "connectionView.fill",
+          "group": "navigation",
+          "when": "view == connectionView"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "connectionView.upload",
+          "when": "view == connectionView && viewItem == Project",
+          "group": "inline"
+        },
+        {
+          "command": "connectionView.front",
+          "when": "view == connectionView && viewItem == Project",
+          "group": "inline"
+        },
+        {
+          "command": "connectionView.saveAsLocalFile",
+          "when": "view == connectionView && viewItem == File",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "connectionView",
+        "contents": "Connect to a PMC-Vis Project.\n[Select Project](command:connectionView.connect)"
+      },
+      {
+        "view": "stateView",
+        "contents": "No selected states"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.98.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mathjs": "^12.3.0",
+    "socket.io-client": "^4.8.1"
+  }
+}

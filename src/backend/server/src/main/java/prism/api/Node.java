@@ -27,10 +27,10 @@ public interface Node extends Namespace {
 
     @Schema(description = "")
     @JsonProperty
-    Map<String, Map<String, Value>> getDetails();
+    Map<String, Map<String, Object>> getDetails();
 
     @JsonIgnore
-    long getNumId();
+    String getNumId();
 
     @JsonIgnore
     double getReward(String name);

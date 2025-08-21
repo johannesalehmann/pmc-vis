@@ -1,0 +1,53 @@
+.cursor-area {
+  opacity: .3;
+  fill: var(--pcp-bubble-cursor-color);
+}
+
+.selection-count-tooltip {
+  fill: black;
+}
+
+path.highlighted-path {
+  stroke: var(--pcp-hover);
+  stroke-width: var(--pcp-hover-width);
+}
+
+.axis line,
+.axis path {
+  fill: none;
+  stroke: var(--pcp-axes-lines);
+}
+
+.axis text {
+  fill: var(--pcp-text-fill);
+  cursor: move;
+}
+
+.detail-inspector { 
+  width: 100%;
+  position: absolute;
+
+  canvas, svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    path {
+      shape-rendering: geometricPrecision;
+    }
+    text {
+      font-size: 12px;
+    }
+  }
+}
+
+.violin path, .bars, .histogram {  
+  stroke: none;
+  fill: #ab9dcc;
+  opacity: 0.5;
+}
+
+.brush > .selection {
+  fill: #4887b9;
+  stroke: none;
+  fill-opacity: .5
+}

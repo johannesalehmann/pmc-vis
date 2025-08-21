@@ -2,12 +2,14 @@ package prism.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import prism.core.Model;
+import prism.core.Project;
+import prism.core.Scheduler.Scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @Schema(description="Object representing an entire Graph")
 public class Graph {
@@ -15,14 +17,14 @@ public class Graph {
 
     private List<Edge> edges;
 
-    private TreeMap<String, Object> info;
+    private Info info;
 
     public Graph(){
         // Jackson deserialization
     }
 
-    public Graph(Model model, List<State> states, List<Transition> transitions) {
-        this.info = model.getInformation();
+    public Graph(Project project, List<State> states, List<Transition> transitions) {
+        this.info = project.getInformation();
         this.nodes = new ArrayList<>(states);
         this.nodes.addAll(transitions);
         this.edges = new ArrayList<>();
@@ -45,7 +47,7 @@ public class Graph {
 
     @Schema(description = "Information about the MC process")
     @JsonProperty
-    public Map<String, Object> getInfo() {
+    public Info getInfo() {
         return info;
     }
 }

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 @Schema(description="Object representing a single Node of a Graph")
 public class State implements Node{
 
-    private long id;
+    private String id;
 
     private String name;
 
@@ -29,7 +29,7 @@ public class State implements Node{
         // Jackson deserialization
     }
 
-    public State(long id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Double> properties) {
+    public State(String id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Double> properties) {
         this.id = id;
         this.name = name;
         this.parameters = new TreeMap<>(parameters);
@@ -41,7 +41,7 @@ public class State implements Node{
     }
 
     public State(String name, List<String> clusters, List<Long> clusteredNodes) {
-        this.id = -1;
+        this.id = "-1";
         this.name = name;
         this.parameters = new TreeMap<>();
         this.clusteredNodes = clusteredNodes;
@@ -52,7 +52,7 @@ public class State implements Node{
 
     @Override
     public String getId() {
-        return (clusters == null) ? Long.toString(id): String.format("%s_%s", String.join("_", clusters), name);
+        return (clusters == null) ? id: String.format("%s_%s", String.join("_", clusters), name);
     }
 
     @Override
@@ -61,12 +61,16 @@ public class State implements Node{
     }
 
     @Override
-    public Map<String, Map<String, Value>> getDetails() {
-        Map<String, Map<String, Value>> details = new HashMap<>();
-        details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new Value(e.getValue(), "ordinal")))));
-        details.put(OUTPUT_REWARDS, new TreeMap<>(rewards.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new Value(e.getValue(), "ordinal")))));
-        details.put(OUTPUT_RESULTS, new TreeMap<>(properties.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new Value(e.getValue(), "ordinal")))));
-        details.put(OUTPUT_LABELS, new TreeMap<>(atomicPropositions.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue() == null ? new Value() : new Value(e.getValue())))));
+    public Map<String, Map<String, Object>> getDetails() {
+        Map<String, Map<String, Object>> details = new HashMap<>();
+        details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters));
+        details.put(OUTPUT_REWARDS, new TreeMap<>(rewards));
+        details.put(OUTPUT_RESULTS, new TreeMap<>(properties));
+        if(atomicPropositions == null){
+            details.put(OUTPUT_LABELS, new TreeMap<>());
+            return details;
+        }
+        details.put(OUTPUT_LABELS, new TreeMap<>(atomicPropositions.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !(e.getValue() == null)))));
         return details;
     }
 
@@ -87,7 +91,7 @@ public class State implements Node{
     }
 
     @Override
-    public long getNumId() {
+    public String getNumId() {
         return id;
     }
 
@@ -110,5 +114,10 @@ public class State implements Node{
             buffer.add(String.format("%s=%s", e.getKey(), e.getValue()));
         }
         return String.join(";", buffer);
+    }
+
+    @JsonIgnore
+    public Map<String, Object> getParameters() {
+        return parameters;
     }
 }

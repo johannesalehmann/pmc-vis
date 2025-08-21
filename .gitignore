@@ -15,18 +15,12 @@ package-lock.json
 **.zip
 **/.idea
 .idea
-
-frontend/public/data/*
-frontend/public/examples
-
-frontend/public/js/lib
-frontend/public/style/lib
+**/dist
 
 backend/server/target
 backend/prism
 backend/server/test
 backend/server/.idea
 Artifact
-
 
 artifact-import-export/*.tar

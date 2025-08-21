@@ -1,29 +1,19 @@
-FROM ubuntu:18.04
+FROM ubuntu:25.04
 WORKDIR /usr/src/pmc-vis
 ENV DEBIAN_FRONTEND=noninteractive
 
-### 1. install node 16
+### 1. node 20
 RUN apt-get update && \
-    apt-get install -y gcc curl gnupg build-essential && \
-    curl --silent --location https://deb.nodesource.com/setup_16.x | bash - && \
-    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
-    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-    apt-get remove -y --purge cmdtest && \
-    apt-get update && \
-    apt-get install -y nodejs yarn && \
-    apt-get install -y cmake openjdk-11-jdk git bc zsh maven && \
-    # remove useless files from the current layer
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /var/lib/apt/lists.d/* && \
-    apt-get autoremove && \
-    apt-get clean && \
-    apt-get autoclean
+    apt-get install curl -y && \
+    curl -sL https://deb.nodesource.com/setup_20.x | bash && \
+    apt-get install nodejs -y && \
+    node -v && npm -v
 
 ### 2. install prism
 WORKDIR /usr/src/pmc-vis/backend/
 RUN git clone https://github.com/prismmodelchecker/prism prism
 WORKDIR /usr/src/pmc-vis/backend/prism/prism
-RUN git checkout 03c6c15
+RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
 RUN make
 
 ### 3. install backend server
