@@ -195,18 +195,20 @@ async function expandGraph(cy, nodes, onLayoutStopFn) {
     cy.nodes().unlock();
 
     const layout = cy.layout(cy.params);
-    if (new_nodes.length !== 0 && onLayoutStopFn) {
+    layout.pon('layoutstop').then(() => {
       // kills batch expansion if there is nothing to expand
-      layout.pon('layoutstop').then(onLayoutStopFn);
-    } else {
-      layout.pon('layoutstop').then(() => getNexts(cy, cy.$('node.s:selected')).select());
-    }
+      if (new_nodes.length !== 0 && onLayoutStopFn) {
+        onLayoutStopFn();
+      } else {
+        getNexts(cy, cy.$('node.s:selected')).select();
+      }
+      spawnPCP(cy);
+    });
 
     layout.run();
     bindListeners(cy);
     setStyles(cy);
     initHTML(cy);
-    spawnPCP(cy);
     const nodesIds = data.nodes
       .map((node) => node.id)
       .filter((id) => !id.startsWith('t'));
@@ -361,7 +363,8 @@ function spawnGraph(pane, data, params, vars = {}) {
     initControls(cy);
 
     selectAll(cy);
-    spawnPCP(cy);
+    console.log(vars.order);
+    spawnPCP(cy, vars.order);
     dispatchEvent(events.GLOBAL_PROPAGATE);
     return cy;
   }
@@ -464,7 +467,7 @@ async function fetchAndSpawn(cy, nodes) {
     });
     vars = structuredClone(varsValues);
   }
-
+  vars.order = cy.pcp.getOrder();
   spawnGraph(pane, data, structuredClone(cy.params), vars);
 }
 
@@ -589,7 +592,7 @@ function getPreviousInPath(cy, sourceNodeId) {
   return { cy, prev };
 }
 
-function spawnPCP(cy) {
+function spawnPCP(cy, order = undefined) {
   const m = cy.vars['mode'].value;
   const selector = m === 's+t' ? '' : '.' + m;
   let selected = 0;
@@ -608,16 +611,31 @@ function spawnPCP(cy) {
 
   const hidden = new Set(['color']);
   const props = Object.keys(pld).filter(k => !hidden.has(k));
+  const sorted_dim_metadata = {};
+
+  const previous_pcp_order = cy.pcp ? cy.pcp.getOrder() : undefined;
+  const pcp_order = order ? structuredClone(order) : previous_pcp_order;
+
+  if (pcp_order) {
+    pcp_order.forEach(key => {
+      if (pld[key]) {
+        sorted_dim_metadata[key] = pld[key];
+        delete pld[key];
+      }
+    });
+  }
+
+  Object.keys(pld).forEach(key => sorted_dim_metadata[key] = pld[key]);
 
   cy.pcp = parallelCoords(
     getPanes()[cy.paneId],
     pl,
     {
       data_id: 'id',
-      nominals: props.filter(k => pld[k].type === 'nominal'),
-      booleans: props.filter(k => pld[k].type === 'boolean'),
-      numbers: props.filter(k => pld[k].type === 'number'),
-      pld,
+      nominals: props.filter(k => sorted_dim_metadata[k].type === 'nominal'),
+      booleans: props.filter(k => sorted_dim_metadata[k].type === 'boolean'),
+      numbers: props.filter(k => sorted_dim_metadata[k].type === 'number'),
+      pld: sorted_dim_metadata,
       preselected: selected,
     },
   );
