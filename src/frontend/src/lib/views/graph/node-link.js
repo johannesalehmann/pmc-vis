@@ -17,11 +17,7 @@ import {
   highlightPaneById,
 } from '../panes/panes.js';
 import { handleEditorSelection } from '../editor.js';
-import {
-  h,
-  t,
-  fixed,
-} from '../../utils/utils.js';
+import { fixed } from '../../utils/utils.js';
 import {
   makeTippy,
   hideAllTippies,
@@ -734,10 +730,9 @@ function bindListeners(cy) {
     }
   });
 
-  cy.on('tap', 'edge', (e) => {
+  cy.on('tap', 'edge', () => {
     setPane(cy.paneId);
     hideAllTippies();
-    console.log(e.target.data());
   });
 
   cy.on('zoom pan', () => {
@@ -771,7 +766,6 @@ function bindListeners(cy) {
   cy.on('tap', 'node', (e) => {
     const n = e.target;
     setPane(cy.paneId);
-    console.log(n.data());
 
     if (!e.originalEvent.shiftKey) {
       hideAllTippies();
@@ -1329,6 +1323,11 @@ function mergePane(panesToMerge, cy, prevSpawners) {
   }
 }
 
+function forceCyUpdate(el) {
+  el.data('update', 1);
+  el.data('update', undefined);
+}
+
 function mergePanes(panesToMerge, paneCy) {
   if (panesToMerge && panesToMerge.length > 0) {
     Swal.fire({
@@ -1474,17 +1473,6 @@ function ctxmenu(cy) {
       },
       hasTrailingDivider: false,
     },
-    /* {
-      id: 'remove',
-      content: 'Collapse outgoing',
-      tooltipText: 'collapse outgoing',
-      selector: 'node.s',
-      onClickFunction: (event) => {
-        const target = event.target || event.cyTarget;
-        console.log('Under development!')
-      },
-      hasTrailingDivider: false
-    }, */
     {
       id: 'expand-best-path',
       content: CONSTANTS.INTERACTIONS.expandN.name(l),
@@ -1499,6 +1487,42 @@ function ctxmenu(cy) {
       onClickFunction: () => {
         iteration = 0;
         expandBestPath(cy, cy.$('node.s:selected'));
+      },
+      hasTrailingDivider: false,
+    },
+    {
+      id: 'remove',
+      content: CONSTANTS.INTERACTIONS.collapse1.name,
+      tooltipText: `${CONSTANTS
+        .INTERACTIONS
+        .collapse1
+        .description}`,
+      selector: 'node.s:selected[[outdegree > 0]]',
+      onClickFunction: () => {
+        const target = cy.$('node.s:selected'); // event.target || event.cyTarget;
+        const outgoer_actions = target.outgoers();
+        const outgoer_states = outgoer_actions.outgoers();
+
+        const removeOutgoer = (oa) => {
+          const d = oa.data();
+          if (oa.group() === 'nodes') {
+            cy.elementMapper.nodes.delete(d.id);
+          } else {
+            cy.elementMapper.edges.delete(getEdgeId({ data: d }));
+          }
+        };
+
+        outgoer_states.edges().forEach(oa => removeOutgoer(oa)).remove();
+        outgoer_actions.forEach(oa => removeOutgoer(oa)).remove();
+
+        outgoer_states.nodes().forEach(n => {
+          if (n.incomers().length === 0 && n.outgoers().length === 0) {
+            cy.elementMapper.nodes.delete(n.data().id);
+            n.remove();
+          }
+        });
+
+        forceCyUpdate(target);
       },
       hasTrailingDivider: false,
     },
@@ -1520,7 +1544,7 @@ function ctxmenu(cy) {
     {
       id: 'inspect-tooltip',
       content: 'Inspect Node Details',
-      tooltipText: 'opens tooltip with node details',
+      tooltipText: 'Opens tooltip with node details',
       selector: 'node',
       onClickFunction: (n) => {
         buildDetailsTooltipFromNode(cy, n.target);
@@ -1548,7 +1572,7 @@ function ctxmenu(cy) {
     {
       id: 'mark-recurring-node-pane',
       content: 'Mark recurring pane-nodes',
-      tooltipText: 'mark pane-nodes that include this node',
+      tooltipText: 'Marks pane-nodes that include this node (in the Overview)',
       selector: 'node.s:selected',
       onClickFunction: (event) => {
         const target = event.target || event.cyTarget;
@@ -1564,7 +1588,7 @@ function ctxmenu(cy) {
       {
         id: 'inspect-pcp',
         content: 'Sync Selection in Details View',
-        tooltipText: 'shows the current selection of nodes in the Details View',
+        tooltipText: 'Shows the current selection of nodes in the Details View',
         selector: 'node',
         onClickFunction: () => {
           spawnPCP(cy);
