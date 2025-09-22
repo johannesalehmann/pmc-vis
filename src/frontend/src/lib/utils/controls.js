@@ -124,6 +124,7 @@ function makeTippy(node, html, id) {
     delete tippies[id];
     return;
   }
+  console.log(id);
 
   const t = tippy(node.popperRef(), {
     title: id,

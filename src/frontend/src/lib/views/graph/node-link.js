@@ -660,6 +660,50 @@ function unbindListeners(cy) {
   }
 }
 
+function buildDetailsTooltipFromNode(cy, n) {
+  n.unselectify();
+  cy.pendingSelectify = true;
+
+  const g = n.data();
+  const $blocks = [];
+  const details = cy.vars['details'].value;
+  Object.keys(details).forEach(d => {
+    if (!g.details[d]) return;
+
+    const show = details[d].all
+      || Object.values(
+        details[d].props,
+      ).reduce((a, b) => a || b, false);
+
+    if (show) {
+      const block = document.createElement('div');
+      block.innerHTML = `
+        <p>${d} ======== </p>
+        <pre>${
+          Object.keys(details[d].props)
+            .filter(p => details[d].props[p])
+            .map(k => {
+              if (details[d].metadata[k].type === 'number') {
+                return `${k}: <span id="tt-${g.id}-${k}">${fixed(g.details[d][k])}</span>`;
+              } else {
+                return `${k}: <span id="tt-${g.id}-${k}">${g.details[d][k]}</span>`;
+              }
+            })
+            .join('\n')
+        }</pre>
+      `;
+      $blocks.push(block);
+    }
+  });
+
+  if ($blocks.length > 0) {
+    const tooltip = document.createElement('div');
+    tooltip.style.textAlign = 'right';
+    $blocks.forEach(block => tooltip.appendChild(block));
+    makeTippy(n, tooltip, `tippy-${g.id}`);
+  }
+}
+
 function bindListeners(cy) {
   unbindListeners(cy);
   cy.edges().unselectify();
@@ -679,7 +723,6 @@ function bindListeners(cy) {
 
   cy.on('cxttapstart', () => {
     setPane(cy.paneId);
-    hideAllTippies();
   });
 
   ctxmenu(cy);
@@ -735,39 +778,7 @@ function bindListeners(cy) {
     }
 
     if (e.originalEvent.shiftKey) {
-      n.unselectify();
-      cy.pendingSelectify = true;
-
-      const g = n.data();
-      const $links = [];
-      const details = cy.vars['details'].value;
-      Object.keys(details).forEach(d => {
-        if (!g.details[d]) return;
-
-        const show = details[d].all
-          || Object.values(
-            details[d].props,
-          ).reduce((a, b) => a || b, false);
-
-        if (show) {
-          $links.push(
-            h('p', {}, [t(`==== ${d} ====`)]),
-            ...Object.keys(details[d].props)
-              .filter(p => details[d].props[p])
-              .map(k => {
-                if (details[d].metadata[k].type === 'number') {
-                  return h('p', {}, [t(k + ': ' + fixed(g.details[d][k]) + '\n ')]);
-                } else {
-                  return h('p', {}, [t(k + ': ' + (g.details[d][k]) + '\n ')]);
-                }
-              }),
-          );
-        }
-      });
-
-      if ($links.length > 0) {
-        makeTippy(n, h('div', {}, $links), `tippy-${g.id}`);
-      }
+      buildDetailsTooltipFromNode(cy, n);
     }
   });
 
@@ -908,6 +919,10 @@ function updateNewPanePosition(cy, prop) {
 
 function toggleFullSync(cy, prop) {
   cy.vars['pcp-auto-sync'].value = prop;
+
+  // reset context menus...
+  bindListeners(cy);
+  spawnPCP(cy);
 }
 
 function togglePCPFlag(cy, prop, name) {
@@ -939,13 +954,17 @@ function selectBasedOnAP(cy, e, ap) {
 }
 
 function mark(cy, selection) {
-  const nodes = cy.$('#' + selection.join(', #'));
-  nodes.addClass('marked');
+  if (selection.length > 0) {
+    const nodes = cy.$('#' + selection.join(', #'));
+    nodes.addClass('marked');
+  }
 }
 
 function unmark(cy, selection) {
-  const nodes = cy.$('#' + selection.join(', #'));
-  nodes.removeClass('marked');
+  if (selection.length > 0) {
+    const nodes = cy.$('#' + selection.join(', #'));
+    nodes.removeClass('marked');
+  }
 }
 
 async function importCy(cy) {
@@ -1435,112 +1454,129 @@ function ctxmenu(cy) {
   const setting = document.getElementById('bestPathLength');
   const l = setting ? setting.value : CONSTANTS.INTERACTIONS.expandN.default;
 
-  cy.ctxmenu = cy.contextMenus({
-    menuItems: [
-      // node specific
-      {
-        id: 'expand',
-        content: CONSTANTS.INTERACTIONS.expand1.name,
-        tooltipText: `${CONSTANTS
-          .INTERACTIONS
-          .expand1
-          .description} \t (${CONSTANTS
-          .INTERACTIONS
-          .expand1
-          .keyboard})`,
-        selector: 'node.s',
-        onClickFunction: () => {
-          setPane(cy.paneId);
-          hideAllTippies();
-          expandGraph(cy, cy.$('node.s:selected'));
-        },
-        hasTrailingDivider: false,
+  const node_options = [
+    // node specific
+    {
+      id: 'expand',
+      content: CONSTANTS.INTERACTIONS.expand1.name,
+      tooltipText: `${CONSTANTS
+        .INTERACTIONS
+        .expand1
+        .description} \t (${CONSTANTS
+        .INTERACTIONS
+        .expand1
+        .keyboard})`,
+      selector: 'node.s:selected',
+      onClickFunction: () => {
+        setPane(cy.paneId);
+        hideAllTippies();
+        expandGraph(cy, cy.$('node.s:selected'));
       },
-      /* {
-        id: 'remove',
-        content: 'Collapse outgoing',
-        tooltipText: 'collapse outgoing',
-        selector: 'node.s',
-        onClickFunction: (event) => {
-          const target = event.target || event.cyTarget;
-          console.log('Under development!')
-        },
-        hasTrailingDivider: false
-      }, */
-      {
-        id: 'expand-best-path',
-        content: CONSTANTS.INTERACTIONS.expandN.name(l),
-        tooltipText: `${CONSTANTS
-          .INTERACTIONS
-          .expandN
-          .description(l)} \t (${CONSTANTS
-          .INTERACTIONS
-          .expandN
-          .keyboard})`,
-        selector: 'node.s:selected',
-        onClickFunction: () => {
-          iteration = 0;
-          expandBestPath(cy, cy.$('node.s:selected'));
-        },
-        hasTrailingDivider: false,
+      hasTrailingDivider: false,
+    },
+    /* {
+      id: 'remove',
+      content: 'Collapse outgoing',
+      tooltipText: 'collapse outgoing',
+      selector: 'node.s',
+      onClickFunction: (event) => {
+        const target = event.target || event.cyTarget;
+        console.log('Under development!')
       },
-      {
-        id: 'mark-node',
-        content: CONSTANTS.INTERACTIONS.mark.name,
-        tooltipText: `${CONSTANTS
-          .INTERACTIONS
-          .mark
-          .description} \t (${CONSTANTS
-          .INTERACTIONS
-          .mark
-          .keyboard})`,
-        selector: 'node.s',
-        onClickFunction: e => {
-          handleMarkNodes(cy, e);
-        },
-        hasTrailingDivider: true,
+      hasTrailingDivider: false
+    }, */
+    {
+      id: 'expand-best-path',
+      content: CONSTANTS.INTERACTIONS.expandN.name(l),
+      tooltipText: `${CONSTANTS
+        .INTERACTIONS
+        .expandN
+        .description(l)} \t (${CONSTANTS
+        .INTERACTIONS
+        .expandN
+        .keyboard})`,
+      selector: 'node.s:selected',
+      onClickFunction: () => {
+        iteration = 0;
+        expandBestPath(cy, cy.$('node.s:selected'));
       },
-      {
-        id: 'expand-new',
-        content: `${CONSTANTS.INTERACTIONS.expand1.name} on New Pane`,
-        tooltipText: `${CONSTANTS
-          .INTERACTIONS
-          .expand1
-          .description} \t (${CONSTANTS
-          .INTERACTIONS
-          .expand1
-          .keyboard_pane})`,
-        selector: 'node.s:selected',
-        onClickFunction: () => {
-          const nodes = cy.$('node.s:selected');
-          hideAllTippies();
-          spawnGraphOnNewPane(cy, nodes.map((n) => n.data()));
-        },
-        hasTrailingDivider: false,
+      hasTrailingDivider: false,
+    },
+    {
+      id: 'mark-node',
+      content: CONSTANTS.INTERACTIONS.mark.name,
+      tooltipText: `${CONSTANTS
+        .INTERACTIONS
+        .mark
+        .description} \t (${CONSTANTS
+        .INTERACTIONS
+        .mark
+        .keyboard})`,
+      selector: 'node.s:selected',
+      onClickFunction: e => {
+        handleMarkNodes(cy, e);
       },
-      {
-        id: 'mark-recurring-node-pane',
-        content: 'Mark recurring pane-nodes',
-        tooltipText: 'Mark pane-nodes that include this node',
-        selector: 'node.s:selected',
-        onClickFunction: (event) => {
-          const target = event.target || event.cyTarget;
-          const nodeId = target.data().id;
-          markRecurringNodesById(nodeId, true);
-        },
-        hasTrailingDivider: true,
+    },
+    {
+      id: 'inspect-tooltip',
+      content: 'Inspect Node Details',
+      tooltipText: 'opens tooltip with node details',
+      selector: 'node',
+      onClickFunction: (n) => {
+        buildDetailsTooltipFromNode(cy, n.target);
       },
+      hasTrailingDivider: true,
+    },
+    {
+      id: 'expand-new',
+      content: `${CONSTANTS.INTERACTIONS.expand1.name} on New Pane`,
+      tooltipText: `${CONSTANTS
+        .INTERACTIONS
+        .expand1
+        .description} \t (${CONSTANTS
+        .INTERACTIONS
+        .expand1
+        .keyboard_pane})`,
+      selector: 'node.s:selected',
+      onClickFunction: () => {
+        const nodes = cy.$('node.s:selected');
+        hideAllTippies();
+        spawnGraphOnNewPane(cy, nodes.map((n) => n.data()));
+      },
+      hasTrailingDivider: false,
+    },
+    {
+      id: 'mark-recurring-node-pane',
+      content: 'Mark recurring pane-nodes',
+      tooltipText: 'mark pane-nodes that include this node',
+      selector: 'node.s:selected',
+      onClickFunction: (event) => {
+        const target = event.target || event.cyTarget;
+        const nodeId = target.data().id;
+        markRecurringNodesById(nodeId, true);
+      },
+      hasTrailingDivider: true,
+    },
+  ];
+
+  if (!cy.vars['pcp-auto-sync'].value) {
+    node_options.push(
       {
         id: 'inspect-pcp',
-        content: 'Inspect selection details',
-        tooltipText: 'inspect selection details',
-        selector: 'node:selected',
+        content: 'Sync Selection in Details View',
+        tooltipText: 'shows the current selection of nodes in the Details View',
+        selector: 'node',
         onClickFunction: () => {
           spawnPCP(cy);
         },
         hasTrailingDivider: true,
       },
+    );
+  }
 
+  cy.ctxmenu = cy.contextMenus({
+    menuItems: [
+      ...node_options,
       // pane controls
       {
         id: 'fit-to-pane',
@@ -1899,7 +1935,7 @@ function setPublicVars(cy, preset) {
     updateDetailsToShow(cy, { update: preset['details'].value });
     updateScheduler(cy, preset['scheduler'].value);
     updateNewPanePosition(cy, preset['panePosition'].value);
-    toggleFullSync(cy, preset['pcp-auto-sync']);
+    toggleFullSync(cy, preset['pcp-auto-sync'].value);
   }
   setUpdateState(cy);
 }

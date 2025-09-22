@@ -1,7 +1,7 @@
 {
     "name": "pmc-vis",
     "version": "0.0.1",
-    "description": "An Interactive Visualization Tool for Probabilistic Model Checking",
+    "description": "visual analysis tool for probabilistic models",
     "type": "module",
     "scripts": {
         "dev": "vite --port 3000",
