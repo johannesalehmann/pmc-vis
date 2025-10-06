@@ -124,7 +124,6 @@ function makeTippy(node, html, id) {
     delete tippies[id];
     return;
   }
-  console.log(id);
 
   const t = tippy(node.popperRef(), {
     title: id,
@@ -448,7 +447,6 @@ async function triggerModelCheckProperty(e, propType, props) {
 }
 
 socket.on('MC_STATUS', (status) => {
-  console.log(status);
   setInfo(status.info);
   info.updating = true;
   setPane(pane.id, { force: true });

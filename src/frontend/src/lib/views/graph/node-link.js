@@ -359,7 +359,6 @@ function spawnGraph(pane, data, params, vars = {}) {
     initControls(cy);
 
     selectAll(cy);
-    console.log(vars.order);
     spawnPCP(cy, vars.order);
     dispatchEvent(events.GLOBAL_PROPAGATE);
     return cy;
@@ -482,9 +481,19 @@ function getNexts(cy, sources) {
 }
 
 async function expandBestPath(cy, allSources) {
-  const sources = allSources.filter(s => !s.data()
+  let sources = allSources.filter(s => !s.data()
     ?.details[CONSTANTS.atomicPropositions][CONSTANTS.ap_end]
     ?.value);
+
+  while (sources.filter(n => n.outgoers().length === 0).length === 0) {
+    sources = getNexts(cy, cy.$('node.s:selected'));
+    sources.select();
+    iteration += 1;
+  }
+
+  if (iteration >= maxIteration) {
+    return;
+  }
 
   await expandGraph(cy, sources, () => {
     const nexts = getNexts(cy, sources);
@@ -1492,10 +1501,10 @@ function ctxmenu(cy) {
     },
     {
       id: 'remove',
-      content: CONSTANTS.INTERACTIONS.collapse1.name,
+      content: CONSTANTS.INTERACTIONS.collapse.name,
       tooltipText: `${CONSTANTS
         .INTERACTIONS
-        .collapse1
+        .collapse
         .description}`,
       selector: 'node.s:selected[[outdegree > 0]]',
       onClickFunction: () => {

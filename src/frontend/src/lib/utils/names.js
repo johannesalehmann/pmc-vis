@@ -44,8 +44,8 @@ const CONSTANTS = {
       keyboard: 'Shift+Enter', // not implemented
       keyboard_pane: 'Shift+Ctrl+Enter', // not implemented
     },
-    collapse1: {
-      name: 'Collapse Once',
+    collapse: {
+      name: 'Collapse',
       icon: 'fa-solid fa-angle-left',
       description: 'Collapses immediately outgoing actions and states from selected node(s)',
       keyboard: '--',
