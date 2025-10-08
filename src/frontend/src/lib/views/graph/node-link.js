@@ -141,7 +141,21 @@ async function renewInfo(cy) {
 async function expandGraph(cy, nodes, onLayoutStopFn) {
   if (!nodes.length) return;
 
-  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${nodes.map(n => n.data().id).join('&id=')}`);
+  const collapsed = nodes
+    .filter(n => n.outgoers().length === 0)
+    .map(n => n.data().id);
+
+  if (collapsed.length === 0) { // everything already expanded
+    const layout = cy.layout(cy.params);
+    layout.pon('layoutstop').then(() => {
+      getNexts(cy, cy.$('node.s:selected')).select();
+    });
+
+    layout.run();
+    return;
+  }
+
+  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${collapsed.join('&id=')}`);
   const data = await res.json();
 
   function finalizeExpand(cy, data) {
@@ -485,7 +499,10 @@ async function expandBestPath(cy, allSources) {
     ?.details[CONSTANTS.atomicPropositions][CONSTANTS.ap_end]
     ?.value);
 
-  while (sources.filter(n => n.outgoers().length === 0).length === 0) {
+  while (
+    iteration < maxIteration
+    && sources.filter(n => n.outgoers().length === 0).length === 0
+  ) {
     sources = getNexts(cy, cy.$('node.s:selected'));
     sources.select();
     iteration += 1;
