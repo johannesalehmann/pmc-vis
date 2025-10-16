@@ -34,6 +34,7 @@ public class ModelResource extends Resource {
             @QueryParam("version") Optional<String> version
     ) {
         try{
+            refreshProject(projectID);
             if (!tasks.containsProject(projectID)) return error(new Message(String.format("Project %s not found", projectID)));
             if (version.isPresent()) return ok(tasks.getProject(projectID).getGraph(version.get()));
             return ok(tasks.getProject(projectID).getGraph());
