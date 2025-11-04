@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -269,6 +270,10 @@ public class Project implements Namespace{
         for (Model m : models.values()) {
             m.clearTables();
         }
+    }
+
+    public List<String> getVersions(){
+        return new ArrayList<>(this.models.keySet());
     }
 
 //    public TreeMap<String, String> modelCheckAllStatistical(long maxPathLength, String simulationMethod, boolean parallel, Optional<String> schedulerName) throws Exception {

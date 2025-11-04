@@ -435,8 +435,7 @@ public class Model implements Namespace {
         for (Property p : properties) {
             p.clear();
         }
-        checker.reset();
-        this.database.execute(String.format("DROP TABLE IF EXISTS %s", TABLE_PANES));
+        setBuilt(false);
     }
 
     // --- API Functions ---
@@ -450,7 +449,7 @@ public class Model implements Namespace {
             }
         }
         try {
-            List<State> initials = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s = 1", TABLE_STATES, ENTRY_S_INIT), new StateMapper(this));
+            List<State> initials = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s = '1'", TABLE_STATES, ENTRY_S_INIT), new StateMapper(this));
 
             return new Graph(this, initials, new ArrayList<>());
         } catch (Exception e) {
@@ -540,8 +539,12 @@ public class Model implements Namespace {
                 throw new RuntimeException(e);
             }
         }
-        String stateID = stateIDs.stream().map(s -> "'" + s + "'").collect(Collectors.joining(","));
-        List<Transition> transitions = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s IN (%s)", TABLE_TRANS, ENTRY_T_OUT, stateID), new TransitionMapper(this));
+        List<Transition> transitions = new ArrayList<>();
+        if (!stateIDs.isEmpty()){
+            String stateID = stateIDs.stream().map(s -> "'" + s + "'").collect(Collectors.joining(","));
+            transitions = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s IN (%s)", TABLE_TRANS, ENTRY_T_OUT, stateID), new TransitionMapper(this));
+        }
+
         Set<String> statesOfInterest = new HashSet<>();
         for (String unStateID : unexploredStateIDs){
             statesOfInterest.add(unStateID);

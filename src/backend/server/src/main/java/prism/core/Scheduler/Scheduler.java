@@ -45,7 +45,7 @@ public class Scheduler {
         }
         String scheduler_collumn = ENTRY_SCHED + id;
 
-        String creationQuery = String.format("ALTER TABLE %s ADD COLUMN %s NOT NULL DEFAULT 0", table, scheduler_collumn);
+        String creationQuery = String.format("ALTER TABLE %s ADD COLUMN %s INTEGER NOT NULL DEFAULT 0", table, scheduler_collumn);
         String updateQuery = String.format("WITH cte AS (SELECT *, dense_rank() OVER(PARTITION BY %s ORDER BY %s) AS r FROM %s) UPDATE %s SET %s=1 WHERE %s IN (SELECT %s FROM cte WHERE r=1)", partition, order, table, table, scheduler_collumn, ENTRY_T_ID, ENTRY_T_ID);
         String infoQuery = String.format("INSERT INTO %s (%s, %s) VALUES(%s, '%s')", schedTable, ENTRY_SCH_ID, ENTRY_SCH_NAME, id, name);
 
