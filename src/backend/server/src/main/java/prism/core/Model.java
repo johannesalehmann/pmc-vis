@@ -430,6 +430,15 @@ public class Model implements Namespace {
         }
     }
 
+    public prism.api.Scheduler getScheduler(String schedulerName) throws Exception {
+        for (Scheduler s : schedulers) {
+            if (s.getName().equals(schedulerName)) {
+                return s.getAPIScheduler();
+            }
+        }
+        throw new Exception("Scheduler " + schedulerName + " not found");
+    }
+
     public void clearTables() throws Exception {
         schedulers.clear();
         for (Property p : properties) {

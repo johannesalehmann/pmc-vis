@@ -1,6 +1,7 @@
 package prism.core;
 
 import prism.api.*;
+import prism.core.Scheduler.Scheduler;
 import prism.db.Database;
 import prism.db.mappers.PaneMapper;
 import prism.server.PRISMServerConfiguration;
@@ -270,6 +271,22 @@ public class Project implements Namespace{
         for (Model m : models.values()) {
             m.clearTables();
         }
+    }
+
+    public prism.api.Scheduler getScheduler(String schedulerID, String version) throws Exception {
+        return models.get(version).getScheduler(schedulerID);
+    }
+
+    public prism.api.Scheduler getScheduler(String schedulerID) throws Exception {
+        return this.getScheduler(schedulerID, this.defaultVersion());
+    }
+
+    public List<String> getSchedulers(String version) {
+        return models.get(version).getSchedulers().stream().map(Scheduler::getName).collect(Collectors.toList());
+    }
+
+    public List<String> getSchedulers() {
+        return this.getSchedulers(this.defaultVersion());
     }
 
     public List<String> getVersions(){
