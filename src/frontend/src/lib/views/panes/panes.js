@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import shortid from 'shortid';
 import Swal from 'sweetalert2/dist/sweetalert2.all.min.js';
 
 import { setPane } from '../../utils/controls.js';
@@ -28,7 +28,7 @@ socket.on('disconnect', () => {
 });
 
 function uid() {
-  return 'id' + uuidv4().replace(/-/g, '');
+  return 'id' + shortid.generate();
 }
 
 function updateHeights() {
@@ -668,7 +668,7 @@ document
             formValues.props[0],
           );
 
-          formValues.name ||= uuidv4();
+          formValues.name ||= shortid.generate();
           redirectName = formValues.name;
           return fetch(
             `${BACKEND}/${formValues.name}/create-project`,
