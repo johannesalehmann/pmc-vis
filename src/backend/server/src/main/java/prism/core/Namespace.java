@@ -14,6 +14,7 @@ public interface Namespace {
     String ENTRY_S_INIT = "initials";
     String ENTRY_REW = "reward_";
     String ENTRY_PROP = "property_";
+    String ENTRY_RESP = "responsibility_";
     String ENTRY_SCHED = "scheduler_";
     String ENTRY_T_ID = "transition_id";
     String ENTRY_T_OUT = "origin";
@@ -63,6 +64,8 @@ public interface Namespace {
     Set<String> FILES_INVISIBLE = new HashSet<>(Arrays.asList(TEMP_FILE, STYLE_FILE, LOG_FILE, DATABASE_FILE, DATABASE_FILE + "-shm", DATABASE_FILE + "-wal"));
 
     String OUTPUT_RESULTS = "Model Checking Results";
+
+    String OUTPUT_RESPONSIBILITY = "Responsibility Results";
 
     String OUTPUT_VARIABLES = "Variable Values";
 

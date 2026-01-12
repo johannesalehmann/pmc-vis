@@ -329,6 +329,39 @@ public class TaskResource extends Resource {
         return ok(new Message(String.format("Started checking %s in project %s", String.join(", ", properties), projectID)));
     }
 
+    @Path("/responsibility")
+    @GET
+    @Timed
+    @Operation(summary = "computes responsibility for a property on the model", description = "Starts the responsibility computation process for an already loaded property")
+    public Response computeResponsibility(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @Parameter(description = "properties that should be checked")
+            @QueryParam("property") List<String> properties
+    ){
+        if (!tasks.containsProject(projectID)) {
+            return error(String.format("Project %s does not exist", projectID));
+        }
+
+        Project p = tasks.getProject(projectID);
+
+        for (String propertyName : properties) {
+            try {
+                p.getProperty(propertyName).ifPresent(property -> {
+                    p.computeResponsibility(propertyName);
+                    if (debug){
+                        System.out.println("Computing responsibility for " + propertyName);
+                    }
+                });
+            } catch (Exception e) {
+                return error(e);
+            }
+
+        }
+
+        return ok(new Message(String.format("Started computing responsibility for %s in project %s", String.join(", ", properties), projectID)));
+    }
+
     @Path("/pane/all")
     @GET
     @Timed

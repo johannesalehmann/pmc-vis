@@ -1,5 +1,6 @@
 const CONSTANTS = {
   results: 'Model Checking Results',
+  responsibility: 'Responsibility Results',
   atomicPropositions: 'Atomic Propositions',
   variables: 'Variable Values',
 

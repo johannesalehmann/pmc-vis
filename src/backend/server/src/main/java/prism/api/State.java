@@ -21,6 +21,8 @@ public class State implements Node{
 
     private TreeMap<String, Double> properties;
 
+    private TreeMap<String, Double> responsibility;
+
     private TreeMap<String, Double> rewards;
 
     private TreeMap<String, AP> atomicPropositions;
@@ -29,13 +31,14 @@ public class State implements Node{
         // Jackson deserialization
     }
 
-    public State(String id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Double> properties) {
+    public State(String id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Double> properties, Map<String, Double> responsibility) {
         this.id = id;
         this.name = name;
         this.parameters = new TreeMap<>(parameters);
         this.clusteredNodes = null;
         this.clusters = null;
         this.properties = new TreeMap<>(properties);
+        this.responsibility = new TreeMap<>(responsibility);
         this.rewards = new TreeMap<>(rewards);
         this.atomicPropositions = atomicPropositions;
     }
@@ -47,6 +50,7 @@ public class State implements Node{
         this.clusteredNodes = clusteredNodes;
         this.clusters = clusters;
         this.properties = new TreeMap<>();
+        this.responsibility = new TreeMap<>();
         this.rewards = new TreeMap<>();
     }
 
@@ -66,6 +70,7 @@ public class State implements Node{
         details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters));
         details.put(OUTPUT_REWARDS, new TreeMap<>(rewards));
         details.put(OUTPUT_RESULTS, new TreeMap<>(properties));
+        details.put(OUTPUT_RESPONSIBILITY, new TreeMap<>(responsibility));
         if(atomicPropositions == null){
             details.put(OUTPUT_LABELS, new TreeMap<>());
             return details;

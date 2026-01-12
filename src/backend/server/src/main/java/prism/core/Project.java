@@ -7,6 +7,7 @@ import parser.ast.PropertiesFile;
 import prism.*;
 import prism.api.*;
 import prism.core.Property.Property;
+import prism.core.Responsibility.ResponsibilityComputer;
 import prism.core.Scheduler.Criteria;
 import prism.core.Scheduler.CriteriaSort;
 import prism.core.Scheduler.Scheduler;
@@ -43,6 +44,7 @@ public class Project implements Namespace{
     //private final Prism prism;
     private final ModelChecker modelChecker;
     private final ModelParser modelParser;
+    private final ResponsibilityComputer responsibilityComputer;
 
     private final TaskManager taskManager;
 
@@ -112,6 +114,7 @@ public class Project implements Namespace{
         this.modelChecker = new ModelChecker(this, file, TABLE_STATES, TABLE_TRANS, TABLE_SCHED, String.format("%dm", cuddMaxMem), numIterations, debug);
         this.modulesFile = modelChecker.getModulesFile();
         this.modelParser = new ModelParser(this, modulesFile, debug);
+        this.responsibilityComputer = new ResponsibilityComputer(this);
 
         this.database = database;
 
@@ -163,6 +166,7 @@ public class Project implements Namespace{
         this.info.setStateEntry(OUTPUT_LABELS, APs);
         this.info.setStateEntry(OUTPUT_RESULTS, new TreeMap<>());
         this.info.setTransitionEntry(OUTPUT_RESULTS, new TreeMap<>());
+        this.info.setStateEntry(OUTPUT_RESPONSIBILITY, new TreeMap<>());
 
         Map<String, VariableInfo> actionParameter = new TreeMap<>();
         actionParameter.put(ENTRY_T_OUT, new VariableInfo(ENTRY_T_OUT, VariableInfo.parseType("string"), 0,0));
@@ -389,6 +393,10 @@ public class Project implements Namespace{
 
     public void checkProperty(String propertyName) throws PrismException {
         modelChecker.checkModel(propertyName);
+    }
+
+    public void computeResponsibility(String propertyName) {
+        responsibilityComputer.computeResponsibility(propertyName);
     }
 
     public void loadPropertyFiles() throws Exception {

@@ -340,7 +340,7 @@ public class ModelParser {
             rewards.put(rewardNames.get(i), rewardValues[i]);
         }
 
-        return new prism.api.State(stateidentifier.toString(), state.toString(), variables, project.getLabelMap(state), rewards, new TreeMap<>());
+        return new prism.api.State(stateidentifier.toString(), state.toString(), variables, project.getLabelMap(state), rewards, new TreeMap<>(), new TreeMap<>());
     }
 
     private Transition convertApiTransition(parser.State out, int choice_index, Choice<Double> choice, Map<parser.State, Double> distribution) throws Exception {

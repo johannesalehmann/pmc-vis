@@ -446,6 +446,21 @@ async function triggerModelCheckProperty(e, propType, props) {
   );
 }
 
+async function triggerComputeResponsibility(e, propType, props) {
+  e.target.className = spinningIcon;
+  props.forEach((p) => {
+    const button = document.getElementById(`responsibility-trigger-button-${propType}-${p}`);
+    if (button) button.className = spinningIcon;
+  });
+
+  fetch(
+    `${BACKEND}/${PROJECT}/responsibility?property=${props.join(
+      '&property=',
+    )}`,
+    { method: 'GET' },
+  );
+}
+
 socket.on('MC_STATUS', (status) => {
   console.log(status);
   setInfo(status.info);
@@ -522,7 +537,7 @@ function makeDetailCheckboxes() {
 
     let $input_div = h('div', { class: 'ui small checkbox' }, [$toggle, h('label', { for: `checkbox-${k}` })]);
 
-    if (k === CONSTANTS.results) {
+    if (k === CONSTANTS.results || k === CONSTANTS.responsibility) {
       const keys = Object.keys(options[k].metadata);
       const statuses = {
         ready: new Set(),
@@ -540,10 +555,17 @@ function makeDetailCheckboxes() {
           class: computing ? spinningIcon : triggerIcon,
           id: `trigger-button-${k}`,
         });
-        $input_div.addEventListener('click', (e) => {
-          triggerModelCheckProperty(e, k, Array.from(statuses.missing));
-          e.preventDefault();
-        });
+        if (k === CONSTANTS.results) {
+          $input_div.addEventListener('click', (e) => {
+            triggerModelCheckProperty(e, k, Array.from(statuses.missing));
+            e.preventDefault();
+          });
+        } else if (k === CONSTANTS.responsibility) {
+          $input_div.addEventListener('click', (e) => {
+            triggerComputeResponsibility(e, k, Array.from(statuses.missing));
+            e.preventDefault();
+          });
+        }
       }
     }
 

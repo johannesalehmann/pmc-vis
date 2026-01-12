@@ -25,6 +25,7 @@ public class StateMapper implements RowMapper<State> {
     private final ViewMapper viewMapper;
 
     private final PropertyMapper propertyMapper;
+    private final ResponsibilityMapper responsibilityMapper;
 
     private final RewardMapper rewardMapper;
 
@@ -34,6 +35,7 @@ public class StateMapper implements RowMapper<State> {
         this.views = views;
         this.viewMapper = new ViewMapper();
         this.propertyMapper = new PropertyMapper(project.getProperties());
+        this.responsibilityMapper = new ResponsibilityMapper(project.getProperties());
         this.rewardMapper = new RewardMapper(project);
     }
 
@@ -41,9 +43,9 @@ public class StateMapper implements RowMapper<State> {
     public State map(final ResultSet rs, final StatementContext ctx) throws SQLException {
         if (views == null) {
             try {
-                return new State(rs.getString(Namespace.ENTRY_S_ID), rs.getString(Namespace.ENTRY_S_NAME), project.getModelParser().parseParameters(rs.getString(Namespace.ENTRY_S_NAME)), project.getLabelMap(project.getModelParser().parseState(rs.getString(Namespace.ENTRY_S_NAME))), rewardMapper.map(rs, ctx), propertyMapper.map(rs, ctx));
+                return new State(rs.getString(Namespace.ENTRY_S_ID), rs.getString(Namespace.ENTRY_S_NAME), project.getModelParser().parseParameters(rs.getString(Namespace.ENTRY_S_NAME)), project.getLabelMap(project.getModelParser().parseState(rs.getString(Namespace.ENTRY_S_NAME))), rewardMapper.map(rs, ctx), propertyMapper.map(rs, ctx), responsibilityMapper.map(rs, ctx));
             }catch (PrismLangException e) {
-                return new State(rs.getString(Namespace.ENTRY_S_ID), rs.getString(Namespace.ENTRY_S_NAME), new TreeMap<>(), new TreeMap<>(), rewardMapper.map(rs, ctx), propertyMapper.map(rs, ctx));
+                return new State(rs.getString(Namespace.ENTRY_S_ID), rs.getString(Namespace.ENTRY_S_NAME), new TreeMap<>(), new TreeMap<>(), rewardMapper.map(rs, ctx), propertyMapper.map(rs, ctx), responsibilityMapper.map(rs, ctx));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

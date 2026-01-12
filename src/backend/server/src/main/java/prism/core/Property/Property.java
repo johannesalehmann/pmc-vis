@@ -11,6 +11,7 @@ import prism.api.VariableInfo;
 import prism.core.Namespace;
 import prism.core.Project;
 import prism.core.Scheduler.Scheduler;
+import prism.core.Utility.Timer;
 import prism.db.Batch;
 import prism.db.PersistentQuery;
 import prism.db.mappers.EntryMapper;
@@ -48,19 +49,30 @@ public abstract class Property implements Namespace {
         this.expression = prismProperty.getExpression();
         this.propertiesFile = propertiesFile;
 
-        Map<String, VariableInfo> info = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESULTS);
+        Map<String, VariableInfo> checkingInfo = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESULTS);
 
         if (project.getDatabase().question(String.format("SELECT name FROM pragma_table_info('%s') WHERE name = '%s'", project.getStateTableName(), this.getPropertyCollumn()))) {
             this.newMaximum();
             this.scheduler = Scheduler.loadScheduler(this.getName(), this.id);
             project.addScheduler(scheduler);
             alreadyChecked = true;
-            info.put(this.name, this.getPropertyInfo());
+            checkingInfo.put(this.name, this.getPropertyInfo());
         }else{
-            info.put(this.name, VariableInfo.blank(this.name));
+            checkingInfo.put(this.name, VariableInfo.blank(this.name));
         }
-        project.getInfo().setStateEntry(OUTPUT_RESULTS, info);
-        project.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
+        project.getInfo().setStateEntry(OUTPUT_RESULTS, checkingInfo);
+        project.getInfo().setTransitionEntry(OUTPUT_RESULTS, checkingInfo);
+
+        Map<String, VariableInfo> responsibilityInfo = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESPONSIBILITY);
+        if (false && project.getDatabase().question(String.format("SELECT name FROM pragma_table_info('%s') WHERE name = '%s'", project.getStateTableName(), this.getPropertyCollumn()))) {
+            // TODO: Do something analogous to the previous block for properties
+            // this.newMaximum(); // newResponsibilityMaximum() ?
+            // alreadyChecked = true; // alreadyComputedResponsibility = true ?
+            // responsibilityInfo.put(this.name, this.getPropertyInfo()); // this.getResponsibilityInfo() ?
+        }else{
+            responsibilityInfo.put(this.name, VariableInfo.blank(this.name));
+        }
+        project.getInfo().setStateEntry(OUTPUT_RESPONSIBILITY, responsibilityInfo);
     }
 
     protected VariableInfo getPropertyInfo(){
@@ -112,6 +124,10 @@ public abstract class Property implements Namespace {
         return ENTRY_PROP + id;
     }
 
+    public String getResponsibilityColumn(){
+        return ENTRY_RESP + id;
+    }
+
     public String getSchedulerCollumn(){
         return ENTRY_SCHED + id;
     }
@@ -122,13 +138,46 @@ public abstract class Property implements Namespace {
 
     public void clear(){
         this.alreadyChecked = false;
-        Map<String, VariableInfo> info = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESULTS);
-        info.replace(this.name, VariableInfo.blank(this.name));
-        project.getInfo().setStateEntry(OUTPUT_RESULTS, info);
-        project.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
+        Map<String, VariableInfo> checkingInfo = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESULTS);
+        checkingInfo.replace(this.name, VariableInfo.blank(this.name));
+        project.getInfo().setStateEntry(OUTPUT_RESULTS, checkingInfo);
+        project.getInfo().setTransitionEntry(OUTPUT_RESULTS, checkingInfo);
+
+        Map<String, VariableInfo> responsibilityInfo = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESPONSIBILITY);
+        responsibilityInfo.replace(this.name, VariableInfo.blank(this.name));
+        project.getInfo().setStateEntry(OUTPUT_RESPONSIBILITY, responsibilityInfo);
     }
 
     public abstract VariableInfo modelCheck() throws PrismException;
+
+    public VariableInfo computeResponsibility() {
+        try (prism.core.Utility.Timer time = new Timer(String.format("Checking %s", this.getName()), project.getLog())) {
+            // TODO: Actually compute responsibility values
+            // result = project.getPrism().modelCheck(propertiesFile, expression);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            project.getDatabase().execute(String.format("ALTER TABLE %s ADD COLUMN %s TEXT", project.getStateTableName(), this.getResponsibilityColumn()));
+
+          } catch (Exception e) {
+            // It's ok if this column already exists (though we currently don't check whether the exception was thrown
+            // because the column already existed or for some other, non-benign reason
+        }
+        try (Timer time = new Timer(String.format("Insert %s to db", this.getName()), project.getLog())) {
+            try (Batch toExecute = project.getDatabase().createBatch(String.format("UPDATE %s SET %s = ? WHERE %s = ?", project.getStateTableName(), this.getResponsibilityColumn(), ENTRY_S_ID), 2)) {
+                // TODO: How do we get the internal state IDs?
+                toExecute.addToBatch("??", "0.123456789");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return this.getPropertyInfo();
+    }
 
     public void printScheduler(String filename, boolean limit) {
         File f = new File(filename);
