@@ -501,7 +501,7 @@ function makeDetailCheckboxes() {
 
   $props_config.insertAdjacentHTML(
     'beforeend',
-    `<div class="buttons param"> 
+    `<div class="buttons param">
       <button class="ui button" id="clear">
         <span>Clear Properties (Testing)</span>
       </button>
@@ -640,6 +640,18 @@ function makeDetailPropsCheckboxes(options, propType) {
       $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
     }
 
+    if (
+      propType === CONSTANTS.responsibility
+      && options.metadata[propName].status !== CONSTANTS.STATUS.ready
+    ) {
+      const computing = options.metadata[propName].status === CONSTANTS.STATUS.computing;
+      $input_div = h('i', {
+        class: computing ? spinningIcon : triggerIcon,
+        id: `trigger-button-${propType}-${propName}`,
+      });
+      $input_div.addEventListener('click', (e) => triggerComputeResponsibility(e, propType, [propName]));
+    }
+
     const html = meta[propName] && meta[propName].identifier
       ? [
         meta[propName].icon
@@ -774,10 +786,10 @@ function makePCPSettings() {
   makeBoundIndicatorDropdown();
 
   const countPrinter = h('div', { class: 'content' });
-  countPrinter.innerHTML = `<pre 
-    id="count" 
+  countPrinter.innerHTML = `<pre
+    id="count"
     style="
-      height: 20px; 
+      height: 20px;
       font-size: 10px"
     >${
       pane.cy.pcp
@@ -787,7 +799,7 @@ function makePCPSettings() {
   $pcp_config.appendChild(countPrinter);
 
   const jsonPrinter = h('div', { class: 'content' });
-  jsonPrinter.innerHTML = `<pre 
+  jsonPrinter.innerHTML = `<pre
     id="json">${
       pane.cy.pcp
         ? JSON.stringify(pane.cy.pcp.getSelection(), undefined, 2)

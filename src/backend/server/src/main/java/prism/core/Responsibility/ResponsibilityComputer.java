@@ -25,6 +25,13 @@ public class ResponsibilityComputer {
 
         Optional<Property> p = project.getProperty(propertyName);
         if(p.isPresent()) {
+            //Make sure model and database are properly build
+            try{
+            project.buildModel();
+            }catch(Exception e){
+                throw new RuntimeException("Error building prism model", e);
+            }
+
             Property property = p.get();
             Map<String, VariableInfo> info = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESPONSIBILITY);
             info.get(propertyName).setStatus(VariableInfo.Status.computing);
@@ -43,7 +50,9 @@ public class ResponsibilityComputer {
 
         @Override
         public void run() {
+            //compute values and write them in the database
             VariableInfo newInfo = property.computeResponsibility();
+            //Replace the info entry for responsibilityInfo
             Map<String, VariableInfo> info = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESPONSIBILITY);
             info.replace(property.getName(), newInfo);
             project.getInfo().setStateEntry(OUTPUT_RESPONSIBILITY, info);

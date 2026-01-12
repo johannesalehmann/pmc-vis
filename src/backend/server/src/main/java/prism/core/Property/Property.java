@@ -21,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +38,8 @@ public abstract class Property implements Namespace {
     protected boolean minimum = false;
 
     protected boolean alreadyChecked = false;
+
+    protected boolean responsibilityComputed = false;
 
     protected Scheduler scheduler = null;
 
@@ -64,11 +67,11 @@ public abstract class Property implements Namespace {
         project.getInfo().setTransitionEntry(OUTPUT_RESULTS, checkingInfo);
 
         Map<String, VariableInfo> responsibilityInfo = (Map<String, VariableInfo>) project.getInfo().getStateEntry(OUTPUT_RESPONSIBILITY);
-        if (false && project.getDatabase().question(String.format("SELECT name FROM pragma_table_info('%s') WHERE name = '%s'", project.getStateTableName(), this.getPropertyCollumn()))) {
-            // TODO: Do something analogous to the previous block for properties
-            // this.newMaximum(); // newResponsibilityMaximum() ?
-            // alreadyChecked = true; // alreadyComputedResponsibility = true ?
-            // responsibilityInfo.put(this.name, this.getPropertyInfo()); // this.getResponsibilityInfo() ?
+        //Check if the Responsibility has already been computed
+        if (project.getDatabase().question(String.format("SELECT name FROM pragma_table_info('%s') WHERE name = '%s'", project.getStateTableName(), this.getResponsibilityColumn()))) {
+            // Add responsibilityinfo from db
+            responsibilityComputed = true;
+            responsibilityInfo.put(this.name, new VariableInfo(this.name, VariableInfo.Type.TYPE_NUMBER, 0, 1)); // this.getResponsibilityInfo() ?
         }else{
             responsibilityInfo.put(this.name, VariableInfo.blank(this.name));
         }
@@ -151,6 +154,11 @@ public abstract class Property implements Namespace {
     public abstract VariableInfo modelCheck() throws PrismException;
 
     public VariableInfo computeResponsibility() {
+        if(responsibilityComputed){
+            //Do not try to recompute
+            System.out.println(String.format("responsibility of %s already in database", this.name));
+            return new VariableInfo(this.name, VariableInfo.Type.TYPE_NUMBER, 0, 1);
+        }
         try (prism.core.Utility.Timer time = new Timer(String.format("Checking %s", this.getName()), project.getLog())) {
             // TODO: Actually compute responsibility values
             // result = project.getPrism().modelCheck(propertiesFile, expression);
@@ -160,23 +168,26 @@ public abstract class Property implements Namespace {
 
         try {
             project.getDatabase().execute(String.format("ALTER TABLE %s ADD COLUMN %s TEXT", project.getStateTableName(), this.getResponsibilityColumn()));
-
-          } catch (Exception e) {
-            // It's ok if this column already exists (though we currently don't check whether the exception was thrown
-            // because the column already existed or for some other, non-benign reason
+          } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
         try (Timer time = new Timer(String.format("Insert %s to db", this.getName()), project.getLog())) {
             try (Batch toExecute = project.getDatabase().createBatch(String.format("UPDATE %s SET %s = ? WHERE %s = ?", project.getStateTableName(), this.getResponsibilityColumn(), ENTRY_S_ID), 2)) {
-                // TODO: How do we get the internal state IDs?
-                toExecute.addToBatch("??", "0.123456789");
+                for (Long stateID : this.project.getAllStates()){
+                    String stateDescription = this.project.getStateName(stateID.toString());
+                    //System.out.println(stateDescription);
+                    // TODO: Match either stateID or stateDescription of previous computation to the necessary output
+                    // UPDATE table SET value = #1 WHERE state_id = #2
+                    toExecute.addToBatch("0.123456789", stateID.toString());
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return this.getPropertyInfo();
+        this.responsibilityComputed = true;
+        return new VariableInfo(this.name, VariableInfo.Type.TYPE_NUMBER, 0, 1);
     }
 
     public void printScheduler(String filename, boolean limit) {
