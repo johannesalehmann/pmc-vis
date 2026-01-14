@@ -326,6 +326,9 @@ public class TaskManager implements Executor, Managed {
         Prism prism = debug ? new Prism(new PrismPrintStreamLog(System.out)) : new Prism(new PrismDevNullLog());
         try {
             ModulesFile modulesFile = prism.parseModelFile(modelFile);
+            if (!modulesFile.getUndefinedConstants().isEmpty()){
+                return String.format("Does not support undefined constants:\n %s", String.join(",", modulesFile.getUndefinedConstants()));
+            }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         } catch (PrismLangException e) {

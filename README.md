@@ -19,7 +19,7 @@
 ----------------------------
 
 ### Local installation:
-Requirements: GNU make, gcc, JDK 11, git, NodeJS v. 16+
+Requirements: GNU make, gcc, JDK 11, git, NodeJS v. 16+, postgres v14
   1. backend:
       - new terminal, go to: `src/backend/`
         - run: `git clone https://github.com/prismmodelchecker/prism` to download prism
@@ -29,6 +29,7 @@ Requirements: GNU make, gcc, JDK 11, git, NodeJS v. 16+
       - go to: `src/backend/server/`
         - run: `mvn dependency:copy-dependencies` to download dependencies
         - run: `mvn package` to build server
+        - run: `./bin/initdb` to initialize the database
         - run: `./bin/run server PRISMDefault.yml` to start server
           - or run: `./bin/run server PRISMDebug.yml` to start sever in debug mode
       - server at `localhost:8080`
