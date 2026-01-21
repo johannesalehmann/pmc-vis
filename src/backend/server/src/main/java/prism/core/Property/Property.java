@@ -1,11 +1,13 @@
 package prism.core.Property;
 
+import com.google.common.collect.ImmutableMap;
 import org.jdbi.v3.core.result.ResultIterator;
 import parser.VarList;
 import parser.ast.*;
 import parser.type.TypeDouble;
 import prism.Pair;
 import prism.PrismException;
+import prism.api.State;
 import prism.api.Transition;
 import prism.api.VariableInfo;
 import prism.core.Namespace;
@@ -17,16 +19,17 @@ import prism.db.PersistentQuery;
 import prism.db.mappers.EntryMapper;
 import prism.db.mappers.PairMapper;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class Property implements Namespace {
+
+    final static Pattern sVaBRespOutputPattern = Pattern.compile("\\((.*)\\)\\s*:\\s*(\\d+(.\\d+)?)");
 
     protected int id;
 
@@ -153,18 +156,96 @@ public abstract class Property implements Namespace {
 
     public abstract VariableInfo modelCheck() throws PrismException;
 
+    private static Map<String, String> callTool(String modelPath, String property, String grouping){
+        try {
+            String p = property;
+            if(property.contains("P>=1.0")){
+                p = property.replace("P>=1.0", "P=1");
+            }
+            String binaryLocation = "../SVaBResp/target/release/svabresp-cli";
+            String call = String.format("./%s", binaryLocation);
+
+            String g = grouping;
+            if (g==null){
+                g = "individual";
+            }
+
+            ProcessBuilder builder = new ProcessBuilder(call, "-o", "parsable", "-a", "refinement", "-g", g, modelPath, p);
+
+            System.out.println(builder.command());
+
+            Process process
+                    = builder.start();
+
+            StringBuilder logger = new StringBuilder();
+            List<String> output = new ArrayList<>();
+
+            BufferedReader reader
+                    = new BufferedReader(new InputStreamReader(
+                    process.getInputStream()));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logger.append(line + "\n");
+                output.add(line);
+            }
+
+            int exitVal = process.waitFor();
+            if (exitVal == 0) {
+                Map<String, String> map = new HashMap<>();
+                if(g.equals("individual")) {
+                    for(String l : output){
+                        Matcher m = sVaBRespOutputPattern.matcher(l);
+                        if (m.find()) {
+                            Map<String, String> key = new HashMap<>();
+                            for (String pair : m.group(1).split(",")) {
+                                String[] split = pair.split("=");
+                                key.put(split[0].trim(), split[1].trim());
+                            }
+                            map.put(key.toString(), m.group(2));
+                            System.out.println(key + ":" + m.group(2));
+                        }
+                    }
+                }else{
+                    for(String l : output){
+                        String[] pair = l.split(":");
+                        map.put(pair[0].trim(), pair[1].trim());
+                    }
+                }
+                return map;
+            } else {
+                BufferedReader errorReader = new BufferedReader(new InputStreamReader( process.getErrorStream()));
+                while ((line = errorReader.readLine()) != null) {
+                    logger.append(line + "\n");
+                }
+                throw new RuntimeException(String.format("Error in SVaBRsp with code %s: \n %s", exitVal ,output.toString()));
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public Map<String, String> computeResponsibilityDirectly(String grouping){
+        String modelPath = String.format("%s/%s/%s", project.getPath(), project.getID(), Namespace.PROJECT_MODEL);
+        String property = this.expression.toString();
+
+        return callTool(modelPath, property, grouping);
+    }
+
     public VariableInfo computeResponsibility() {
         if(responsibilityComputed){
             //Do not try to recompute
             System.out.println(String.format("responsibility of %s already in database", this.name));
             return new VariableInfo(this.name, VariableInfo.Type.TYPE_NUMBER, 0, 1);
         }
-        try (prism.core.Utility.Timer time = new Timer(String.format("Checking %s", this.getName()), project.getLog())) {
-            // TODO: Actually compute responsibility values
-            // result = project.getPrism().modelCheck(propertiesFile, expression);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
+        String modelPath = String.format("%s/%s/%s", project.getPath(), project.getID(), Namespace.PROJECT_MODEL);
+        String property = this.expression.toString();
+
+        Map<String, String> values = callTool(modelPath, property, null);
 
         try {
             project.getDatabase().execute(String.format("ALTER TABLE %s ADD COLUMN %s TEXT", project.getStateTableName(), this.getResponsibilityColumn()));
@@ -173,12 +254,18 @@ public abstract class Property implements Namespace {
         }
         try (Timer time = new Timer(String.format("Insert %s to db", this.getName()), project.getLog())) {
             try (Batch toExecute = project.getDatabase().createBatch(String.format("UPDATE %s SET %s = ? WHERE %s = ?", project.getStateTableName(), this.getResponsibilityColumn(), ENTRY_S_ID), 2)) {
-                for (Long stateID : this.project.getAllStates()){
-                    String stateDescription = this.project.getStateName(stateID.toString());
-                    //System.out.println(stateDescription);
-                    // TODO: Match either stateID or stateDescription of previous computation to the necessary output
-                    // UPDATE table SET value = #1 WHERE state_id = #2
-                    toExecute.addToBatch("0.123456789", stateID.toString());
+                for (State state : this.project.getStates(this.project.getAllStates())){
+                    Map<String, String> key = new HashMap<>();
+                    for(String pair : state.getParameterString().split(";")){
+                        String[] split = pair.split("=");
+                        key.put(split[0].trim(), split[1].trim());
+                    }
+                    System.out.println(key.toString());
+                    if(values.containsKey(key.toString())){
+                        // UPDATE table SET value = #1 WHERE state_id = #2
+                        toExecute.addToBatch(values.get(key.toString()), state.getId());
+                        System.out.println(values.get(key.toString()));
+                    }
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

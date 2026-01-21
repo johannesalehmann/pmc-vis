@@ -24,10 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Path("/{project_id}")
 @Produces(MediaType.APPLICATION_JSON)
@@ -360,6 +357,40 @@ public class TaskResource extends Resource {
         }
 
         return ok(new Message(String.format("Started computing responsibility for %s in project %s", String.join(", ", properties), projectID)));
+    }
+
+    @Path("/responsibilityNOW")
+    @GET
+    @Timed
+    @Operation(summary = "computes responsibility for a property on the model an return it immediatly", description = "Starts the responsibility computation process for an already loaded property, and returns the result")
+    public Response computeResponsibilityNow(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @Parameter(description = "properties that should be checked")
+            @QueryParam("property") List<String> properties,
+            @QueryParam("grouping") Optional<String> grouping
+    ){
+        refreshProject(projectID);
+
+        if (!tasks.containsProject(projectID)) {
+            return error(String.format("Project %s does not exist", projectID));
+        }
+
+        Project p = tasks.getProject(projectID);
+        Map<String, String> results = new HashMap<>();
+
+        for (String propertyName : properties) {
+            try {
+                p.getProperty(propertyName).ifPresent(property -> {
+                    results.putAll(property.computeResponsibilityDirectly(grouping.orElse(null)));
+                });
+            } catch (Exception e) {
+                return error(e);
+            }
+
+        }
+
+        return ok(results);
     }
 
     @Path("/pane/all")
