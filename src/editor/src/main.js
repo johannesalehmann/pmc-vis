@@ -72,6 +72,8 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('moveTo', item => moveTo(item)))
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand('responsibility.computeModules', item => connectionProvider.getResponsibility(item, "modules")));
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand('responsibility.computeActions', item => connectionProvider.getResponsibility(item, "actions")));
 
 	comm.register(constants.EVENT_STATE, update_state);
 }

@@ -117,9 +117,31 @@
       {
         "command": "moveTo",
         "title": "Move to line in current active Window"
+      },
+      {
+        "command": "responsibility.computeModules",
+        "title": "Compute Module Responsibility for the current Document",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "responsibility.computeActions",
+        "title": "Compute Action Responsibility for the current Document",
+        "icon": "$(milestone)"
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "responsibility.computeModules",
+          "group": "navigation",
+          "when": "editorLangId == mdp"
+        },
+        {
+          "command": "responsibility.computeActions",
+          "group": "navigation",
+          "when": "editorLangId == mdp"
+        }
+      ],
       "view/title": [
         {
           "command": "connectionView.connect",

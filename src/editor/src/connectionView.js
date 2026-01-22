@@ -46,6 +46,67 @@ class ConnectionViewProvider {
         this.refresh();
     }
 
+    async getResponsibility(activeEditor, grouping) {
+
+        const document = activeEditor.document;
+
+        if (document.languageId == "mdp" && document.uri.scheme == "virtual") {
+            let responsibilityValues = new Map();
+            let responsibilityKeys = [];
+            const project = document.uri.path.split("/")[1];
+
+            await fetch(`http://${constants.ADDRESS}:8080/${project}/initial`, {
+                method: 'GET'
+            }).then(
+                result => result.json()
+            ).then(
+                data => {
+                    let info = data["info"]["s"];
+                    if (info["Responsibility Results"]) {
+                        info = info["Responsibility Results"];
+                        Object.keys(info).forEach(key => {
+                            responsibilityKeys.push(key);
+                        })
+                    }
+                }
+            )
+
+
+            for (let property of responsibilityKeys) {
+                await fetch(`http://${constants.ADDRESS}:8080/${project}/responsibilityNOW?property=${property}&grouping=${grouping}`, {
+                    method: 'GET'
+                }).then(
+                    result => result.json()
+                ).then(
+                    data => {
+                        //console.log(data)
+                        // @ts-ignore
+                        Object.keys(data).forEach(key => {
+                            if (data[key] > 0) {
+                                if (!responsibilityValues.has(key)) {
+                                    responsibilityValues.set(key, new Map());
+                                }
+                                responsibilityValues.get(key).set(property, data[key])
+                            }
+
+                        })
+                        //console.log(responsibilityValues)
+                        return responsibilityValues;
+                    }
+                    //
+                ).catch(
+                    error => {
+                        vscode.window.showErrorMessage("Failed to Attain Responsibility Values\n\n" + error)
+                    } // Handle the error response object
+                );
+            }
+
+            //console.log("then");
+            this._decorator.setResponsibility(activeEditor, responsibilityValues);
+
+        }
+    }
+
     removeProject(projectID) {
         this._openProjects = this._openProjects.filter(item => item._projectID != projectID);
         this.refresh();

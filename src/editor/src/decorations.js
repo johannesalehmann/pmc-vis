@@ -7,6 +7,7 @@ const green = "#b3ffb3";
 const red = "#ff9999";
 const yellow = "#ffff99";
 const grey = "#f2f2f2";
+const lightblue = "#7fe9f4"
 
 //RegExpressions used
 const constantRegExp = /^\s*const\s+(int|bool)\s+(\w+)\s*=\s*(.+?)\s*;$/
@@ -76,6 +77,23 @@ const partiallyBlockedActionDecoration = vscode.window.createTextEditorDecoratio
     }
 });
 
+const responsibilityDecoration = vscode.window.createTextEditorDecorationType({
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    overviewRulerColor: lightblue,
+    overviewRulerLane: vscode.OverviewRulerLane.Right,
+    light: {
+        // this color will be used in light color themes
+        borderColor: lightblue,
+        backgroundColor: lightblue
+    },
+    dark: {
+        // this color will be used in dark color themes
+        borderColor: lightblue,
+        backgroundColor: lightblue
+    }
+});
+
 const varDecoration = vscode.window.createTextEditorDecorationType({
     borderWidth: '1px',
     borderStyle: 'solid',
@@ -102,6 +120,7 @@ class Decorator {
         this._states = new Map();
         this._activeState = new Map();
         this._projectID = null;
+        this._responsibilityValues = new Map();
 
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -142,25 +161,85 @@ class Decorator {
         return true;
     }
 
+    setResponsibility(activeEditor, responsibilityValues) {
+        this._responsibilityValues = responsibilityValues;
+        this.updateResponsibility(activeEditor);
+    }
+
+    updateResponsibility(activeEditor) {
+        const document = activeEditor.document;
+
+        const responsibilities = [];
+        let matchModule;
+
+        while ((matchModule = moduleRegExp.exec(document.getText()))) {
+            const name = matchModule[1];
+
+            if (this._responsibilityValues.has(name)) {
+                //console.log(name)
+                const startPos = document.positionAt(matchModule.index + 7);
+                const endPos = document.positionAt(matchModule.index + name.length + 7);
+
+                const hovermessage = new vscode.MarkdownString(`**Responsibility:**`, true);
+                hovermessage.isTrusted = true;
+                const values = this._responsibilityValues.get(name);
+                values.forEach((value, property) => {
+                    //console.log(`${property} : ${value}`);
+                    hovermessage.appendText(`\n ${property} : ${value}`);
+                });
+
+                const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hovermessage };
+                responsibilities.push(decoration)
+            }
+        }
+
+        let matchAction;
+
+        while ((matchAction = actionRegExp.exec(document.getText()))) {
+            const name = matchAction[1];
+
+            if (this._responsibilityValues.has(name)) {
+                //console.log(name)
+                const startPos = document.positionAt(matchAction.index);
+                const endPos = document.positionAt(matchAction.index + name.length + 2);
+
+                const hovermessage = new vscode.MarkdownString(`**Responsibility:**`, true);
+                hovermessage.isTrusted = true;
+                const values = this._responsibilityValues.get(name);
+                values.forEach((value, property) => {
+                    //console.log(`${property} : ${value}`);
+                    hovermessage.appendText(`\n ${property} : ${value}`);
+                });
+
+                const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: hovermessage };
+                responsibilities.push(decoration)
+            }
+        }
+
+        activeEditor.setDecorations(responsibilityDecoration, responsibilities);
+    }
+
     updateInfo(activeEditor) {
 
-        console.log("updateInfo")
+        //console.log("updateInfo")
+
+        this.updateResponsibility(activeEditor)
 
         let state = this._activeState[this._projectID];
 
-        console.log("activeState:")
-        console.log(state)
+        //console.log("activeState:")
+        //console.log(state)
 
         if (!state || !this.matchVars(state.getState())) {
             activeEditor.setDecorations(allowedActionDecoration, []);
             activeEditor.setDecorations(blockedActionDecoration, []);
             activeEditor.setDecorations(partiallyBlockedActionDecoration, []);
             activeEditor.setDecorations(varDecoration, []);
-            console.log("fail")
+            //console.log("fail")
             return;
         }
 
-        console.log("succeed")
+        //console.log("succeed")
         state = state.getState();
 
         const document = activeEditor.document;
