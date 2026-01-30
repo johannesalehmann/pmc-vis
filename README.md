@@ -2,7 +2,7 @@
 ## **Responsibility-Extension**
 
 ### Requirements
-1. Active Docker Daemon (min 2GB RAM, recommended 4+GB RAM)
+1. Active Docker Daemon (min 4GB RAM, recommended 8+GB RAM)
 2. A chromium-based browser (e.g., Google Chrome)
 
 ----------------------------

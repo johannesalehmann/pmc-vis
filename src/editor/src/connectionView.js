@@ -9,6 +9,7 @@ class ConnectionViewProvider {
     constructor(decorator) {
         this._openProjects = [];
         this._decorator = decorator;
+        this._checkingResponsibility = false;
 
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -51,6 +52,10 @@ class ConnectionViewProvider {
         const document = activeEditor.document;
 
         if (document.languageId == "mdp" && document.uri.scheme == "virtual") {
+            if (this._checkingResponsibility == true) {
+                return
+            }
+            this._checkingResponsibility = true;
             let responsibilityValues = new Map();
             let responsibilityKeys = [];
             const project = document.uri.path.split("/")[1];
@@ -103,7 +108,7 @@ class ConnectionViewProvider {
 
             //console.log("then");
             this._decorator.setResponsibility(activeEditor, responsibilityValues);
-
+            this._checkingResponsibility = false;
         }
     }
 

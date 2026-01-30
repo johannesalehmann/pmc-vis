@@ -1,2 +1,0 @@
-// Liveness (if a philosopher is hungry then eventually some philosopher eats)
-"Live":P>=1 [ F "eat" ]
