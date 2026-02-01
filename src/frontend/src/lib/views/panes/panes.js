@@ -1,7 +1,7 @@
 import shortid from 'shortid';
 import Swal from 'sweetalert2/dist/sweetalert2.all.min.js';
 
-import { setPane } from '../../utils/controls.js';
+import { setPane, PROJECT } from '../../utils/controls.js';
 import { colorList } from '../../utils/utils.js';
 import { CONSTANTS } from '../../utils/names.js';
 import makeCtxMenu from './ctx-menu.js';
@@ -10,10 +10,10 @@ import { socket } from '../imports/import-socket.js';
 
 const MIN_FLEX_GROW = 0.005;
 const MIN_SIZE = 10;
-const panes = {}; // governs the pane-based exploration
-const tracker = {}; // keeps track of already seen nodes, marks, etc.
+const panes = {};
+const allPanesRegistry = {};
+const tracker = {};
 
-// let width;
 let height;
 const maxheight = () => height - MIN_SIZE * 2;
 
@@ -48,8 +48,8 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
     dragbar: uid(),
     // width: dims.width,
     height,
-    split: 0.3, // defines how much height the pcp has
-    cy: undefined, // must be set later!,
+    split: 0.3,
+    cy: undefined,
     backgroundColor,
     nodesIds: new Set(nodesIds),
     spawner,
@@ -68,14 +68,12 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
 
   pane.details = pane.container + '-details';
 
-  // pane div
   const div = document.createElement('div');
   div.className = 'cy-s flex-item pane';
   div.id = pane.id;
   div.style.flex = paneKeysBefore.length + 1;
   div.style.height = pane.height + 'px';
 
-  // add the node-link diagram view
   const cyContainer = document.createElement('div');
   cyContainer.id = pane.container;
   cyContainer.className = 'cy';
@@ -87,7 +85,6 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
 
   const buttons = createPaneControls(pane);
 
-  // add the pane for the detail view (pcp)
   const details = document.createElement('div');
   details.className = 'detail-inspector';
   details.id = pane.details;
@@ -156,13 +153,20 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
   }
 
   panes[div.id] = pane;
+  allPanesRegistry[pane.id] = {
+    ...pane,
+    destroyed: false,
+  };
   const paneKeysAfter = Object.keys(panes);
-  if (spawner && panes[spawner]) {
-    if (spawner.length > 0) {
-      // TODO, eg merged
-    }
-    panes[spawner].spawned ||= new Set();
-    panes[spawner].spawned.add(div.id); // remembers which panes were created from this one
+
+  if (spawner) {
+    const spawners = Array.isArray(spawner) ? spawner : [spawner];
+    spawners.forEach(spawnerId => {
+      if (panes[spawnerId]) {
+        panes[spawnerId].spawned ||= new Set();
+        panes[spawnerId].spawned.add(div.id);
+      }
+    });
   }
 
   enableDragBars();
@@ -170,12 +174,14 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
 
   if (paneKeysAfter.length > numberOfPanes.value) {
     destroyPanes(
-      panes[paneKeysAfter[1]].id, // skip the first pane
+      panes[paneKeysAfter[1]].id,
       {
         firstOnly: true,
         pre: true,
       },
-    );
+    ).catch(error => {
+      console.error('Error destroying panes:', error);
+    });
   }
 
   return pane;
@@ -270,7 +276,6 @@ function enableDragBars() {
   enableSplitDragBars();
 }
 
-// https://stackoverflow.com/questions/28767221/flexbox-resizing
 function enablePaneDragBars() {
   const dragbars = Array.from(document.getElementsByClassName('dragbar'));
   let dragging = false;
@@ -283,7 +288,6 @@ function enablePaneDragBars() {
   dragbars.forEach(d => {
     d.onmousedown = (e) => {
       const resizer = e.target;
-      // e.button === 0 means left click
       if (e.button > 0 || !resizer.classList.contains('dragbar')) {
         return;
       }
@@ -308,7 +312,6 @@ function enablePaneDragBars() {
 
       e.preventDefault();
 
-      // Avoid cursor flickering (reset in onMouseUp)
       document.body.style.cursor = getComputedStyle(resizer).cursor;
 
       let prevSize = prev[sizeProp];
@@ -375,7 +378,6 @@ function enableSplitDragBars() {
       const elementId = e.target ? e.target.id : e.srcElement.id;
       const bar = document.getElementById(elementId);
 
-      // e.button === 0 means left click
       if (e.button > 0 || !bar) {
         return;
       }
@@ -393,7 +395,7 @@ function enableSplitDragBars() {
     };
     d.ondblclick = null;
     if (d && d.previousElementSibling && d.parentElement) {
-      makeCtxMenu(d, d.previousElementSibling); // pane is: panes[d.parentElement.id]
+      makeCtxMenu(d, d.previousElementSibling);
     }
   });
 }
@@ -403,17 +405,124 @@ function getPanes() {
 }
 
 function updatePanes(newPanesData) {
-  Object.keys(newPanesData).forEach((k) => (panes[k] = newPanesData[k]));
+  Object.keys(newPanesData).forEach((k) => {
+    panes[k] = newPanesData[k];
+    if (allPanesRegistry[k]) {
+      allPanesRegistry[k] = {
+        ...allPanesRegistry[k],
+        ...newPanesData[k],
+        destroyed: false,
+      };
+    } else {
+      allPanesRegistry[k] = {
+        ...newPanesData[k],
+        destroyed: false,
+      };
+    }
+    if (panes[k]) {
+      clearTimeout(panes[k]._storeTimeout);
+      panes[k]._storeTimeout = setTimeout(() => {
+        storePaneToServer(k, panes[k]).catch(error => {
+          console.warn(`Failed to auto-store pane ${k}:`, error);
+        });
+      }, 1000);
+    }
+  });
 }
 
-// recursively destroy every pane starting from an id
-function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
+// Store pane data to server
+async function storePaneToServer(paneId, paneData) {
+  try {
+    const paneInfo = {
+      id: paneId,
+      nodesIds: Array.from(paneData.nodesIds || []),
+      spawner: paneData.spawner,
+      spawnerNodes: paneData.spawnerNodes,
+      backgroundColor: paneData.backgroundColor,
+      cyData: paneData.cy ? paneData.cy.json() : null,
+    };
+
+    const content = JSON.stringify(paneInfo);
+    const encodedPaneId = encodeURIComponent(paneId);
+
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane/store?pane_id=${encodedPaneId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: content,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`Failed to store pane ${paneId} to server: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to store pane: ${response.status}`);
+    }
+
+    console.log(`Successfully stored pane ${paneId} to server`);
+  } catch (error) {
+    console.error(`Error storing pane ${paneId} to server:`, error);
+    throw error;
+  }
+}
+
+// Fetch pane data from server
+async function fetchPaneFromServer(paneId) {
+  try {
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane?pane_id=${paneId}`);
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 500) {
+        return null;
+      }
+      return null;
+    }
+    const data = await response.json();
+    if (data && typeof data === 'object') {
+      const paneData = data[paneId];
+      if (paneData) {
+        if (typeof paneData === 'string') {
+          try {
+            return JSON.parse(paneData);
+          } catch {
+            try {
+              const decoded = decodeURIComponent(escape(atob(paneData)));
+              return JSON.parse(decoded);
+            } catch (e2) {
+              console.warn(`Failed to parse pane data for ${paneId}:`, e2);
+              return null;
+            }
+          }
+        }
+        return paneData;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn(`Error fetching pane ${paneId} from server:`, error);
+    return null;
+  }
+}
+
+async function destroyPanes(firstId, {
+  firstOnly = false, pre = false, manualRemoval = false,
+} = {}) {
   const pane = document.getElementById(firstId);
 
   if (pane) {
     if (panes[firstId] && panes[firstId].spawned?.size > 0) {
       if (!firstOnly) {
-        panes[firstId].spawned.forEach(p => destroyPanes(p));
+        const spawnedArray = Array.from(panes[firstId].spawned);
+        for (let i = 0; i < spawnedArray.length; i += 1) {
+          await destroyPanes(spawnedArray[i], { manualRemoval });
+        }
+      }
+    }
+
+    if (panes[firstId]) {
+      try {
+        await storePaneToServer(firstId, panes[firstId]);
+      } catch (error) {
+        console.error(`Failed to store pane ${firstId} before destruction:`, error);
       }
     }
 
@@ -423,6 +532,14 @@ function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
     }
 
     pane.remove();
+
+    if (manualRemoval) {
+      delete allPanesRegistry[firstId];
+      socket.emit('pane removed', firstId);
+    } else if (allPanesRegistry[firstId]) {
+      allPanesRegistry[firstId].destroyed = true;
+    }
+
     delete panes[firstId];
 
     const newKeys = Object.keys(panes);
@@ -431,14 +548,81 @@ function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
     });
 
     if (!pre) {
-      setPane(panes[newKeys[newKeys.length - 1]].id);
-    }
+      const lastPaneId = newKeys[newKeys.length - 1];
 
-    socket.emit('pane removed', firstId);
+      highlightPaneById(lastPaneId);
+    }
   }
 }
 
-function highlightPaneById(paneId) {
+async function restorePaneFromServer(paneId) {
+  if (!allPanesRegistry[paneId] || !allPanesRegistry[paneId].destroyed) {
+    console.log(`Pane ${paneId} is not in destroyed state, skipping restore`);
+    return false;
+  }
+
+  console.log(`Attempting to restore pane ${paneId} from server...`);
+  let serverData = null;
+  try {
+    serverData = await fetchPaneFromServer(paneId);
+  } catch (error) {
+    console.warn(`Error fetching pane ${paneId} from server:`, error);
+  }
+
+  const { spawnGraph } = await import('../graph/node-link.js');
+  const { params } = await import('../graph/layout-options/klay.js');
+
+  const registryPane = allPanesRegistry[paneId];
+  const nodesIds = serverData?.nodesIds || Array.from(registryPane.nodesIds || []);
+
+  if (nodesIds.length === 0) {
+    console.warn(`Cannot restore pane ${paneId}: no node IDs available`);
+    return false;
+  }
+
+  const pane = spawnPane(
+    {
+      spawner: registryPane.spawner,
+      id: paneId,
+      newPanePosition: { value: 'end' },
+    },
+    nodesIds,
+    registryPane.spawnerNodes,
+  );
+
+  if (serverData?.cyData && spawnGraph) {
+    try {
+      const data = {
+        cyImport: serverData.cyData,
+        nodes: serverData.cyData.elements?.nodes || [],
+        edges: serverData.cyData.elements?.edges || [],
+      };
+      const layoutParams = params.default || params;
+      spawnGraph(pane, data, layoutParams);
+    } catch (error) {
+      console.warn(`Error restoring graph for pane ${paneId}:`, error);
+    }
+  } else if (nodesIds.length > 0) {
+    console.log(`Pane ${paneId} has no stored graph data, will need to expand nodes`);
+  }
+
+  if (allPanesRegistry[paneId]) {
+    allPanesRegistry[paneId].destroyed = false;
+  }
+
+  console.log(`Successfully restored pane ${paneId}`);
+  return true;
+}
+
+async function highlightPaneById(paneId) {
+  if (!panes[paneId]) {
+    const restored = await restorePaneFromServer(paneId);
+    if (!restored) {
+      console.warn(`Pane ${paneId} not found and could not be restored`);
+      return;
+    }
+  }
+
   const paneDiv = document.getElementById(paneId);
   setPane(paneId);
   if (paneDiv) {
@@ -456,10 +640,7 @@ function highlightPaneById(paneId) {
 }
 
 function updateDocDims() {
-  // width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
   const navHeight = parseInt(
-    // turns NNpx into NN
     window.getComputedStyle(document.body).getPropertyValue('--nav-height'),
   );
 
@@ -468,7 +649,6 @@ function updateDocDims() {
       || document.documentElement.clientHeight
       || document.body.clientHeight);
 
-  // width -= document.getElementById("config")?.clientWidth;
   updateHeights();
 }
 
@@ -502,7 +682,6 @@ addEventListener('global-action', (e) => {
         tracker[e.detail.action],
       );
     } else {
-      // "undo-"
       e.detail.elements.forEach(
         tracker[e.detail.action].delete,
         tracker[e.detail.action],
@@ -706,10 +885,15 @@ document
     });
   });
 
+function getAllPanesRegistry() {
+  return allPanesRegistry;
+}
+
 export {
   enablePaneDragBars,
   spawnPane,
   getPanes,
+  getAllPanesRegistry,
   updatePanes,
   destroyPanes,
   togglePane,
