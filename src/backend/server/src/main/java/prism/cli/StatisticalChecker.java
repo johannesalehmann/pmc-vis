@@ -19,6 +19,8 @@ import java.io.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -108,7 +110,7 @@ public class StatisticalChecker extends ConfiguredCommand<PRISMServerConfigurati
 
         TaskManager taskManager = new TaskManager();
 
-        Project project = new Project(projectID, configuration.getPathTemplate(), taskManager,  database, configuration.getCUDDMaxMem(), configuration.getIterations(), configuration.getDebug());
+        Project project = new Project(projectID, configuration.getPathTemplate(), taskManager,  database, configuration.getCUDDMaxMem(), configuration.getIterations(), configuration.getDebug(), new ArrayList<>());
 
         Optional<String> scheduler;
         if (namespace.get("scheduler") == null){

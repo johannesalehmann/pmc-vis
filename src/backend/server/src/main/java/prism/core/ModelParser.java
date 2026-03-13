@@ -51,20 +51,20 @@ public class ModelParser {
             throw new RuntimeException(e);
         }
 
-        TreeMap<String, VariableInfo> info = new TreeMap<>();
+
         for (int i = 0; i < varList.getNumVars() ; i++) {
             String name = varList.getName(i);
-            info.put(name, new VariableInfo(name, VariableInfo.parseType(varList.getType(i).getTypeString()), varList.getLow(i), varList.getHigh(i) ));
+            this.parent.getInfo().setStateEntry(Namespace.OUTPUT_VARIABLES, new DataEntry(name, DataEntry.parseType(varList.getType(i).getTypeString()), varList.getLow(i), varList.getHigh(i) ));
         }
-        this.parent.getInfo().setStateEntry(Namespace.OUTPUT_VARIABLES, info);
-        info = new TreeMap<>();
+
         for (int i = 0; i < modulesFile.getNumRewardStructs() ; i++) {
             RewardStruct rw = modulesFile.getRewardStruct(i);
             String name = rw.getName();
-            info.put(name, new VariableInfo(name, VariableInfo.Type.TYPE_NUMBER, 0, Double.POSITIVE_INFINITY));
+            DataEntry info = new DataEntry(name, DataEntry.Type.TYPE_NUMBER, 0, Double.POSITIVE_INFINITY);
+            this.parent.getInfo().setStateEntry(Namespace.OUTPUT_REWARDS, info);
+            this.parent.getInfo().setTransitionEntry(Namespace.OUTPUT_REWARDS, info);
         }
-        this.parent.getInfo().setStateEntry(Namespace.OUTPUT_REWARDS, info);
-        this.parent.getInfo().setTransitionEntry(Namespace.OUTPUT_REWARDS, info);
+
         try {
             buildInitialStateObjects();
         } catch (Exception e) {

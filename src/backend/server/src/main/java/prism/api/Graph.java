@@ -25,7 +25,7 @@ public class Graph {
     }
 
     public Graph(Model model, List<State> states, List<Transition> transitions) {
-        this.info = model.getInformation();
+        this.info = model.getInfo();
         this.nodes = new ArrayList<>(states);
         this.nodes.addAll(transitions);
         this.edges = new ArrayList<>();

@@ -27,7 +27,7 @@ public class Status {
     }
 
     public Status(Model model, List<String> messages){
-        this.info = model.getInformation();
+        this.info = model.getInfo();
         this.messages = messages;
         this.status = 200;
     }

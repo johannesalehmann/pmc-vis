@@ -2,6 +2,7 @@ const CONSTANTS = {
   results: 'Model Checking Results',
   atomicPropositions: 'Atomic Propositions',
   variables: 'Variable Values',
+  computable: 'computable',
 
   ap_init: 'init',
   ap_deadlock: 'deadlock',

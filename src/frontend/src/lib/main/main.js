@@ -16,14 +16,13 @@ const info = {
       panes[m.target.pane]?.cy?.pcp.redraw();
     });
   }),
+  computable: {},
 }; // singleton
 
 function getDefaultBadge(name) {
-  return `<i class="fa-xs ${
-    CONSTANTS.INTERACTIONS[name].icon
-  }" title="${
-    CONSTANTS.INTERACTIONS[name].type
-  }"></i>`;
+  return `<i class="fa-xs ${CONSTANTS.INTERACTIONS[name].icon
+    }" title="${CONSTANTS.INTERACTIONS[name].type
+    }"></i>`;
 }
 
 function setInfo(newInfo) {
@@ -32,6 +31,7 @@ function setInfo(newInfo) {
   });
   info.details = {};
   info.types = {};
+  info.computable = newInfo[CONSTANTS.computable];
   ['s', 't'].forEach(type => {
     Object.keys(info[type]).forEach(k => {
       info.details[k] = info[type][k];

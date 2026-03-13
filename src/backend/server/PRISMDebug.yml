@@ -1,5 +1,6 @@
 pathTemplate: volume
 debug: true
+registeredDataProvider: [mock]
 
 logging:
 

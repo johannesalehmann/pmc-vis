@@ -4,7 +4,7 @@ import parser.ast.Expression;
 import parser.ast.ModulesFile;
 import parser.ast.PropertiesFile;
 import prism.*;
-import prism.api.VariableInfo;
+import prism.api.DataEntry;
 import prism.core.Property.Property;
 import prism.core.Utility.Prism.Updater;
 import prism.core.Utility.Timer;
@@ -362,11 +362,10 @@ public class ModelChecker implements Namespace {
         public void run() {
             try {
                 prism.buildModelIfRequired();
-                VariableInfo newInfo = property.modelCheck();
-                Map<String, VariableInfo> info = (Map<String, VariableInfo>) parent.getInfo().getStateEntry(OUTPUT_RESULTS);
-                info.replace(property.getName(), newInfo);
-                parent.getInfo().setStateEntry(OUTPUT_RESULTS, info);
-                parent.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
+                DataEntry newInfo = property.modelCheck();
+
+                parent.getInfo().setStateEntry(OUTPUT_RESULTS, newInfo);
+                parent.getInfo().setTransitionEntry(OUTPUT_RESULTS, newInfo);
             } catch (PrismException e) {
                 throw new RuntimeException(e);
             }
@@ -414,8 +413,9 @@ public class ModelChecker implements Namespace {
         Optional<Property> p = parent.getProperty(propertyName);
         if(p.isPresent()) {
             Property property = p.get();
-            Map<String, VariableInfo> info = (Map<String, VariableInfo>) parent.getInfo().getStateEntry(OUTPUT_RESULTS);
-            info.get(propertyName).setStatus(VariableInfo.Status.computing);
+
+            DataEntry info = parent.getInfo().getStateEntry(OUTPUT_RESULTS, propertyName).copy();
+            info.setStatus(DataEntry.Status.computing);
             parent.getInfo().setStateEntry(OUTPUT_RESULTS, info);
             parent.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
             parent.getTaskManager().execute(new modelCheckTask(property));

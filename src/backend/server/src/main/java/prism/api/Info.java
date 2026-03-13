@@ -2,20 +2,23 @@ package prism.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class Info {
 
     private String id;
-    private TreeMap<String, Object> stateInformation;
-    private TreeMap<String, Object> transitionInformation;
-    private TreeMap<String, Object> schedulerInformation;
+    private TreeMap<String, DataCategory> stateInformation;
+    private TreeMap<String, DataCategory> transitionInformation;
+    private List<String> computable;
 
     public Info(String id){
         this.id = id;
         this.stateInformation = new TreeMap<>();
         this.transitionInformation = new TreeMap<>();
-        this.schedulerInformation = new TreeMap<>();
+        this.computable = new ArrayList<>();
     }
 
     @JsonProperty
@@ -24,49 +27,63 @@ public class Info {
     }
 
     @JsonProperty
-    public TreeMap<String, Object> getS() {
-        return stateInformation;
+    public TreeMap<String, Map<String, DataEntry>> getS() {
+        TreeMap<String, Map<String, DataEntry>> map = new TreeMap<>();
+        for (Map.Entry<String, DataCategory> entry : stateInformation.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().getEntries());
+        }
+        return map;
     }
 
     @JsonProperty
-    public TreeMap<String, Object> getT() {
-        return transitionInformation;
+    public TreeMap<String, Map<String, DataEntry>> getT() {
+        TreeMap<String, Map<String, DataEntry>> map = new TreeMap<>();
+        for (Map.Entry<String, DataCategory> entry : transitionInformation.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().getEntries());
+        }
+        return map;
     }
 
     @JsonProperty
-    public TreeMap<String, Object> getScheduler() {
-        return schedulerInformation;
+    public TreeMap<String, Map<String, DataEntry>> getScheduler() {
+        TreeMap<String, Map<String, DataEntry>> map = new TreeMap<>();
+        return map;
     }
 
-    public void setStateEntry(String key, Object value) {
-        this.stateInformation.put(key, value);
+    public List<String> getComputable() {
+        return computable;
     }
 
-    public void setTransitionEntry(String key, Object value) {
-        this.transitionInformation.put(key, value);
+    public void setStateEntry(String category, DataEntry entry) {
+        if (!stateInformation.containsKey(category)) {
+            stateInformation.put(category, new DataCategory(category));
+        }
+        stateInformation.get(category).addEntry(entry);
     }
 
-    public void setSchedulerEntry(String key, Object value) {
-        this.schedulerInformation.put(key, value);
+    public void setTransitionEntry(String category, DataEntry entry) {
+        if (!transitionInformation.containsKey(category)) {
+            transitionInformation.put(category, new DataCategory(category));
+        }
+        transitionInformation.get(category).addEntry(entry);
     }
 
-    public Object getStateEntry(String key) {
-        return this.stateInformation.get(key);
+    public DataEntry getStateEntry(String category, String key) {
+        return this.stateInformation.get(category).getEntry(key);
     }
 
-    public Object getTransitionEntry(String key) {
-        return this.transitionInformation.get(key);
+    public DataEntry getTransitionEntry(String category, String key) {
+        return this.transitionInformation.get(category).getEntry(key);
     }
 
-    public Object getSchedulerEntry(String key) {
-        return this.schedulerInformation.get(key);
+    public void setComputable(String category) {
+        this.computable.add(category);
     }
 
     public Info copy() {
         Info newInfo = new Info(id);
         newInfo.stateInformation = new TreeMap<>(stateInformation);
         newInfo.transitionInformation = new TreeMap<>(transitionInformation);
-        newInfo.schedulerInformation = new TreeMap<>(schedulerInformation);
         return newInfo;
     }
 }

@@ -439,7 +439,7 @@ async function triggerModelCheckProperty(e, propType, props) {
   });
 
   fetch(
-    `${BACKEND}/${PROJECT}/check?property=${props.join(
+    `${BACKEND}/${PROJECT}/check?category=${propType}&property=${props.join(
       '&property=',
     )}`,
     { method: 'GET' },
@@ -485,7 +485,7 @@ function makeDetailCheckboxes() {
 
   $props_config.insertAdjacentHTML(
     'beforeend',
-    `<div class="buttons param"> 
+    `<div class="buttons param">
       <button class="ui button" id="clear">
         <span>Clear Properties (Testing)</span>
       </button>
@@ -521,7 +521,7 @@ function makeDetailCheckboxes() {
 
     let $input_div = h('div', { class: 'ui small checkbox' }, [$toggle, h('label', { for: `checkbox-${k}` })]);
 
-    if (k === CONSTANTS.results) {
+    if (info.computable.includes(k)) {
       const keys = Object.keys(options[k].metadata);
       const statuses = {
         ready: new Set(),
@@ -606,7 +606,7 @@ function makeDetailPropsCheckboxes(options, propType) {
     let $input_div = h('div', {}, [$toggle, h('label', { for: `checkbox-${propType}-${propName}` })]);
 
     if (
-      propType === CONSTANTS.results
+      info.computable.includes(propType)
       && options.metadata[propName].status !== CONSTANTS.STATUS.ready
     ) {
       const computing = options.metadata[propName].status === CONSTANTS.STATUS.computing;
@@ -751,10 +751,10 @@ function makePCPSettings() {
   makeBoundIndicatorDropdown();
 
   const countPrinter = h('div', { class: 'content' });
-  countPrinter.innerHTML = `<pre 
-    id="count" 
+  countPrinter.innerHTML = `<pre
+    id="count"
     style="
-      height: 20px; 
+      height: 20px;
       font-size: 10px"
     >${
       pane.cy.pcp
@@ -764,7 +764,7 @@ function makePCPSettings() {
   $pcp_config.appendChild(countPrinter);
 
   const jsonPrinter = h('div', { class: 'content' });
-  jsonPrinter.innerHTML = `<pre 
+  jsonPrinter.innerHTML = `<pre
     id="json">${
       pane.cy.pcp
         ? JSON.stringify(pane.cy.pcp.getSelection(), undefined, 2)

@@ -1,11 +1,11 @@
 package prism.core;
 
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import parser.ast.Expression;
 import parser.ast.ModulesFile;
 import parser.ast.PropertiesFile;
 import prism.*;
 import prism.api.*;
+import prism.core.Computation.DataProvider;
 import prism.core.Property.Property;
 import prism.core.Scheduler.Criteria;
 import prism.core.Scheduler.CriteriaSort;
@@ -20,14 +20,16 @@ import simulator.TransitionList;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public class Model implements Namespace {
 
+    private final File modelFile;
     private final String version;
-    private final Project parent;
+    public final Project parent;
 
     private final ModelParser parser;
     private final ModelChecker checker;
@@ -47,6 +49,8 @@ public class Model implements Namespace {
 
     private final Map<String, AP> APs;
 
+    private final List<DataProvider> dataProviders;
+
     private final File outLog;
 
     private boolean built = false;
@@ -56,6 +60,7 @@ public class Model implements Namespace {
 
     public Model(File modelFile, String version, Project parent, boolean debug) throws Exception {
 
+        this.modelFile = modelFile;
         this.parent = parent;
         this.outLog = parent.getLog();
         this.version = version;
@@ -87,17 +92,17 @@ public class Model implements Namespace {
 
         AP initial;
         if (labelStyles.containsKey(LABEL_INIT)){
-            initial = new AP(labelStyles.get(LABEL_INIT),true);
+            initial = new AP(LABEL_INIT, labelStyles.get(LABEL_INIT),true);
         }else{
-            initial = new AP("i", false);
+            initial = new AP(LABEL_INIT, "i", false);
         }
         APs.put(LABEL_INIT,  initial);
 
         AP deadlock;
         if (labelStyles.containsKey(LABEL_DEAD)){
-            deadlock = new AP(labelStyles.get(LABEL_DEAD),true);
+            deadlock = new AP(LABEL_DEAD, labelStyles.get(LABEL_DEAD),true);
         }else{
-            deadlock = new AP("d", false);
+            deadlock = new AP(LABEL_DEAD,"d", false);
         }
         APs.put(LABEL_DEAD,  deadlock);
 
@@ -105,30 +110,37 @@ public class Model implements Namespace {
             String name = modulesFile.getLabelName(i);
             AP ap;
             if (labelStyles.containsKey(name)){
-                ap = new AP(labelStyles.get(name),true);
+                ap = new AP(name, labelStyles.get(name),true);
             }else{
                 String shortName = name.substring(0, 1);
                 if (!usedShorts.containsKey(shortName)) usedShorts.put(shortName, 0);
                 int number = usedShorts.get(shortName);
-                ap = new AP(shortName + number, false);
+                ap = new AP(name,shortName + number, false);
                 usedShorts.replace(shortName, number + 1);
             }
             APs.put(name,  ap);
         }
+        for(AP ap : APs.values()){
+            this.info.setStateEntry(OUTPUT_LABELS, ap);
+        }
 
-        this.info.setStateEntry(OUTPUT_LABELS, APs);
-        this.info.setStateEntry(OUTPUT_RESULTS, new TreeMap<>());
-        this.info.setTransitionEntry(OUTPUT_RESULTS, new TreeMap<>());
-
-        Map<String, VariableInfo> actionParameter = new TreeMap<>();
-        actionParameter.put(ENTRY_T_OUT, new VariableInfo(ENTRY_T_OUT, VariableInfo.parseType("string"), 0,0));
-        actionParameter.put(ENTRY_T_ACT, new VariableInfo(ENTRY_T_ACT, VariableInfo.parseType("string"), 0,0));
-        actionParameter.put(ENTRY_T_PROB, new VariableInfo(ENTRY_T_PROB, VariableInfo.parseType("complex"), 0,0));
-        this.info.setTransitionEntry(OUTPUT_ACTION, actionParameter);
+        Map<String, DataEntry> actionParameter = new TreeMap<>();
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_OUT, DataEntry.parseType("string"), 0,0));
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_ACT, DataEntry.parseType("string"), 0,0));
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_PROB, DataEntry.parseType("complex"), 0,0));
 
         this.loadPropertyFiles();
         if (checker.isBuilt()) {
             this.setBuilt(true);
+        }
+
+        this.info.setComputable(OUTPUT_RESULTS);
+
+        this.dataProviders = new ArrayList<>();
+        for (String registeredProvider : parent.getRegisteredDataProviders()){
+            DataProvider dataProvider = DataProvider.initialize(registeredProvider, this);
+            dataProviders.add(dataProvider);
+            this.info.setComputable(dataProvider.getName());
         }
     }
 
@@ -136,6 +148,10 @@ public class Model implements Namespace {
 
     public String getID(){
         return String.format("%s_%s", this.parent.getID(), this.version);
+    }
+
+    public File getModelFile() {
+        return modelFile;
     }
 
     public String getVersion(){
@@ -194,6 +210,10 @@ public class Model implements Namespace {
         return info;
     }
 
+    public List<DataProvider> getDataProviders() {
+        return dataProviders;
+    }
+
     public long getSize() {
         return this.checker.getModel().getNumStates();
     }
@@ -214,16 +234,8 @@ public class Model implements Namespace {
         return name;
     }
 
-    public Info getInformation() {
+    public Info getInfoCopy() {
         Info outInfo = this.info.copy();
-        for (Property p : properties) {
-            if(p.getScheduler() == null){
-                outInfo.setSchedulerEntry(p.getName(), VariableInfo.Status.missing);
-            }
-        }
-        for (Scheduler s : schedulers){
-            outInfo.setSchedulerEntry(s.getName(), VariableInfo.Status.ready);
-        }
         return outInfo;
     }
 
@@ -286,8 +298,8 @@ public class Model implements Namespace {
         return database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s in (%s)", TABLE_STATES, ENTRY_S_ID, stateString), new StateMapper(this));
     }
 
-    public List<Long> getAllStates() {
-        return database.executeCollectionQuery(String.format("SELECT %s FROM %s", ENTRY_S_ID, TABLE_STATES), Long.class);
+    public List<String> getAllStateIDs() {
+        return database.executeCollectionQuery(String.format("SELECT %s FROM %s", ENTRY_S_ID, TABLE_STATES), String.class);
     }
 
     public String getStateID(String stateDescription) {

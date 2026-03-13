@@ -29,7 +29,7 @@ public class TransitionMapper implements RowMapper<Transition> {
 
     public TransitionMapper(Model model){
         this.distributionMapper = new DistributionMapper();
-        this.propertyMapper = new PropertyMapper(model.getProperties());
+        this.propertyMapper = new PropertyMapper(model.getProperties(), model.getDataProviders());
         this.rewardMapper = new RewardMapper(model);
         this.scheduleMapper = new ScheduleMapper(model.getSchedulers());
         this.map = null;

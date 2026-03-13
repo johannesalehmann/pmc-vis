@@ -10,6 +10,7 @@ import prism.PrismException;
 import prism.api.Message;
 import prism.api.Pane;
 import prism.api.Status;
+import prism.core.Computation.DataProvider;
 import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Project;
@@ -310,6 +311,7 @@ public class TaskResource extends Resource {
             @PathParam("project_id") String projectID,
             @Parameter(description = "properties that should be checked")
             @QueryParam("property") List<String> properties,
+            @QueryParam("category") String category,
             @QueryParam("version") Optional<String> version
     ){
         if (!tasks.containsProject(projectID)) {
@@ -323,22 +325,37 @@ public class TaskResource extends Resource {
             if (version.isPresent()) {
                 m = p.getModel(version.get());
             }else{
-
-                    m = p.getDefaultModel();
+                m = p.getDefaultModel();
             }
-
-            for (String propertyName : properties) {
-                m.getProperty(propertyName).ifPresent(property -> {
-                    try {
-                        m.checkProperty(propertyName);
-                        if (debug){
-                            System.out.println("Checking property " + propertyName);
+            if (category == null || category.equals(Namespace.OUTPUT_RESULTS)){
+                for (String propertyName : properties) {
+                    m.getProperty(propertyName).ifPresent(property -> {
+                        try {
+                            m.checkProperty(propertyName);
+                            if (debug){
+                                System.out.println("Checking property " + propertyName);
+                            }
+                        } catch (PrismException e) {
+                            throw new RuntimeException(e);
                         }
-                    } catch (PrismException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                    });
 
+                }
+            }else{
+                Optional<DataProvider> prov = m.getDataProviders().stream().filter(d -> d.getName().equals(category)).findFirst();
+                if (prov.isPresent()) {
+                    DataProvider provider = prov.get();
+                    for (String propertyName : properties) {
+                        m.getProperty(propertyName).ifPresent(property -> {
+                            provider.compute(property, new HashMap<>());
+                            if (debug){
+                                System.out.println(String.format("Computing %s of %s ", provider.getName(), propertyName));
+                            }
+                        });
+                    }
+                }else{
+                    throw new RuntimeException("No data provider found for category " + category);
+                }
             }
         } catch (Exception e) {
             return error(e);

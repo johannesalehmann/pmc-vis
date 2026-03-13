@@ -6,13 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import prism.core.Namespace;
 
 @Schema(description="Information Object for Variables and Properties")
-public class VariableInfo implements Namespace {
+public class DataEntry implements Namespace {
 
     public enum Type {TYPE_BLANK, TYPE_NUMBER, TYPE_BOOL, TYPE_OTHER};
 
     public enum Status {missing, ready, computing}
 
-    private final String variableName;
+    private final String entryName;
 
     private final String type;
 
@@ -22,8 +22,8 @@ public class VariableInfo implements Namespace {
 
     private Status status;
 
-    public static VariableInfo blank(String name){
-        return new VariableInfo(name, Type.TYPE_BLANK, 0, 0, Status.missing);
+    public static DataEntry blank(String name){
+        return new DataEntry(name, Type.TYPE_BLANK, 0, 0, Status.missing);
     }
 
     public static Type parseType(String typeName){
@@ -44,12 +44,12 @@ public class VariableInfo implements Namespace {
         }
     }
 
-    public VariableInfo(String name, Type type, double minValue, double maxValue){
+    public DataEntry(String name, Type type, double minValue, double maxValue){
         this(name, type, minValue, maxValue, Status.ready);
     }
 
-    public VariableInfo(String name, Type type, double minValue, double maxValue, Status status){
-        this.variableName = name;
+    public DataEntry(String name, Type type, double minValue, double maxValue, Status status){
+        this.entryName = name;
         switch(type){
             case TYPE_NUMBER:
                 this.type = TYPE_NUMBER;
@@ -71,15 +71,14 @@ public class VariableInfo implements Namespace {
     }
 
     @JsonIgnore
-    public String getVariableName(){
-        return variableName;
+    public String getEntryName(){
+        return entryName;
     }
 
     @JsonIgnore
     public void setStatus(Status status){
         this.status = status;
     }
-
 
     @JsonProperty
     public String getType() {
@@ -99,5 +98,9 @@ public class VariableInfo implements Namespace {
     @JsonProperty
     public String status() {
         return status.toString();
+    }
+
+    public DataEntry copy(){
+        return new DataEntry(this.entryName, parseType(this.type), this.minValue, this.maxValue, this.status);
     }
 }

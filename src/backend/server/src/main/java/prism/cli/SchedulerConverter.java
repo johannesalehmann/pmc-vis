@@ -20,6 +20,7 @@ import java.io.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class SchedulerConverter extends ConfiguredCommand<PRISMServerConfiguration> {
@@ -86,7 +87,7 @@ public class SchedulerConverter extends ConfiguredCommand<PRISMServerConfigurati
 
         TaskManager activeProjects = new TaskManager();
 
-        Project project = new Project(projectID, configuration.getPathTemplate(), activeProjects,  database, configuration.getCUDDMaxMem(), configuration.getIterations(), configuration.getDebug());
+        Project project = new Project(projectID, configuration.getPathTemplate(), activeProjects,  database, configuration.getCUDDMaxMem(), configuration.getIterations(), configuration.getDebug(), new ArrayList<>());
         project.getDefaultModel().printScheduler(namespace.get("out"), namespace.getBoolean("limit"));
         project.removeFiles();
     }

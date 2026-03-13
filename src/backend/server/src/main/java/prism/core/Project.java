@@ -37,15 +37,17 @@ public class Project implements Namespace{
     private Map<String, Model> models;
     private String newestVersion;
 
+    private List<String> registerdProviders;
+
     public static Project reset(Project original) throws Exception {
-        return new Project(original.id, original.rootDir, original.taskManager, original.database, original.cuddMaxMem, original.numIterations, original.debug);
+        return new Project(original.id, original.rootDir, original.taskManager, original.database, original.cuddMaxMem, original.numIterations, original.debug, original.registerdProviders);
     }
 
     public Project(String id, String rootDir, TaskManager taskManager, Database database, PRISMServerConfiguration config) throws Exception {
-        this(id, rootDir, taskManager, database, config.getCUDDMaxMem(), config.getIterations(), config.getDebug());
+        this(id, rootDir, taskManager, database, config.getCUDDMaxMem(), config.getIterations(), config.getDebug(), config.getRegisteredDataProvider());
     }
 
-    public Project(String id, String rootDir, TaskManager taskManager, Database database, long cuddMaxMem, int numIterations, boolean debug) throws Exception {
+    public Project(String id, String rootDir, TaskManager taskManager, Database database, long cuddMaxMem, int numIterations, boolean debug, List<String> dataProviders) throws Exception {
         this.id = id;
         this.taskManager = taskManager;
         this.debug = debug;
@@ -59,6 +61,8 @@ public class Project implements Namespace{
         this.database = database;
         this.propertyFiles = new HashSet<>();
         this.models = new HashMap<>();
+
+        this.registerdProviders = dataProviders;
 
         addAllFiles();
     }
@@ -94,6 +98,10 @@ public class Project implements Namespace{
 
     public Model getModel(String version) throws Exception {
         return models.get(version);
+    }
+
+    public List<String> getRegisteredDataProviders() {
+        return registerdProviders;
     }
 
     public Model getDefaultModel() throws Exception {

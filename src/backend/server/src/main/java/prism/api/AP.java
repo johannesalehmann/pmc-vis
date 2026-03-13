@@ -4,17 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import prism.core.Namespace;
 
-public class AP {
+public class AP extends DataEntry {
 
     private String identifier;
 
     private boolean icon;
 
-    public AP(){
-        // Jackson deserialization
-    }
-
-    public AP(String identifier, boolean icon){
+    public AP(String name, String identifier, boolean icon){
+        super(name, Type.TYPE_BOOL, 0.0, 1.0);
         this.identifier = identifier;
         this.icon = icon;
     }

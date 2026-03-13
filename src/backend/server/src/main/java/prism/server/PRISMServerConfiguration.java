@@ -7,6 +7,8 @@ import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Runtime.getRuntime;
 
@@ -25,6 +27,8 @@ public class PRISMServerConfiguration extends Configuration {
     private int socketPort = 8082;
 
     private String socketHost = "0.0.0.0";
+
+    private List<String> registeredDataProvider = new ArrayList<>();
 
     @Valid
     @NotNull
@@ -122,6 +126,16 @@ public class PRISMServerConfiguration extends Configuration {
     @JsonProperty
     public void setSocketHost(String socketHost) {
         this.socketHost = socketHost;
+    }
+
+    @JsonProperty
+    public List<String> getRegisteredDataProvider() {
+        return registeredDataProvider;
+    }
+
+    @JsonProperty
+    public void setRegisteredDataProvider(List<String> registeredDataProvider) {
+        this.registeredDataProvider = registeredDataProvider;
     }
 
 }

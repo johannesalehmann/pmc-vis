@@ -3,14 +3,12 @@ package prism.core.Property;
 import org.jdbi.v3.core.result.ResultIterator;
 import parser.VarList;
 import parser.ast.*;
-import parser.type.TypeDouble;
 import prism.Pair;
 import prism.PrismException;
 import prism.api.Transition;
-import prism.api.VariableInfo;
+import prism.api.DataEntry;
 import prism.core.Model;
 import prism.core.Namespace;
-import prism.core.Project;
 import prism.core.Scheduler.Scheduler;
 import prism.db.Batch;
 import prism.db.PersistentQuery;
@@ -49,23 +47,23 @@ public abstract class Property implements Namespace {
         this.expression = prismProperty.getExpression();
         this.propertiesFile = propertiesFile;
 
-        Map<String, VariableInfo> info = (Map<String, VariableInfo>) model.getInfo().getStateEntry(OUTPUT_RESULTS);
-
         if (model.getDatabase().question(String.format("SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' AND column_name = '%s'", model.getVersion(), Namespace.TABLE_STATES_BASE, this.getPropertyCollumn()))) {
             this.newMaximum();
             this.scheduler = Scheduler.loadScheduler(this.getName(), this.id, model);
             model.addScheduler(scheduler);
             alreadyChecked = true;
-            info.put(this.name, this.getPropertyInfo());
+            DataEntry info = this.getPropertyInfo();
+
+            model.getInfo().setStateEntry(OUTPUT_RESULTS, info);
+            model.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
         }else{
-            info.put(this.name, VariableInfo.blank(this.name));
+            model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
+            model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
         }
-        model.getInfo().setStateEntry(OUTPUT_RESULTS, info);
-        model.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
     }
 
-    protected VariableInfo getPropertyInfo(){
-        return new VariableInfo(this.name, VariableInfo.Type.TYPE_NUMBER, 0, maximum);
+    protected DataEntry getPropertyInfo(){
+        return new DataEntry(this.name, DataEntry.Type.TYPE_NUMBER, 0, maximum);
     }
 
     protected void newMaximum(){
@@ -121,15 +119,15 @@ public abstract class Property implements Namespace {
         return this.scheduler;
     }
 
+    public Expression getExpression() {return expression;}
+
     public void clear(){
         this.alreadyChecked = false;
-        Map<String, VariableInfo> info = (Map<String, VariableInfo>) model.getInfo().getStateEntry(OUTPUT_RESULTS);
-        info.replace(this.name, VariableInfo.blank(this.name));
-        model.getInfo().setStateEntry(OUTPUT_RESULTS, info);
-        model.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
+        model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
+        model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
     }
 
-    public abstract VariableInfo modelCheck() throws PrismException;
+    public abstract DataEntry modelCheck() throws PrismException;
 
     public void printScheduler(String filename, boolean limit) {
         File f = new File(filename);

@@ -30,7 +30,7 @@ public class StateMapper implements RowMapper<State> {
     public StateMapper(Model model) {
         this.model = model;
         this.viewMapper = new ViewMapper();
-        this.propertyMapper = new PropertyMapper(model.getProperties());
+        this.propertyMapper = new PropertyMapper(model.getProperties(), model.getDataProviders());
         this.rewardMapper = new RewardMapper(model);
     }
 

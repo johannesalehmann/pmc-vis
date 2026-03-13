@@ -1,5 +1,6 @@
 pathTemplate: volume
 debug: true
+registeredDataProvider: [responsibility, mock]
 
 logging:
 
@@ -45,4 +46,4 @@ database:
   evictionInterval: 10s
 
   # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
-  minIdleTime: 120 minute
+  minIdleTime: 1 minute

@@ -16,7 +16,7 @@ public class Transition implements Node{
 
     private Map<String, Double> probabilityDistribution;
 
-    private TreeMap<String, Double> results;
+    private TreeMap<String, Map<String, Double>> results;
 
     private TreeMap<String, Double> rewards;
 
@@ -26,7 +26,7 @@ public class Transition implements Node{
         // Jackson deserialization
     }
 
-    public Transition(String id, String source, String action, Map<String, Double> probabilityDistribution, Map<String, Double> rewards, Map<String, Double> results, Map<String, Double> scheduler, Map<String, String> translation){
+    public Transition(String id, String source, String action, Map<String, Double> probabilityDistribution, Map<String, Double> rewards, Map<String, Map<String, Double>> results, Map<String, Double> scheduler, Map<String, String> translation){
         this.id = id;
         this.source = source;
         this.action = action;
@@ -78,7 +78,9 @@ public class Transition implements Node{
 
         details.put(OUTPUT_ACTION, parameters);
         details.put(OUTPUT_REWARDS, new TreeMap<>(rewards));
-        details.put(OUTPUT_RESULTS, new TreeMap<>(results));
+        for (Map.Entry<String, Map<String, Double>> e : results.entrySet()) {
+            details.put(e.getKey(), new TreeMap<>(e.getValue()));
+        }
         details.put(OUTPUT_SCHEDULER, new TreeMap<>(scheduler));
         return details;
     }
@@ -97,11 +99,6 @@ public class Transition implements Node{
     @JsonIgnore
     public String getSource() {
         return source;
-    }
-
-    @JsonIgnore
-    public Map<String, Double> getResults() {
-        return results;
     }
 
     @JsonIgnore

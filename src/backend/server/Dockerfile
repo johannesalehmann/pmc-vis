@@ -1,4 +1,4 @@
-FROM debian:11-slim
+FROM rust:slim-bullseye
 
 #Create working dir
 RUN useradd -ms /bin/bash prismServer
@@ -20,7 +20,9 @@ ENV PATH="$PATH:/usr/lib/postgresql/14/bin"
 WORKDIR /home/prismServer
 
 RUN git clone https://github.com/prismmodelchecker/prism prism
+RUN git clone https://github.com/johannesalehmann/SVaBResp.git SVaBResp
 
+#build prism
 WORKDIR /home/prismServer/prism/prism
 
 RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
@@ -28,6 +30,14 @@ RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
 WORKDIR /home/prismServer/prism/prism
 
 RUN make
+
+#build SVaBResp
+WORKDIR /home/prismServer/SVaBResp
+
+#To lock to a certain commit
+#RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
+
+RUN cargo build --release --package svabresp-cli --bin svabresp-cli
 
 WORKDIR /home/prismServer
 
