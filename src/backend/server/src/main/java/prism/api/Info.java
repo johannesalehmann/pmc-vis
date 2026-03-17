@@ -76,6 +76,19 @@ public class Info {
         return this.transitionInformation.get(category).getEntry(key);
     }
 
+    public void removeStateEntries(String category) {
+        if (stateInformation.containsKey(category)) {
+            this.stateInformation.remove(category);
+        }
+
+    }
+
+    public void removeTransitionEntries(String category) {
+        if (transitionInformation.containsKey(category)) {
+            this.transitionInformation.remove(category);
+        }
+    }
+
     public void setComputable(String category) {
         this.computable.add(category);
     }

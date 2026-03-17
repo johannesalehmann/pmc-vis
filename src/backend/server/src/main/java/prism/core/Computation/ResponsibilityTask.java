@@ -18,8 +18,11 @@ public class ResponsibilityTask extends DataProviderTask {
 
     private final static Pattern sVaBRespOutputPattern = Pattern.compile("\\((.*)\\)\\s*:\\s*(\\d+(.\\d+)?)");
 
+    private final String binaryLocation;
+
     public ResponsibilityTask(String name, Model model, Property property) {
         super(name, model, property);
+        this.binaryLocation = "../SVaBResp/target/release/svabresp-cli";
     }
 
     @Override
@@ -30,7 +33,6 @@ public class ResponsibilityTask extends DataProviderTask {
         Map<String, String> results = callSVAResp(modelPath, property.getExpression().toString(), grouping);
         Map<String, String> modifiedResults = new HashMap<>();
         for (Map.Entry<String, String> entry : results.entrySet()) {
-
             modifiedResults.put(mapStateToId(entry.getKey().replace("{", "(")), entry.getValue());
         }
         this.writeToDatabase(model.getTableStates(), this.getColumnName(), Namespace.ENTRY_S_ID, modifiedResults);
@@ -47,17 +49,46 @@ public class ResponsibilityTask extends DataProviderTask {
     }
 
     @Override
+    public boolean isReady() {
+        try{
+            String call = String.format("./%s", binaryLocation);
+            ProcessBuilder builder = new ProcessBuilder(call, "--help");
+            Process process = builder.start();
+
+            int exitVal = process.waitFor();
+            if (exitVal == 0) {
+                return true;
+            }
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            String line;
+            StringBuilder logger = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                logger.append(line).append("\n");
+            }
+            while ((line = errorReader.readLine()) != null) {
+                logger.append(line).append("\n");
+            }
+            System.out.println(logger);
+        } catch (InterruptedException | IOException e) {
+            return false;
+        }
+        return false;
+    }
+
+    @Override
     public String shortName(){
         return "Resp";
     }
 
-    private static Map<String, String> callSVAResp(String modelPath, String property, String grouping) {
+    private Map<String, String> callSVAResp(String modelPath, String property, String grouping) {
         try {
             String p = property;
             if (property.contains("P>=1.0")) {
                 p = property.replace("P>=1.0", "P=1");
             }
-            String binaryLocation = "../SVaBResp/target/release/svabresp-cli";
+
             String call = String.format("./%s", binaryLocation);
 
             String g = grouping;

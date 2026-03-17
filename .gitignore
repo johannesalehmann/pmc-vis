@@ -17,6 +17,8 @@ package-lock.json
 .idea
 **/dist
 **/server/db
+**/switss
+**/gurobi
 
 backend/server/target
 backend/prism

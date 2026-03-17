@@ -4,6 +4,12 @@
 1. Active Docker Daemon (min 2GB RAM, recommended 4+GB RAM)
 2. A chromium-based browser (e.g., Google Chrome)
 
+### **Tool** Version
+If you want to use the PMC-VIS version with more tools added,
+follow the **Tool** keyword. Before starting any build option:
+1. add switss-multi to `src/backend/switss`
+2. add an active gurobi license to `src/backend/gurobi`
+
 ----------------------------
 
 ### Docker Compose:
@@ -11,6 +17,7 @@
 2. `docker compose up` starts the server:
    - `-d` flag detaches the running system
    - `--build` flag rebuilds docker images
+   - **Tool** `--profile tools` to build with the tools profile
    - `docker compose down` stops the system
    - `docker image prune` removes dangling images
 3. web vis at `http://localhost:3000`

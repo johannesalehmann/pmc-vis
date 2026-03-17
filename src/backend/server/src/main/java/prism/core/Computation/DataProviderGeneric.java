@@ -37,6 +37,16 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     }
 
     @Override
+    public boolean isReady() {
+        for (T task : tasks.values()) {
+            if(!task.isReady()){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void compute(Property property, Map<String, Object> args){
         T task = tasks.get(property.getName());
         task.setArguments(args);

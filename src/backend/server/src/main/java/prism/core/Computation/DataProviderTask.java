@@ -98,6 +98,8 @@ public abstract class DataProviderTask implements Task {
 
     public abstract double getMax();
 
+    public abstract boolean isReady();
+
     protected void writeToDatabase(String tableName, String collumnName, String matchingIdentifier, Map<String, String> values){
         //Creates a new Collumn to store the new Values
         try {

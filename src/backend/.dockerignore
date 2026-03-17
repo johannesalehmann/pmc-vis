@@ -1,0 +1,6 @@
+Dockerfile
+server/target
+server/test
+server/db
+gurobi
+prism

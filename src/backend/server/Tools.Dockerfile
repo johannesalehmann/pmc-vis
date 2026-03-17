@@ -22,6 +22,7 @@ RUN rustup default stable
 WORKDIR /home/prismServer
 
 RUN git clone https://github.com/prismmodelchecker/prism prism
+RUN git clone https://github.com/johannesalehmann/SVaBResp.git SVaBResp
 
 #build prism
 WORKDIR /home/prismServer/prism/prism
@@ -31,6 +32,29 @@ RUN git checkout 17a47f8
 WORKDIR /home/prismServer/prism/prism
 
 RUN make
+
+#build SVaBResp
+WORKDIR /home/prismServer/SVaBResp
+
+#To lock to a certain commit
+#RUN git checkout c541affb994f3ed044ae4e1dce3ed3dd078323be
+
+RUN cargo build --release --package svabresp-cli --bin svabresp-cli
+
+# Load Switts-Multi
+WORKDIR /home/prismServer
+
+COPY switss switss
+WORKDIR /home/prismServer/switss/build
+
+RUN cmake ..
+RUN make
+
+RUN cp switss-multi /usr/local/bin/
+
+#Hook gurobi license
+VOLUME ["/data"]
+ENV GRB_LICENSE_FILE="/data/gurobi.lic"
 
 #Load PMC-Vis backend
 WORKDIR /home/prismServer
@@ -52,7 +76,7 @@ USER prismServer
 
 RUN /bin/bash -c 'bin/initdb'
 
-ENTRYPOINT ["bin/run", "server", "DockerDefault.yml"]
+ENTRYPOINT ["bin/run", "server", "DockerTools.yml"]
 
 EXPOSE 8080
 EXPOSE 8082

@@ -41,6 +41,11 @@ public class MockTask extends DataProviderTask {
     }
 
     @Override
+    public boolean isReady() {
+        return true;
+    }
+
+    @Override
     public String shortName(){
         return "Mock";
     }

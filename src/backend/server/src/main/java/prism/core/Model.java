@@ -139,8 +139,10 @@ public class Model implements Namespace {
         this.dataProviders = new ArrayList<>();
         for (String registeredProvider : parent.getRegisteredDataProviders()){
             DataProvider dataProvider = DataProvider.initialize(registeredProvider, this);
-            dataProviders.add(dataProvider);
-            this.info.setComputable(dataProvider.getName());
+            if(dataProvider != null){
+                dataProviders.add(dataProvider);
+                this.info.setComputable(dataProvider.getName());
+            }
         }
     }
 
@@ -340,36 +342,6 @@ public class Model implements Namespace {
         if (this.debug) {
             System.out.printf("Loading Properties in Model %s finished%n", this.getID());
         }
-    }
-
-    public List<String> getStatesByExpression(String expression) {
-        List<String> members = new ArrayList<>();
-        if (modulesFile.getLabelList().getLabelNames().contains(expression)) {
-            for (String stateDescription : this.checker.getModel().getReachableStates().exportToStringList()) {
-                try {
-                    String id = this.getStateID(stateDescription);
-                    BaseState state = new BaseState(id, stateDescription, this);
-                    if (state.getLabels().contains(expression)) {
-                        members.add(id);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            return members;
-        }
-        for (String stateDescription : this.checker.getModel().getReachableStates().exportToStringList()) {
-            try {
-                String id = this.getStateID(stateDescription);
-                BaseState state = new BaseState(id, stateDescription, this);
-                if (state.checkForProperty(expression)) {
-                    members.add(id);
-                }
-            } catch (prism.PrismLangException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return members;
     }
 
     public List<String> getInitialStates() throws Exception {

@@ -10,17 +10,30 @@ public interface DataProvider {
 
     //Used to call the constructor of your provider
     static DataProvider initialize(String type, Model parent){
+        DataProvider dataProvider = null;
         try{
         switch (type){
             case "responsibility":
-                return new DataProviderGeneric<>("Responsibility", parent, ResponsibilityTask.class.getConstructor(String.class, Model.class, Property.class));
+                dataProvider = new DataProviderGeneric<>("Responsibility", parent, ResponsibilityTask.class.getConstructor(String.class, Model.class, Property.class));
+                break;
             case "mock":
-                return new DataProviderGeneric<>("Mock Values", parent, MockTask.class.getConstructor(String.class, Model.class, Property.class));
+                dataProvider = new DataProviderGeneric<>("Mock Values", parent, MockTask.class.getConstructor(String.class, Model.class, Property.class));
+                break;
         }
         }catch(NoSuchMethodException e){
             throw new RuntimeException("Could not find Constructor for: " + type, e);
         }
-        throw new RuntimeException("Unsupported data provider type: " + type);
+        if(dataProvider == null){
+            throw new RuntimeException("Unsupported data provider type: " + type);
+        }
+        if(dataProvider.isReady()){
+            return dataProvider;
+        }else {
+            System.out.println("DataProvider: " + dataProvider.getName() + " is not ready");
+            parent.getInfo().removeStateEntries(dataProvider.getName());
+            parent.getInfo().removeTransitionEntries(dataProvider.getName());
+            return null;
+        }
     }
 
     //Used to start computation of values the provider provides
@@ -29,4 +42,6 @@ public interface DataProvider {
     Map<String, String> getColumnMap();
 
     String getName();
+
+    boolean isReady();
 }

@@ -1,5 +1,6 @@
 package prism.core;
 
+import parser.State;
 import parser.ast.Expression;
 import parser.ast.ModulesFile;
 import parser.ast.PropertiesFile;
@@ -28,6 +29,7 @@ public class ModelChecker implements Namespace {
     private final Prism prism;
     private final ModulesFile modulesFile;
     private prism.Model model;
+    private ModelGenerator modelGen;
     private final Updater updater;
 
     private final String stateTable;
@@ -199,6 +201,12 @@ public class ModelChecker implements Namespace {
             }
 
             model = prism.getBuiltModel();
+            try {
+                modelGen = prism.getModelGenerator();
+            } catch (PrismException e) {
+                throw new RuntimeException(e);
+            }
+
             if (model == null || isBuilt()) {
                 parent.setBuilt(true);
                 return;
@@ -228,7 +236,7 @@ public class ModelChecker implements Namespace {
                     throw new RuntimeException(e.toString());
                 }
 
-                List<String> stateList = model.getReachableStates().exportToStringList();
+                List<State> stateList = getReachableStates();
 
                 String stateInsertCall = String.format("INSERT INTO %s (%s,%s,%s) VALUES(?,?,?::boolean)", stateTable, ENTRY_S_ID, ENTRY_S_NAME, ENTRY_S_INIT);
                 String transitionInsertCall = String.format("INSERT INTO %s(%s,%s,%s,%s) VALUES (?,?,?,?)", transTable, ENTRY_T_ID, ENTRY_T_OUT, ENTRY_T_ACT, ENTRY_T_PROB);
@@ -245,8 +253,8 @@ public class ModelChecker implements Namespace {
 
                 try (Batch toExecute = database.createBatch(stateInsertCall, 3 + numRewards)) {
                     for (int i = 0; i < stateList.size(); i++) {
-                        String stateName = parent.getModelParser().normalizeStateName(stateList.get(i));
-                        parser.State s = parent.getModelParser().parseState(stateName);
+                        State s = stateList.get(i);
+                        String stateName = parent.getModelParser().normalizeStateName(s.toString());
                         String s_id = parent.getModelParser().stateIdentifier(s).toString();
 
                         //Determine whether this is an initial state or not
@@ -280,8 +288,7 @@ public class ModelChecker implements Namespace {
 
                 try (Batch toExecute = database.createBatch(transitionInsertCall, 4 + numRewards)) {
                     for (int i = 0; i < stateList.size(); i++) {
-                        String stateName = parent.getModelParser().normalizeStateName(stateList.get(i));
-                        parser.State s = parent.getModelParser().parseState(stateName);
+                        State s = stateList.get(i);
                         String s_id = parent.getModelParser().stateIdentifier(s).toString();
 
                         TransitionList<Double> transitionList = new TransitionList<>(Evaluator.forDouble());
@@ -447,6 +454,28 @@ public class ModelChecker implements Namespace {
         for (Property p : parent.getProperties()) {
             checkModelDirectly(p.getName());
         }
+    }
+
+    public List<State> getReachableStates() throws PrismException {
+        if (modelGen == null) {
+            throw new PrismException("Model has not been built.");
+        }
+        Set<State> visited = new HashSet<>();
+        List<State> toVisit = modelGen.getInitialStates();
+        while (!toVisit.isEmpty()) {
+            State state = toVisit.remove(0);
+            visited.add(state);
+            modelGen.exploreState(state);
+            for (int i = 0; i < modelGen.getNumChoices(); i++) {
+                for (int j = 0; j < modelGen.getNumTransitions(i); j++) {
+                    State newState = modelGen.computeTransitionTarget(i,j);
+                    if (!(visited.contains(newState) || toVisit.contains(newState))) {
+                        toVisit.add(newState);
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(visited);
     }
 
 }

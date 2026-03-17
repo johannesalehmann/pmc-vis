@@ -5,7 +5,7 @@ import parser.ast.ExpressionReward;
 import parser.ast.PropertiesFile;
 import prism.PrismException;
 import prism.Result;
-import prism.StateValues;
+import symbolic.states.StateValues;
 import prism.api.Transition;
 import prism.api.DataEntry;
 import prism.core.Model;
