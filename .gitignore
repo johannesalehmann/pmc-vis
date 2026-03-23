@@ -20,10 +20,9 @@ package-lock.json
 **/switss
 **/gurobi
 
-backend/server/target
-backend/prism
-backend/server/test
-backend/server/.idea
+src/backend/server/target
+src/backend/prism
+src/backend/server/test
 Artifact
 
 artifact-import-export/*.tar

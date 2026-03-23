@@ -36,6 +36,8 @@ public interface DataProvider {
         }
     }
 
+    void addProperty(Property property);
+
     //Used to start computation of values the provider provides
     void compute(Property property, Map<String, Object> arguments);
 

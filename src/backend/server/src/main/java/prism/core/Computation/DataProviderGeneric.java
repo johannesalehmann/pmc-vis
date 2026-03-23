@@ -15,12 +15,14 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
 
     private final String name;
     private final Model parent;
+    private final Constructor<T> taskConstructor;
 
     private Map<String, T> tasks;
 
     protected DataProviderGeneric(String name, Model parent, Constructor<T> taskConstructor) {
         this.name = name;
         this.parent = parent;
+        this.taskConstructor = taskConstructor;
         this.tasks = new TreeMap<>();
 
         for (Property property : parent.getProperties()) {
@@ -52,6 +54,16 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
         task.setArguments(args);
         parent.getInfo().getStateEntry(this.name, property.getName()).setStatus(DataEntry.Status.computing);
         runTask(task);
+    }
+
+    @Override
+    public void addProperty(Property property) {
+        try {
+            T task = taskConstructor.newInstance(name, parent, property);
+            tasks.put(property.getName(), task);
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

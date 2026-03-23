@@ -232,7 +232,11 @@ public class Model implements Namespace {
         parser.ast.Property prismProperty = propertiesFile.getPropertyObject(number);
         String name = prismProperty.getName() != null ? prismProperty.getName() : prismProperty.getExpression().toString();
         if (existsProperty(name)) return name;
-        properties.add(Property.createProperty(this, properties.size(), propertiesFile, prismProperty));
+        Property property = Property.createProperty(this, properties.size(), propertiesFile, prismProperty);
+        properties.add(property);
+        for (DataProvider dataProvider : dataProviders) {
+            dataProvider.addProperty(property);
+        }
         return name;
     }
 
