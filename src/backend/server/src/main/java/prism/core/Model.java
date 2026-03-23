@@ -66,6 +66,7 @@ public class Model implements Namespace {
         this.version = version;
         this.debug = debug;
         this.info = new Info(parent.getID());
+        this.dataProviders = new ArrayList<>();
 
         this.TABLE_STATES = String.format(TABLE_STATES_GEN, version);
         this.TABLE_TRANS = String.format(TABLE_TRANS_GEN, version);
@@ -136,7 +137,6 @@ public class Model implements Namespace {
 
         this.info.setComputable(OUTPUT_RESULTS);
 
-        this.dataProviders = new ArrayList<>();
         for (String registeredProvider : parent.getRegisteredDataProviders()){
             DataProvider dataProvider = DataProvider.initialize(registeredProvider, this);
             if(dataProvider != null){
