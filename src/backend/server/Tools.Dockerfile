@@ -69,6 +69,7 @@ RUN mvn dependency:copy-dependencies
 RUN mvn package
 
 RUN chown -R prismServer . && chown -R prismServer /var/run/postgresql
+RUN chown -R prismServer /opt
 
 RUN sed -i 's/\r$//' bin/run && chmod +x bin/run && chmod +x bin/initdb
 

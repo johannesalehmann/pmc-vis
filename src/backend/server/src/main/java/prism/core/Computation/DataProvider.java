@@ -22,6 +22,9 @@ public interface DataProvider {
             case "mock2":
                 dataProvider = new DataProviderGeneric<>("Mockier Values", parent, MockTask2.class.getConstructor(String.class, Model.class, Property.class));
                 break;
+            case "witness":
+                dataProvider = new DataProviderGeneric<>("Witnessing Subsystems", parent, WitnessTask.class.getConstructor(String.class, Model.class, Property.class));
+                break;
         }
         }catch(NoSuchMethodException e){
             System.out.println("Could not find Constructor for: " + type);
