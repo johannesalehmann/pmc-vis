@@ -14,7 +14,7 @@ function ndl_to_pcp(data, prop) {
       if (!info.types[p].includes(d.type)) return;
 
       Object.keys(prop[p].props).forEach((e) => {
-        if (prop[p].props[e]) {
+        if (prop[p].props[e] && d.details[p]) {
           polyline[e] = d.details[p][e];
           returnable.pld[e] ||= {
             type: prop[p].metadata[e].type,

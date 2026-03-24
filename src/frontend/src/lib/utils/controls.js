@@ -43,6 +43,7 @@ const layoutTemplates = {
 
 const spinningIcon = 'loading spinner icon trigger-check-prop';
 const triggerIcon = 'fa fa-rocket trigger-check-prop';
+const makeScheduler = 'fa-regular fa-compass trigger-check-prop';
 
 // updates all graphs active canvas space when a pane resize happens
 $('#config-toggle')?.addEventListener('click', () => {
@@ -356,11 +357,12 @@ function makeSelectionModesDropdown() {
 }
 
 function makeSchedulerPropDropdown() {
+  const schedulers = pane.cy.vars.details.value[CONSTANTS.results].metadata;
   const options = Object.keys(
-    info.scheduler, // only scheduler from the 'details'
+    schedulers, // only scheduler from the 'details'
   ).map(k => {
     return { value: k, name: k };
-  }).filter(m => info.scheduler[m.name] === 'ready');
+  }).filter(m => schedulers[m.name].status === 'ready');
 
   options.push({ value: '_none_', name: 'No scheduler' });
 
@@ -369,6 +371,7 @@ function makeSchedulerPropDropdown() {
     pane.cy.vars['scheduler'].value,
     (value) => {
       pane.cy.vars['scheduler'].fn(pane.cy, value);
+      updateScheduler(pane.cy, 'Scheduler', value);
     },
     'scheduler-prop',
     'Scheduler (DOI)',
@@ -461,6 +464,7 @@ async function clear() {
 
   if (response.content.startsWith(CONSTANTS.MESSAGES.cleared_starts_with)) {
     const state = await status();
+
     setInfo(state.info);
     setPane(pane.id, { force: true });
   }
@@ -618,10 +622,15 @@ function makeDetailPropsCheckboxes(options, propType) {
         });
         $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
       } else if (options.metadata[propName].highlightEntry) {
-        $schedule_div = h('i', { class: triggerIcon, id: `schedule-button-${propName}` });
+        $schedule_div = h('i', {
+          class: makeScheduler,
+          id: `schedule-button-${propName}`,
+          title: `Highlight ${options.metadata[propName].highlightEntry}`,
+          style: 'margin-left:3px',
+        });
         $schedule_div.addEventListener('click', (e) => {
-          console.log();
           updateScheduler(pane.cy, options.metadata[propName].highlightEntry, propName);
+          document.getElementById('scheduler-prop').value = propName;
           e.preventDefault();
         });
       }
@@ -646,8 +655,8 @@ function makeDetailPropsCheckboxes(options, propType) {
       },
       [
         $input_div,
-        $schedule_div,
         h('p', { class: 'prop-text-label-text' }, html),
+        $schedule_div,
       ],
     );
 

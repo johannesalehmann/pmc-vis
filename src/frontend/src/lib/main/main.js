@@ -21,8 +21,8 @@ const info = {
 
 function getDefaultBadge(name) {
   return `<i class="fa-xs ${CONSTANTS.INTERACTIONS[name].icon
-    }" title="${CONSTANTS.INTERACTIONS[name].type
-    }"></i>`;
+  }" title="${CONSTANTS.INTERACTIONS[name].type
+  }"></i>`;
 }
 
 function setInfo(newInfo) {

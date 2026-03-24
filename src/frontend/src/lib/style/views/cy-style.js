@@ -140,6 +140,13 @@ const stylesheet = [
       'line-style': 'solid',
     },
   },
+  {
+    selector: 'node.scheduler',
+    style: {
+      'background-color': COLORS.HL_EDGE_COLOR,
+      'border-color': COLORS.HL_EDGE_COLOR,
+    },
+  },
 ];
 
 export {

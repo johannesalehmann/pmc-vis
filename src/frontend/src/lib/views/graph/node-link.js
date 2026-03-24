@@ -99,6 +99,19 @@ function setStyles(cy) {
     })
     .addClass('scheduler');
 
+  cy.nodes()
+    .removeClass('scheduler')
+    .filter((n) => {
+      const data = n.data();
+
+      if (data && data.details[cy.vars['scheduler'].category]) {
+        const nodeSchedulerValue = data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
+        console.log(nodeSchedulerValue === 1);
+        return nodeSchedulerValue === 1;
+      }
+    })
+    .addClass('scheduler');
+
   cy.endBatch();
 }
 
@@ -939,6 +952,19 @@ function updateDetailsToShow(cy, { update } = {}) {
 function updateScheduler(cy, category, prop) {
   cy.vars['scheduler'].category = category;
   cy.vars['scheduler'].value = prop;
+
+  const menu = document.getElementById('props-checkboxes-Model Checking Results');
+  if (menu) {
+    const kids = menu.children;
+    for (var i = 0; i < kids.length; i += 1) {
+      if (kids[i].childNodes[1].innerHTML === prop) {
+        kids[i].childNodes[1].style.fontWeight = 'bold';
+      } else {
+        kids[i].childNodes[1].style.fontWeight = 'normal';
+      }
+    }
+  }
+
   setStyles(cy);
   cy.resize();
 }
