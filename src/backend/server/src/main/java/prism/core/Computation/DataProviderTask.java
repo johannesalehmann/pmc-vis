@@ -21,18 +21,21 @@ public abstract class DataProviderTask implements Task {
     protected Property property;
     protected Map<String, Object> arguments;
     protected boolean computed;
+    protected boolean highlighting;
+    protected boolean hovering;
 
     public DataProviderTask(String name, Model model, Property property) {
+        this(name, model, property, false, false);
+    }
+
+    public DataProviderTask(String name, Model model, Property property, boolean highlighting, boolean hovering) {
         this.name = name;
         this.model = model;
         this.property = property;
         this.arguments = new HashMap<>();
         this.computed = checkDB();
-        if (computed) {
-            model.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), DataEntry.Type.TYPE_NUMBER, getMin(), getMax(), DataEntry.Status.ready));
-        }else{
-            model.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), DataEntry.Type.TYPE_NUMBER, getMin(), getMax(), DataEntry.Status.missing));
-        }
+        this.highlighting = highlighting;
+        this.hovering = hovering;
     }
 
     private boolean checkDB() {
@@ -46,6 +49,34 @@ public abstract class DataProviderTask implements Task {
 
     protected String getColumnName(){
         return String.format("%s_%s", this.shortName(), property.getID());
+    }
+
+    protected String getHighlightName(){
+        if (highlighting){
+            return String.format("%s Highlighting", this.name);
+        }
+        return "";
+    }
+
+    protected String getHoverName(){
+        if (hovering){
+            return String.format("Hover %s", this.name);
+        }
+        return "";
+    }
+
+    protected String getHighlightCollumn(){
+        if (highlighting){
+            return String.format("color_%s_%s", this.shortName(), property.getID());
+        }
+        return "";
+    }
+
+    protected String getHoverCollumn(){
+        if (hovering){
+            return String.format("hover_%s_%s", this.shortName(), property.getID());
+        }
+        return "";
     }
 
     //Status Message visible while computing current Task

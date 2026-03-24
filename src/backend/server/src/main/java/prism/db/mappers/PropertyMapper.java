@@ -38,15 +38,20 @@ public class PropertyMapper implements RowMapper<Map<String, Map<String, Double>
         }
         propertyMap.put(Namespace.OUTPUT_RESULTS, map);
         for (DataProvider provider : providers){
-            map = new HashMap<>();
-            Map<String, String> columns = provider.getColumnMap();
+            Map<String, Map<String, Double>> providerMap = new HashMap<>();
+            Map<String, String[]> columns = provider.getColumnMap();
             for (int i = 1; i <= rs.getMetaData().getColumnCount();i++){
                 String collumn = rsm.getColumnName(i);
                 if (columns.containsKey(collumn)){
-                    map.put(columns.get(collumn), rs.getDouble(i));
+                    String category = columns.get(collumn)[0];
+                    String prop = columns.get(collumn)[1];
+                    if (!providerMap.containsKey(category)){
+                        providerMap.put(category, new HashMap<>());
+                    }
+                    providerMap.get(category).put(prop, rs.getDouble(i));
                 }
             }
-            propertyMap.put(provider.getName(), map);
+            propertyMap.putAll(providerMap);
         }
         return propertyMap;
     }

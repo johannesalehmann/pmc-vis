@@ -26,12 +26,7 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
         this.tasks = new TreeMap<>();
 
         for (Property property : parent.getProperties()) {
-            try {
-                T task = taskConstructor.newInstance(name, parent, property);
-                tasks.put(property.getName(), task);
-            } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+            this.addProperty(property);
         }
         if(parent.debug){
             System.out.println(String.format("Created Provider for %s", this.name));
@@ -40,6 +35,9 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
 
     @Override
     public boolean isReady() {
+        if(tasks.isEmpty()){
+            return false;
+        }
         for (T task : tasks.values()) {
             if(!task.isReady()){
                 return false;
@@ -60,17 +58,38 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     public void addProperty(Property property) {
         try {
             T task = taskConstructor.newInstance(name, parent, property);
-            tasks.put(property.getName(), task);
+            if (task.isReady()){
+                DataEntry.Status status = DataEntry.Status.missing;
+                if (task.computed()) {
+                    status = DataEntry.Status.ready;
+                }
+                parent.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), DataEntry.Type.TYPE_NUMBER, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
+                tasks.put(property.getName(), task);
+            }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Map<String, String> getColumnMap() {
-        Map<String, String> columnMap = new HashMap<>();
+    public Map<String, String[]> getColumnMap() {
+        Map<String, String[]> columnMap = new HashMap<>();
         for (T task : tasks.values()) {
-            columnMap.put(task.getColumnName().toLowerCase(), task.getPropertyName());
+            String property = task.getPropertyName();
+            String[] values = new String[] {this.getName(), property};
+            columnMap.put(task.getColumnName().toLowerCase(), values);
+
+            String highlightCollumn = task.getHighlightCollumn();
+            if(!highlightCollumn.isEmpty()){
+                values = new String[] {task.getHighlightName(), property};
+                columnMap.put(highlightCollumn.toLowerCase(), values);
+            }
+
+            String hoverCollumn = task.getHoverCollumn();
+            if(!hoverCollumn.isEmpty()){
+                values = new String[] {task.getHoverName(), property};
+                columnMap.put(hoverCollumn.toLowerCase(), values);
+            }
         }
 
         return columnMap;

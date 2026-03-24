@@ -15,6 +15,7 @@ import {
   markRecurringNodes,
   setMaxIteration,
   unmarkRecurringNodes,
+  updateScheduler,
 } from '../views/graph/node-link.js';
 import { socket } from '../views/imports/import-socket.js';
 
@@ -604,17 +605,26 @@ function makeDetailPropsCheckboxes(options, propType) {
     });
 
     let $input_div = h('div', {}, [$toggle, h('label', { for: `checkbox-${propType}-${propName}` })]);
+    let $schedule_div = h('div', {});
 
     if (
       info.computable.includes(propType)
-      && options.metadata[propName].status !== CONSTANTS.STATUS.ready
     ) {
-      const computing = options.metadata[propName].status === CONSTANTS.STATUS.computing;
-      $input_div = h('i', {
-        class: computing ? spinningIcon : triggerIcon,
-        id: `trigger-button-${propType}-${propName}`,
-      });
-      $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
+      if (options.metadata[propName].status !== CONSTANTS.STATUS.ready) {
+        const computing = options.metadata[propName].status === CONSTANTS.STATUS.computing;
+        $input_div = h('i', {
+          class: computing ? spinningIcon : triggerIcon,
+          id: `trigger-button-${propType}-${propName}`,
+        });
+        $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
+      } else if (options.metadata[propName].highlightEntry) {
+        $schedule_div = h('i', { class: triggerIcon, id: `schedule-button-${propName}` });
+        $schedule_div.addEventListener('click', (e) => {
+          console.log();
+          updateScheduler(pane.cy, options.metadata[propName].highlightEntry, propName);
+          e.preventDefault();
+        });
+      }
     }
 
     const html = meta[propName] && meta[propName].identifier
@@ -634,7 +644,11 @@ function makeDetailPropsCheckboxes(options, propType) {
         class: 'prop-text ui small checkbox',
         style: 'display:flex',
       },
-      [$input_div, h('p', { class: 'prop-text-label-text' }, html)],
+      [
+        $input_div,
+        $schedule_div,
+        h('p', { class: 'prop-text-label-text' }, html),
+      ],
     );
 
     $param.appendChild($div);

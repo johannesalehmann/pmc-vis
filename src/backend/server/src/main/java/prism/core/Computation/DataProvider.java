@@ -19,21 +19,19 @@ public interface DataProvider {
             case "mock":
                 dataProvider = new DataProviderGeneric<>("Mock Values", parent, MockTask.class.getConstructor(String.class, Model.class, Property.class));
                 break;
+            case "mock2":
+                dataProvider = new DataProviderGeneric<>("Mockier Values", parent, MockTask2.class.getConstructor(String.class, Model.class, Property.class));
+                break;
         }
         }catch(NoSuchMethodException e){
-            throw new RuntimeException("Could not find Constructor for: " + type, e);
-        }
-        if(dataProvider == null){
-            throw new RuntimeException("Unsupported data provider type: " + type);
-        }
-        if(dataProvider.isReady()){
-            return dataProvider;
-        }else {
-            System.out.println("DataProvider: " + dataProvider.getName() + " is not ready");
-            parent.getInfo().removeStateEntries(dataProvider.getName());
-            parent.getInfo().removeTransitionEntries(dataProvider.getName());
+            System.out.println("Could not find Constructor for: " + type);
             return null;
         }
+        if(dataProvider == null){
+            System.out.println("Unsupported data provider type: " + type);
+            return null;
+        }
+        return dataProvider;
     }
 
     void addProperty(Property property);
@@ -41,7 +39,7 @@ public interface DataProvider {
     //Used to start computation of values the provider provides
     void compute(Property property, Map<String, Object> arguments);
 
-    Map<String, String> getColumnMap();
+    Map<String, String[]> getColumnMap();
 
     String getName();
 

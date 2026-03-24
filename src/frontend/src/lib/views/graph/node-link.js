@@ -78,8 +78,8 @@ function setStyles(cy) {
       if (source && source.startsWith('t')) {
         const node = cy.elementMapper.nodes.get(source);
 
-        if (node && node.data.scheduler) {
-          const nodeSchedulerValue = node.data.scheduler[cy.vars['scheduler'].value];
+        if (node && node.data.details[cy.vars['scheduler'].category]) {
+          const nodeSchedulerValue = node.data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
           return nodeSchedulerValue > 0;
         }
 
@@ -89,8 +89,8 @@ function setStyles(cy) {
       const target = data.target;
       if (target && target.startsWith('t')) {
         const node = cy.elementMapper.nodes.get(target);
-        if (node && node.data.scheduler) {
-          const nodeSchedulerValue = node.data.scheduler[cy.vars['scheduler'].value];
+        if (node && node.data.details[cy.vars['scheduler'].category]) {
+          const nodeSchedulerValue = node.data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
           return nodeSchedulerValue > 0;
         }
 
@@ -542,8 +542,8 @@ function getNextBestInPath(cy, sourceNodeId) {
 
     if (target && target.startsWith('t')) {
       const node = cy.elementMapper.nodes.get(target);
-      if (node && node.data.scheduler && source === sourceNodeId) {
-        const nodeSchedulerValue = node.data.scheduler[cy.vars['scheduler'].value];
+      if (node && node.data.details[cy.vars['scheduler'].category] && source === sourceNodeId) {
+        const nodeSchedulerValue = node.data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
         if (nodeSchedulerValue >= bestValue) {
           bestValue = nodeSchedulerValue;
           bestNext = target;
@@ -560,8 +560,8 @@ function getNextBestInPath(cy, sourceNodeId) {
 
     if (source && source.startsWith('t') && source === tId) {
       const node = cy.elementMapper.nodes.get(source);
-      if (node && node.data.scheduler) {
-        const nodeSchedulerValue = node.data.scheduler[cy.vars['scheduler'].value];
+      if (node && node.data.details[cy.vars['scheduler'].category]) {
+        const nodeSchedulerValue = node.data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
         if (nodeSchedulerValue >= bestValue) {
           bestValue = nodeSchedulerValue;
           bestNext = target;
@@ -707,10 +707,17 @@ function buildDetailsTooltipFromNode(cy, n) {
           Object.keys(details[d].props)
             .filter(p => details[d].props[p])
             .map(k => {
+              const hoverEntry = details[d].metadata[k].hoverEntry;
+              let extraInfo = '';
+              if (hoverEntry) {
+                console.log(hoverEntry);
+                extraInfo = '\n(' + g.details[hoverEntry][k] + ')';
+                console.log(extraInfo);
+              }
               if (details[d].metadata[k].type === 'number') {
-                return `${k}: <span id="tt-${g.id}-${k}">${fixed(g.details[d][k])}</span>`;
+                return `${k}: <span id="tt-${g.id}-${k}">${fixed(g.details[d][k])}${extraInfo}</span>`;
               } else {
-                return `${k}: <span id="tt-${g.id}-${k}">${g.details[d][k]}</span>`;
+                return `${k}: <span id="tt-${g.id}-${k}">${g.details[d][k]}${extraInfo}</span>`;
               }
             })
             .join('\n')
@@ -929,7 +936,8 @@ function updateDetailsToShow(cy, { update } = {}) {
   spawnPCP(cy);
 }
 
-function updateScheduler(cy, prop) {
+function updateScheduler(cy, category, prop) {
+  cy.vars['scheduler'].category = category;
   cy.vars['scheduler'].value = prop;
   setStyles(cy);
   cy.resize();
@@ -1938,6 +1946,7 @@ function setPublicVars(cy, preset) {
     },
     scheduler: {
       value: undefined,
+      category: undefined,
       fn: updateScheduler,
     },
     panePosition: {
@@ -1989,11 +1998,11 @@ function setPublicVars(cy, preset) {
   if (Object.keys(preset).length === 0) {
     setSelectMode(cy, cy.vars['mode'].value);
     updateDetailsToShow(cy, { update: false });
-    updateScheduler(cy, '_none_');
+    updateScheduler(cy, '_none_', '_none_');
   } else {
     setSelectMode(cy, preset['mode'].value);
     updateDetailsToShow(cy, { update: preset['details'].value });
-    updateScheduler(cy, preset['scheduler'].value);
+    updateScheduler(cy, preset['scheduler'].category, preset['scheduler'].value);
     updateNewPanePosition(cy, preset['panePosition'].value);
     toggleFullSync(cy, preset['pcp-auto-sync'].value);
   }
@@ -2007,4 +2016,5 @@ export {
   setMaxIteration,
   mergePane,
   handleMergePane,
+  updateScheduler,
 };

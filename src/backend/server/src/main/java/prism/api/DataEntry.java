@@ -1,11 +1,13 @@
 package prism.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import prism.core.Namespace;
 
 @Schema(description="Information Object for Variables and Properties")
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class DataEntry implements Namespace {
 
     public enum Type {TYPE_BLANK, TYPE_NUMBER, TYPE_BOOL, TYPE_OTHER};
@@ -21,6 +23,9 @@ public class DataEntry implements Namespace {
     private final double maxValue;
 
     private Status status;
+
+    private String highlightEntry = "";
+    private String hoverEntry = "";
 
     public static DataEntry blank(String name){
         return new DataEntry(name, Type.TYPE_BLANK, 0, 0, Status.missing);
@@ -48,6 +53,10 @@ public class DataEntry implements Namespace {
         this(name, type, minValue, maxValue, Status.ready);
     }
 
+    public DataEntry(String name, Type type, double minValue, double maxValue, String highlightEntry, String hoverEntry){
+        this(name, type, minValue, maxValue, Status.ready, highlightEntry, hoverEntry);
+    }
+
     public DataEntry(String name, Type type, double minValue, double maxValue, Status status){
         this.entryName = name;
         switch(type){
@@ -70,6 +79,30 @@ public class DataEntry implements Namespace {
         this.status = status;
     }
 
+    public DataEntry(String name, Type type, double minValue, double maxValue, Status status, String highlightEntry, String hoverEntry){
+        this.entryName = name;
+        switch(type){
+            case TYPE_NUMBER:
+                this.type = TYPE_NUMBER;
+                break;
+            case TYPE_BOOL:
+                this.type = TYPE_BOOLEAN;
+                break;
+            case TYPE_OTHER:
+                this.type = TYPE_NOMINAL;
+                break;
+            case TYPE_BLANK:
+            default:
+                this.type = TYPE_BLANK;
+                break;
+        }
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.status = status;
+        this.highlightEntry = highlightEntry;
+        this.hoverEntry = hoverEntry;
+    }
+
     @JsonIgnore
     public String getEntryName(){
         return entryName;
@@ -78,6 +111,16 @@ public class DataEntry implements Namespace {
     @JsonIgnore
     public void setStatus(Status status){
         this.status = status;
+    }
+
+    @JsonIgnore
+    public void setHighlightEntry(String highlightEntry){
+        this.highlightEntry = highlightEntry;
+    }
+
+    @JsonIgnore
+    public void setHoverEntry(String hoverEntry){
+        this.hoverEntry = hoverEntry;
     }
 
     @JsonProperty
@@ -98,6 +141,16 @@ public class DataEntry implements Namespace {
     @JsonProperty
     public String status() {
         return status.toString();
+    }
+
+    @JsonProperty
+    public String highlightEntry() {
+        return highlightEntry;
+    }
+
+    @JsonProperty
+    public String hoverEntry() {
+        return hoverEntry;
     }
 
     public DataEntry copy(){

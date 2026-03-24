@@ -5,36 +5,32 @@ import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Property.Property;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
-public class MockTask extends DataProviderTask {
+public class MockTask2 extends DataProviderTask {
 
-    public MockTask(String name, Model model, Property property) {
-        super(name, model, property, true, false);
+    public MockTask2(String name, Model model, Property property) {
+        super(name, model, property, false, true);
     }
 
     @Override
     public void callTool() {
 
         Map<String, String> results = new HashMap<>();
-        Map<String, String> highlights = new HashMap<>();
-        Random random = new Random(125324263);
+        Map<String, String> hoverEntries = new HashMap<>();
+        Random random = new Random(4356436);
         for(String s : model.getAllStateIDs()){
             double d = random.nextDouble();
             results.put(s, Double.toString(d));
         }
-        for(Transition t : model.getAllTransitions()){
-            boolean b = random.nextBoolean();
-            highlights.put(t.getNumId(), b?"1":"0");
+        for(String s : model.getAllStateIDs()){
+            String hover = String.valueOf(random.nextDouble());
+            hoverEntries.put(s, hover);
         }
         this.writeToDatabase(model.getTableStates(), this.getColumnName(), Namespace.ENTRY_S_ID, results);
-        this.writeToDatabase(model.getTableTrans(), this.getHighlightCollumn(), Namespace.ENTRY_T_ID, highlights);
+        this.writeToDatabase(model.getTableStates(), this.getHoverCollumn(), Namespace.ENTRY_S_ID, hoverEntries);
     }
 
     @Override
@@ -54,7 +50,7 @@ public class MockTask extends DataProviderTask {
 
     @Override
     public String shortName(){
-        return "Mock";
+        return "Mock2";
     }
 }
 

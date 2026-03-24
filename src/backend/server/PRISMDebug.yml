@@ -1,6 +1,6 @@
 pathTemplate: volume
 debug: true
-registeredDataProvider: [mock]
+registeredDataProvider: [mock, mock2]
 
 logging:
 

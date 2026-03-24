@@ -63,7 +63,7 @@ public abstract class Property implements Namespace {
     }
 
     protected DataEntry getPropertyInfo(){
-        return new DataEntry(this.name, DataEntry.Type.TYPE_NUMBER, 0, maximum);
+        return new DataEntry(this.name, DataEntry.Type.TYPE_NUMBER, 0, maximum, OUTPUT_SCHEDULER, "");
     }
 
     protected void newMaximum(){
