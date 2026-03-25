@@ -64,6 +64,9 @@ public class WitnessTask extends DataProviderTask {
             Process process = builder.start();
 
             int exitVal = process.waitFor();
+            if (exitVal == 0) {
+                return true;
+            }
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
@@ -76,10 +79,6 @@ public class WitnessTask extends DataProviderTask {
                 logger.append(line).append("\n");
             }
             System.out.println(logger);
-
-            if (exitVal == 0) {
-                return true;
-            }
 
         } catch (InterruptedException | IOException e) {
             return false;
@@ -107,9 +106,9 @@ public class WitnessTask extends DataProviderTask {
             // Create temporary file containing property
             propFile = Files.createTempFile("property", ".prop");
             Files.writeString(propFile, property);
-            System.out.println(property);
+            //System.out.println(property);
             ProcessBuilder builder = new ProcessBuilder(call, modelPath, "--prop", propFile.toAbsolutePath().toString(), "--grb-timelimit", Integer.toString(this.gurobiTimelimit), "--witness", "--export-subsystem-states");
-            System.out.println(builder.command());
+            //System.out.println(builder.command());
 
             Process process = builder.start();
 
@@ -124,7 +123,7 @@ public class WitnessTask extends DataProviderTask {
             while ((line = errorReader.readLine()) != null) {
                 logger.append(line).append("\n");
             }
-            System.out.println(logger);
+            //System.out.println(logger);
 
             Path subsystemPath = Paths.get(this.subsystemFilename);
             if (Files.exists(subsystemPath)){
