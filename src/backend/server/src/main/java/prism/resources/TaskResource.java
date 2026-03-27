@@ -346,12 +346,12 @@ public class TaskResource extends Resource {
                 if (prov.isPresent()) {
                     DataProvider provider = prov.get();
                     for (String propertyName : properties) {
-                        m.getProperty(propertyName).ifPresent(property -> {
-                            provider.compute(property, new HashMap<>());
+                        if (provider.contains(propertyName)) {
+                            provider.compute(propertyName, new HashMap<>());
                             if (debug){
                                 System.out.println(String.format("Computing %s of %s ", provider.getName(), propertyName));
                             }
-                        });
+                        }
                     }
                 }else{
                     throw new RuntimeException("No data provider found for category " + category);

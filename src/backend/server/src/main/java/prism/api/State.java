@@ -19,7 +19,7 @@ public class State implements Node{
 
     private TreeMap<String, Object> parameters;
 
-    private TreeMap<String, Map<String, Double>> properties;
+    private TreeMap<String, Map<String, Object>> properties;
 
     private TreeMap<String, Double> rewards;
 
@@ -29,7 +29,7 @@ public class State implements Node{
         // Jackson deserialization
     }
 
-    public State(String id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Map<String, Double>> properties) {
+    public State(String id, String name, Map<String, Object> parameters, TreeMap<String, AP> atomicPropositions, Map<String, Double> rewards, Map<String, Map<String, Object>> properties) {
         this.id = id;
         this.name = name;
         this.parameters = new TreeMap<>(parameters);
@@ -65,7 +65,7 @@ public class State implements Node{
         Map<String, Map<String, Object>> details = new HashMap<>();
         details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters));
         details.put(OUTPUT_REWARDS, new TreeMap<>(rewards));
-        for (Map.Entry<String, Map<String, Double>> entry : properties.entrySet()) {
+        for (Map.Entry<String, Map<String, Object>> entry : properties.entrySet()) {
             details.put(entry.getKey(), new TreeMap<>(entry.getValue()));
         }
         if(atomicPropositions == null){

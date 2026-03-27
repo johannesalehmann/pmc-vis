@@ -24,7 +24,7 @@ public class WitnessTask extends DataProviderTask {
 
     public WitnessTask(String name, Model model, Property property) {
 
-        super(name, model, property);
+        super(name, model, property, true, false);
         this.binaryLocation = "../switss/build/switss-multi";
         this.gurobiTimelimit = 30;
         this.subsystemFilename = "ws_0.txt";
@@ -40,6 +40,7 @@ public class WitnessTask extends DataProviderTask {
             modifiedResults.put(mapStateToId(entry.getKey().replace("{", "(")), entry.getValue());
         }
         this.writeToDatabase(model.getTableStates(), this.getColumnName(), Namespace.ENTRY_S_ID, modifiedResults);
+        this.writeToDatabase(model.getTableStates(), this.getHighlightCollumn(), Namespace.ENTRY_S_ID, modifiedResults);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package prism.core.Computation;
 
-;
 import prism.core.Model;
 import prism.core.Property.Property;
 
@@ -16,6 +15,9 @@ public interface DataProvider {
             case "responsibility":
                 dataProvider = new DataProviderGeneric<>("Responsibility", parent, ResponsibilityTask.class.getConstructor(String.class, Model.class, Property.class));
                 break;
+            //case "causality":
+            //    dataProvider = new DataProviderCausality("Causality", parent);
+            //    break;
             case "mock":
                 dataProvider = new DataProviderGeneric<>("Mock Values", parent, MockTask.class.getConstructor(String.class, Model.class, Property.class));
                 break;
@@ -39,12 +41,15 @@ public interface DataProvider {
 
     void addProperty(Property property);
 
+    boolean contains(String property);
     //Used to start computation of values the provider provides
-    void compute(Property property, Map<String, Object> arguments);
+    void compute(String property, Map<String, Object> arguments);
 
     Map<String, String[]> getColumnMap();
 
     String getName();
 
     boolean isReady();
+
+    boolean isBool();
 }

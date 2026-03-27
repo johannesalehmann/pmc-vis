@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Maps database output for property Maps (i.e. Maps from property name to value in state)
  */
-public class PropertyMapper implements RowMapper<Map<String, Map<String, Double>>> {
+public class PropertyMapper implements RowMapper<Map<String, Map<String, Object>>> {
 
     private final List<Property> properties;
     private final List<DataProvider> providers;
@@ -25,10 +25,10 @@ public class PropertyMapper implements RowMapper<Map<String, Map<String, Double>
     }
 
     @Override
-    public Map<String, Map<String, Double>> map(final ResultSet rs, final StatementContext ctx) throws SQLException {
-        Map<String, Map<String, Double>> propertyMap = new HashMap<>();
+    public Map<String, Map<String, Object>> map(final ResultSet rs, final StatementContext ctx) throws SQLException {
+        Map<String, Map<String, Object>> propertyMap = new HashMap<>();
         ResultSetMetaData rsm = rs.getMetaData();
-        Map<String,Double> map = new HashMap<>();
+        Map<String,Object> map = new HashMap<>();
         for (int i = 1; i <= rsm.getColumnCount();i++){
             String collumn = rsm.getColumnName(i);
             if (collumn.startsWith(Namespace.ENTRY_PROP)){
@@ -38,7 +38,7 @@ public class PropertyMapper implements RowMapper<Map<String, Map<String, Double>
         }
         propertyMap.put(Namespace.OUTPUT_RESULTS, map);
         for (DataProvider provider : providers){
-            Map<String, Map<String, Double>> providerMap = new HashMap<>();
+            Map<String, Map<String, Object>> providerMap = new HashMap<>();
             Map<String, String[]> columns = provider.getColumnMap();
             for (int i = 1; i <= rs.getMetaData().getColumnCount();i++){
                 String collumn = rsm.getColumnName(i);
@@ -48,7 +48,12 @@ public class PropertyMapper implements RowMapper<Map<String, Map<String, Double>
                     if (!providerMap.containsKey(category)){
                         providerMap.put(category, new HashMap<>());
                     }
-                    providerMap.get(category).put(prop, rs.getDouble(i));
+                    if(provider.isBool()){
+                        providerMap.get(category).put(prop, rs.getBoolean(i));
+                    }else{
+                        providerMap.get(category).put(prop, rs.getDouble(i));
+                    }
+
                 }
             }
             propertyMap.putAll(providerMap);

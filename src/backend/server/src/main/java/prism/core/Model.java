@@ -48,6 +48,7 @@ public class Model implements Namespace {
     private final List<Scheduler> schedulers;
 
     private final Map<String, AP> APs;
+    private final Map<String, String> apFormulas;
 
     private final List<DataProvider> dataProviders;
 
@@ -82,6 +83,7 @@ public class Model implements Namespace {
         this.schedulers = new ArrayList<>();
 
         this.APs = new HashMap<>();
+        this.apFormulas = new HashMap<>();
         Map<String, Integer> usedShorts = new HashMap<>();
         Map<String, String> labelStyles = new HashMap<>();
         File styleFile = new File(parent.getPath() + STYLE_FILE);
@@ -109,6 +111,8 @@ public class Model implements Namespace {
 
         for (int i = 0; i < modulesFile.getNumLabels(); i++){
             String name = modulesFile.getLabelName(i);
+            String formula = modulesFile.getLabelList().getLabel(i).toString();
+            apFormulas.put(name, formula);
             AP ap;
             if (labelStyles.containsKey(name)){
                 ap = new AP(name, labelStyles.get(name),true);
@@ -222,6 +226,10 @@ public class Model implements Namespace {
 
     public boolean existsProperty(String name) {
         return properties.stream().anyMatch(p -> p.getName().equals(name));
+    }
+
+    public Map<String, String> getAPFormulas() {
+        return apFormulas;
     }
 
     public Optional<Property> getProperty(String name) {

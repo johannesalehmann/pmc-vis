@@ -167,7 +167,7 @@ public class ModelParser {
                 Object value = null;
                 for (Type t : valueTypes) {
                     try {
-                        value = castStringToType(assignment[1], t);
+                        value = castStringToType(assignment[1].trim(), t);
                         break;
                     } catch (PrismLangException | NumberFormatException e) {
                         value = null;
@@ -176,7 +176,7 @@ public class ModelParser {
                 if (value == null) {
                     throw new PrismLangException("Invalid value in: " + id);
                 }
-                state.setValue(modulesFile.getVarIndex(assignment[0]), value);
+                state.setValue(modulesFile.getVarIndex(assignment[0].trim()), value);
             }
         }
         return state;
@@ -237,16 +237,21 @@ public class ModelParser {
 
             int position = modulesFile.getVarIndex(varList.getName(i));
 
-            switch(varList.getType(i).getTypeString()){
-                case "int":
-                    value = (int) state.varValues[position];
-                    break;
-                case "bool":
-                    boolean bool = (boolean) state.varValues[position];
-                    value = bool ? 1 : 0;
-                    break;
-                default:
-                    throw new RuntimeException("Unknown type: " + varList.getType(i).getTypeString());
+            try {
+                switch (varList.getType(i).getTypeString()) {
+                    case "int":
+                        value = (int) state.varValues[position];
+                        break;
+                    case "bool":
+                        boolean bool = (boolean) state.varValues[position];
+                        value = bool ? 1 : 0;
+                        break;
+                    default:
+                        throw new RuntimeException("Unknown type: " + varList.getType(i).getTypeString());
+                }
+            }catch(ClassCastException e) {
+                System.out.println(String.format("Variable %s is declared type %s, but has input %s", varList.getName(i), varList.getType(i).getTypeString(), state.varValues[position]));
+                throw e;
             }
 
             index = index.add(prevRange.multiply(BigInteger.valueOf(value - minValue)));

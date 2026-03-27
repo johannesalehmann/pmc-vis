@@ -39,7 +39,7 @@ public abstract class DataProviderTask implements Task {
     }
 
     private boolean checkDB() {
-        boolean entry = model.getDatabase().question(String.format("SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' AND column_name = '%s'", model.getVersion(), Namespace.TABLE_STATES_BASE, this.getColumnName().toLowerCase()));
+        boolean entry = model.getDatabase().question(String.format("SELECT column_name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s' AND column_name = '%s'", model.getVersion(), Namespace.TABLE_STATES_BASE, this.getColumnName().toLowerCase()), false);
         return entry;
     }
 
@@ -88,7 +88,7 @@ public abstract class DataProviderTask implements Task {
     //Name of the Task
     @Override
     public String name(){
-        return String.format("%s-%s", this.name, property.getID());
+        return String.format("%s-%s", shortName(), property.getID());
     }
 
     public abstract String shortName();
@@ -112,7 +112,7 @@ public abstract class DataProviderTask implements Task {
     public void run(){
         callTool();
         computed = true;
-        model.getInfo().getStateEntry(this.name, property.getName()).setStatus(DataEntry.Status.ready);
+        model.getInfo().getStateEntry(this.name, this.getPropertyName()).setStatus(DataEntry.Status.ready);
     }
 
     public boolean computed(){

@@ -13,21 +13,26 @@ import java.util.*;
 
 public class DataProviderGeneric<T extends DataProviderTask> implements DataProvider, Namespace {
 
-    private final String name;
-    private final Model parent;
-    private final Constructor<T> taskConstructor;
+    protected final String name;
+    protected final Model parent;
+    protected final DataEntry.Type type;
+    protected final Constructor<T> taskConstructor;
 
-    private Map<String, T> tasks;
+    protected Map<String, T> tasks;
 
     protected DataProviderGeneric(String name, Model parent, Constructor<T> taskConstructor) {
+        this(name, parent, DataEntry.Type.TYPE_NUMBER, taskConstructor);
+    }
+
+    protected DataProviderGeneric(String name, Model parent, DataEntry.Type type, Constructor<T> taskConstructor) {
         this.name = name;
         this.parent = parent;
         this.taskConstructor = taskConstructor;
+        this.type = type;
         this.tasks = new TreeMap<>();
 
-        for (Property property : parent.getProperties()) {
-            this.addProperty(property);
-        }
+        inititializeTasks();
+
         if(parent.debug){
             System.out.println(String.format("Created Provider for %s", this.name));
         }
@@ -47,11 +52,22 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     }
 
     @Override
-    public void compute(Property property, Map<String, Object> args){
-        T task = tasks.get(property.getName());
+    public boolean contains(String property){
+        return tasks.containsKey(property);
+    }
+
+    @Override
+    public void compute(String property, Map<String, Object> args){
+        T task = tasks.get(property);
         task.setArguments(args);
-        parent.getInfo().getStateEntry(this.name, property.getName()).setStatus(DataEntry.Status.computing);
+        parent.getInfo().getStateEntry(this.name, property).setStatus(DataEntry.Status.computing);
         runTask(task);
+    }
+
+    protected void inititializeTasks(){
+        for (Property property : parent.getProperties()) {
+            this.addProperty(property);
+        }
     }
 
     @Override
@@ -63,7 +79,7 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
                 if (task.computed()) {
                     status = DataEntry.Status.ready;
                 }
-                parent.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), DataEntry.Type.TYPE_NUMBER, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
+                parent.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
                 tasks.put(property.getName(), task);
             }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
@@ -98,6 +114,11 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     @Override
     public String getName() {
         return this.name;
+    }
+
+    @Override
+    public boolean isBool(){
+        return this.type.equals(DataEntry.Type.TYPE_BOOL);
     }
 
     protected void runTask(T task){

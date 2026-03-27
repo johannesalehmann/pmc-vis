@@ -1,4 +1,4 @@
-FROM movesrwth/storm:1.11.0
+FROM movesrwth/stormpy:1.11.0
 
 #Create working dir
 RUN useradd -ms /bin/bash prismServer
@@ -56,23 +56,32 @@ RUN cp switss-multi /usr/local/bin/
 VOLUME ["/data"]
 ENV GRB_LICENSE_FILE="/data/gurobi.lic"
 
-#Load PMC-Vis backend
 WORKDIR /home/prismServer
 
+#Load the SPR Tool
+#COPY spr-storm spr-storm
+
+#Load PMC-Vis backend (dependencies first)
+COPY server/pom.xml server/pom.xml
+WORKDIR /home/prismServer/server
+RUN mvn dependency:copy-dependencies
+
+
 #Load everything into the image
+WORKDIR /home/prismServer
 COPY server/ server/
 
 WORKDIR /home/prismServer/server
 
-RUN mvn dependency:copy-dependencies
-
+#Package Server
 RUN mvn package
 
-RUN chown -R prismServer . && chown -R prismServer /var/run/postgresql
-RUN chown -R prismServer /opt
+#Make executable
+RUN chown -R prismServer . && chown -R prismServer /var/run/postgresql && chown -R prismServer /opt #&& chown -R prismServer /home/prismServer/spr-storm
 
 RUN sed -i 's/\r$//' bin/run && chmod +x bin/run && chmod +x bin/initdb
 
+# Init db as prismServer
 USER prismServer
 
 RUN /bin/bash -c 'bin/initdb'

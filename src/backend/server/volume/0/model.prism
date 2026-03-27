@@ -77,7 +77,7 @@ module process2
 	[] (pc2=2) & (counter>left) & (counter<right) -> (pc2'=0);
 	// loop (all loop together when done)
 	[done] (pc2=3) -> (pc2'=3);
-	// sync step
+	// sync step?
 	[barrier] (pc2=4) -> (pc2'=2);
 
 endmodule
