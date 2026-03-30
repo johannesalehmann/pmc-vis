@@ -28,9 +28,8 @@ public class MockTask extends DataProviderTask {
         Random random = new Random(125324263);
         for(String s : model.getAllStateIDs()){
             double d = random.nextDouble();
-            boolean b = random.nextBoolean();
             results.put(s, Double.toString(d));
-            highlights2.put(s, b?"1":"0");
+            highlights2.put(s, d>0.1?"1":"0");
         }
         for(Transition t : model.getAllTransitions()){
             boolean b = random.nextBoolean();

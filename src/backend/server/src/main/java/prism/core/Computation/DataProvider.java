@@ -3,6 +3,7 @@ package prism.core.Computation;
 import prism.core.Model;
 import prism.core.Property.Property;
 
+import java.util.List;
 import java.util.Map;
 
 public interface DataProvider {
@@ -46,6 +47,8 @@ public interface DataProvider {
     void compute(String property, Map<String, Object> arguments);
 
     Map<String, String[]> getColumnMap();
+
+    Map<String, DataProviderTask> getProviderTasks();
 
     String getName();
 

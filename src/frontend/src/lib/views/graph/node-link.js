@@ -23,6 +23,7 @@ import {
   hideAllTippies,
   setPane,
   PROJECT,
+  VERSION,
 } from '../../utils/controls.js';
 import { parallelCoords } from '../attributes/parallel-coords.js';
 import { ndl_to_pcp } from '../format.js';
@@ -123,7 +124,8 @@ async function renewInfo(cy) {
 
     const call = `${BACKEND}/${PROJECT}/reset?${
       ids.length > 0 ? '&id=' + ids : ''}${
-      idus.length > 0 ? '&idu=' + idus : ''}`;
+      idus.length > 0 ? '&idu=' + idus : ''}${
+      VERSION ? '&version=' + VERSION : ''}`;
 
     return await (await fetch(call)).json();
   }
@@ -168,7 +170,7 @@ async function expandGraph(cy, nodes, onLayoutStopFn) {
     return;
   }
 
-  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${collapsed.join('&id=')}`);
+  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${collapsed.join('&id=')}${VERSION ? '&version=' + VERSION : ''}`);
   const data = await res.json();
 
   function finalizeExpand(cy, data) {
@@ -459,7 +461,7 @@ function spawnGraphOnNewPane(cy, nodes) {
 async function fetchAndSpawn(cy, nodes) {
   if (!nodes.length) return;
 
-  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${nodes.map((n) => n.id).join('&id=')}`);
+  const res = await fetch(`${BACKEND}/${PROJECT}/outgoing?id=${nodes.map((n) => n.id).join('&id=')}${VERSION ? '&version=' + VERSION : ''}`);
   const data = await res.json();
 
   const nodesIds = data.nodes

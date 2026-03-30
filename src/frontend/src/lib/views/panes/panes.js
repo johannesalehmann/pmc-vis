@@ -1,7 +1,7 @@
 import shortid from 'shortid';
 import Swal from 'sweetalert2/dist/sweetalert2.all.min.js';
 
-import { setPane, PROJECT } from '../../utils/controls.js';
+import { setPane, PROJECT, VERSION } from '../../utils/controls.js';
 import { colorList } from '../../utils/utils.js';
 import { CONSTANTS } from '../../utils/names.js';
 import makeCtxMenu from './ctx-menu.js';
@@ -445,7 +445,7 @@ async function storePaneToServer(paneId, paneData) {
     const content = JSON.stringify(paneInfo);
     const encodedPaneId = encodeURIComponent(paneId);
 
-    const response = await fetch(`${BACKEND}/${PROJECT}/pane/store?pane_id=${encodedPaneId}`, {
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane/store?pane_id=${encodedPaneId}${VERSION ? '&version=' + VERSION : ''}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -469,7 +469,7 @@ async function storePaneToServer(paneId, paneData) {
 // Fetch pane data from server
 async function fetchPaneFromServer(paneId) {
   try {
-    const response = await fetch(`${BACKEND}/${PROJECT}/pane?pane_id=${paneId}`);
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane?pane_id=${paneId}${VERSION ? '&version=' + VERSION : ''}`);
     if (!response.ok) {
       if (response.status === 404 || response.status === 500) {
         return null;

@@ -3,6 +3,7 @@ package prism.core;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 
 /**
@@ -104,6 +105,8 @@ public interface Namespace {
     String EVENT_STATUS = "MC_STATUS";
 
     String EVENT_RESET = "MODEL_RESET";
+
+    Pattern PATTERN_ACTION = Pattern.compile("\\[(.*)\\]");
 
     static String getLanguage(String filename){
         String language = filename.substring(filename.lastIndexOf(".") + 1);

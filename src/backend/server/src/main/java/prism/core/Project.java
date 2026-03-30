@@ -96,8 +96,11 @@ public class Project implements Namespace{
         }
     }
 
-    public Model getModel(String version) throws Exception {
-        return models.get(version);
+    public Model getModel(String version) {
+        if (models.containsKey(version)){
+            return models.get(version);
+        }
+        throw new RuntimeException("Could not find version: " + version + "\nThese Versions exist: " + this.getVersions().toString());
     }
 
     public List<String> getRegisteredDataProviders() {
@@ -126,7 +129,14 @@ public class Project implements Namespace{
     }
 
     public String createModel(File modelFile, String version) throws Exception {
-        Model m = new Model(modelFile, version, this, debug);
+        Model m;
+        try {
+            m = new Model(modelFile, version, this, debug);
+        } catch (Exception e) {
+            System.out.println(String.format("Failed to create model for file %s:\n%s", modelFile.getName(), e.toString()));
+            e.printStackTrace();
+            return null;
+        }
         models.put(version, m);
         this.newestVersion = version;
         for (File f : propertyFiles) {
@@ -236,7 +246,7 @@ public class Project implements Namespace{
     }
 
     public Graph getInitialNodes(String version){
-        return models.get(version).getInitialNodes();
+        return getModel(version).getInitialNodes();
     }
 
     public Graph getGraph(){
@@ -244,7 +254,7 @@ public class Project implements Namespace{
     }
 
     public Graph getGraph(String version){
-        return models.get(version).getGraph();
+        return getModel(version).getGraph();
     }
 
     public Graph getSubGraph(List<String> stateIDs){
@@ -252,7 +262,7 @@ public class Project implements Namespace{
     }
 
     public Graph getSubGraph(List<String> stateIDs, String version){
-        return models.get(version).getSubGraph(stateIDs);
+        return getModel(version).getSubGraph(stateIDs);
     }
 
     public Graph getOutgoing(List<String> stateIDs){
@@ -260,7 +270,7 @@ public class Project implements Namespace{
     }
 
     public Graph getOutgoing(List<String> stateIDs, String version){
-        return models.get(version).getOutgoing(stateIDs);
+        return getModel(version).getOutgoing(stateIDs);
     }
 
     public Graph getState(String stateID){
@@ -268,7 +278,7 @@ public class Project implements Namespace{
     }
 
     public Graph getState(String stateID, String version){
-        return models.get(version).getState(stateID);
+        return getModel(version).getState(stateID);
     }
 
     public Graph resetGraph(List<String> exploredStateIDs, List<String> unexploredStateIDs){
@@ -276,7 +286,7 @@ public class Project implements Namespace{
     }
 
     public Graph resetGraph(List<String> exploredStateIDs, List<String> unexploredStateIDs, String version){
-        return models.get(version).resetGraph(exploredStateIDs, unexploredStateIDs);
+        return getModel(version).resetGraph(exploredStateIDs, unexploredStateIDs);
     }
 
     public void clearTables() throws Exception {
@@ -286,7 +296,7 @@ public class Project implements Namespace{
     }
 
     public prism.api.Scheduler getScheduler(String schedulerID, String version) throws Exception {
-        return models.get(version).getScheduler(schedulerID);
+        return getModel(version).getScheduler(schedulerID);
     }
 
     public prism.api.Scheduler getScheduler(String schedulerID) throws Exception {
@@ -294,7 +304,7 @@ public class Project implements Namespace{
     }
 
     public List<String> getSchedulers(String version) {
-        return models.get(version).getSchedulers().stream().map(Scheduler::getName).collect(Collectors.toList());
+        return getModel(version).getSchedulers().stream().map(Scheduler::getName).collect(Collectors.toList());
     }
 
     public List<String> getSchedulers() {

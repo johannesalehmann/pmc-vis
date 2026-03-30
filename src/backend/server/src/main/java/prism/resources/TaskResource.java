@@ -11,6 +11,7 @@ import prism.api.Message;
 import prism.api.Pane;
 import prism.api.Status;
 import prism.core.Computation.DataProvider;
+import prism.core.Computation.DataProviderTask;
 import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Project;
@@ -362,6 +363,71 @@ public class TaskResource extends Resource {
         }
 
         return ok(new Message(String.format("Started checking %s in project %s", String.join(", ", properties), projectID)));
+    }
+
+    @Path("/submodel/")
+    @GET
+    public Response subModel(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @Parameter(description = "Selected States")
+            @QueryParam("id") List<String> nodeIDs,
+            @QueryParam("provider") Optional<String> provider,
+            @QueryParam("property") Optional<String> property,
+            @QueryParam("version") Optional<String> version,
+            @QueryParam("name") Optional<String> name
+    ){
+        if (!tasks.containsProject(projectID)) {
+            return error(String.format("Project %s does not exist", projectID));
+        }
+        try {
+            Project p = tasks.getProject(projectID);
+            Model m;
+            if (version.isPresent()) {
+                m = p.getModel(version.get());
+            }else{
+                m = p.getDefaultModel();
+            }
+            String newVersionName = name.orElse(getRandomNewVersionName(p));
+            File modelFile;
+            if (provider.isPresent()){
+                if(property.isEmpty()){
+                    return error("Missing property for " + provider.get());
+                }
+                DataProviderTask task = null;
+                for (DataProvider prov : m.getDataProviders()){
+                    DataProviderTask tempTask = prov.getProviderTasks().get(property.get());
+                    if (tempTask != null && tempTask.getHighlightName().equals(provider.get())){
+                        task = prov.getProviderTasks().get(property.get());
+                    }
+                }
+                if (task==null) return error("Could not find Highlighting for Provider Task: " + provider.get() + " : " + property.get());
+                else{
+                    if(!task.computed()){
+                        return error("Task has not yet been computed: " + provider.get() + " : " + property.get());
+                    }
+                    List<String> stateIDs = task.getHighlightedStates();
+                    modelFile = m.createSubModel(stateIDs, newVersionName);
+                }
+            }else{
+                modelFile = m.createSubModel(nodeIDs, newVersionName);
+            }
+
+            String parsingMessage = tasks.checkParse(modelFile, configuration.getDebug());
+
+            if(parsingMessage != null){
+                System.out.println("parse Failed");
+                return error("File could not be parsed: \n" + parsingMessage);
+            }
+
+            tasks.resetProject(projectID);
+
+            return ok(newVersionName);
+        } catch (Exception e) {
+            return error(e);
+        }
+
+
     }
 
     @Path("/pane/all")

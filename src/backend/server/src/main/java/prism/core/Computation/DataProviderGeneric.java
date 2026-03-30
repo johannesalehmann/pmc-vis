@@ -134,4 +134,9 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
             parent.getInfo().getStateEntry(this.name, task.getPropertyName()).setStatus(DataEntry.Status.ready);
         }
     }
+
+    @Override
+    public Map<String, DataProviderTask> getProviderTasks(){
+        return (Map<String, DataProviderTask>) this.tasks;
+    }
 }

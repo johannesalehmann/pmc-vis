@@ -1,7 +1,7 @@
 import { spawnPane, getPanes } from '../views/panes/panes.js';
 import { params } from '../views/graph/layout-options/klay.js';
 import { spawnGraph } from '../views/graph/node-link.js';
-import { PROJECT } from '../utils/controls.js';
+import { PROJECT, VERSION } from '../utils/controls.js';
 import { CONSTANTS } from '../utils/names.js';
 import { socket } from '../views/imports/import-socket.js';
 
@@ -98,7 +98,7 @@ async function start() {
   setInfo(data.info);
 
   Promise.all([
-    fetch(`${BACKEND}/${PROJECT}/initial`).then(r => r.json()),
+    fetch(`${BACKEND}/${PROJECT}/initial${VERSION ? ('?version=' + VERSION) : ''}`).then(r => r.json()),
     // fetch(BACKEND + PROJECT).then((res) => res.json()), // requests entire dataset
   ]).then((promises) => {
     const data = promises[0];

@@ -12,6 +12,7 @@ import prism.server.Task;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class DataProviderTask implements Task {
@@ -51,28 +52,28 @@ public abstract class DataProviderTask implements Task {
         return String.format("%s_%s", this.shortName(), property.getID());
     }
 
-    protected String getHighlightName(){
+    public String getHighlightName(){
         if (highlighting){
             return String.format("%s Highlighting", this.name);
         }
         return "";
     }
 
-    protected String getHoverName(){
+    public String getHoverName(){
         if (hovering){
             return String.format("Hover %s", this.name);
         }
         return "";
     }
 
-    protected String getHighlightCollumn(){
+    public String getHighlightCollumn(){
         if (highlighting){
             return String.format("color_%s_%s", this.shortName(), property.getID());
         }
         return "";
     }
 
-    protected String getHoverCollumn(){
+    public String getHoverCollumn(){
         if (hovering){
             return String.format("hover_%s_%s", this.shortName(), property.getID());
         }
@@ -161,5 +162,10 @@ public abstract class DataProviderTask implements Task {
         } catch (PrismLangException e) {
             throw new RuntimeException("Failed to convert string to state: " + state, e);
         }
+    }
+
+    public List<String> getHighlightedStates() {
+        String query = String.format("SELECT %s FROM %s WHERE %s = '1'", Namespace.ENTRY_S_ID, model.getTableStates(), this.getHighlightCollumn());
+        return model.getDatabase().executeCollectionQuery(query, String.class);
     }
 }

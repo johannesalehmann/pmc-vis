@@ -29,6 +29,7 @@ const $overview_config = $('#overview-config');
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const PROJECT = params.get('id') || 0;
+const VERSION = params.get('version');
 
 let pane = null;
 let tippies = {};
@@ -44,6 +45,7 @@ const layoutTemplates = {
 const spinningIcon = 'loading spinner icon trigger-check-prop';
 const triggerIcon = 'fa fa-rocket trigger-check-prop';
 const makeScheduler = 'fa-regular fa-compass trigger-check-prop';
+const subModelButton = 'fa-regular fa-clone trigger-check-prop';
 
 // updates all graphs active canvas space when a pane resize happens
 $('#config-toggle')?.addEventListener('click', () => {
@@ -407,6 +409,28 @@ function makeSchedulerPropDropdown() {
 
   $param.appendChild($label);
   $param.appendChild($numberInput);
+
+  const subModel = h('i', {
+    class: subModelButton,
+    style: 'margin-left:3px',
+    title: 'Create new Model from Highlighting',
+  });
+  subModel.addEventListener('click', async () => {
+    const category = pane.cy.vars['scheduler'].category;
+    const value = pane.cy.vars['scheduler'].value;
+
+    fetch(`${BACKEND}/${PROJECT}/submodel?provider=${category}&property=${value}${VERSION ? ('&version=' + VERSION) : ''}`).then(
+      async accept => {
+        const newVersion = await accept.text();
+        console.log(newVersion);
+        await window.open(`${url.protocol}//${url.host}/?id=${PROJECT}&version=${newVersion}`, '_blank').focus();
+      },
+      reject => {
+        console.log('Failed to open new Sub Model\n Error: ' + reject.json());
+      },
+    );
+  });
+  $param.appendChild(subModel);
   $props_config.appendChild($param);
 }
 
@@ -443,7 +467,7 @@ async function triggerModelCheckProperty(e, propType, props) {
   });
 
   fetch(
-    `${BACKEND}/${PROJECT}/check?category=${propType}&property=${props.join(
+    `${BACKEND}/${PROJECT}/check?category=${propType}${VERSION ? '&version=' + VERSION : ''}&property=${props.join(
       '&property=',
     )}`,
     { method: 'GET' },
@@ -919,5 +943,5 @@ function makeOverviewSettings() {
 }
 
 export {
-  makeTippy, hideAllTippies, setPane, PROJECT,
+  makeTippy, hideAllTippies, setPane, PROJECT, VERSION,
 };

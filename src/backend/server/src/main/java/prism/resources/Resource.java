@@ -9,10 +9,8 @@ import prism.server.TaskManager;
 
 import javax.ws.rs.core.Response;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Resource {
@@ -27,6 +25,9 @@ public abstract class Resource {
     protected final boolean debug;
 
     protected TaskManager tasks;
+    protected Random random;
+
+    private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
     protected Resource(Environment environment, PRISMServerConfiguration configuration, TaskManager tasks){
         this.environment = environment;
@@ -36,6 +37,7 @@ public abstract class Resource {
         this.cuddMaxMem = configuration.getCUDDMaxMem();
         this.maxIterations = configuration.getIterations();
         this.tasks = tasks;
+        this.random = new Random(Instant.now().getEpochSecond());
     }
 
     private Map<String, Project> currModels;
@@ -48,8 +50,34 @@ public abstract class Resource {
         return Response.status(Response.Status.NOT_FOUND).entity(m).build();
     }
 
+    protected String getRandomNewVersionName(Project p){
+        String versionName;
+        do{
+            versionName = getRandomString(10);
+        }while(p.getVersions().contains(versionName));
+        return versionName;
+
+    }
+
+    protected String getRandomString(int length){
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(CHARACTERS.length());
+            sb.append(CHARACTERS.charAt(index));
+        }
+        return sb.toString();
+    }
+
     protected static Response error(Object o){
-        System.out.println(o);
+        if (o instanceof Exception) {
+            Exception e = (Exception) o;
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+
+            String out = String.format("Error %s:\n%s", e.toString(), sw.toString());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(out).build();
+        }
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(o).build();
     }
 

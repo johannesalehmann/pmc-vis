@@ -3,6 +3,7 @@ package prism.core;
 import parser.ast.Expression;
 import parser.ast.ModulesFile;
 import parser.ast.PropertiesFile;
+import parser.ast.RewardStruct;
 import prism.*;
 import prism.api.*;
 import prism.core.Computation.DataProvider;
@@ -12,16 +13,16 @@ import prism.core.Scheduler.CriteriaSort;
 import prism.core.Scheduler.Scheduler;
 import prism.core.Utility.BaseState;
 import prism.db.Database;
+import prism.db.mappers.PairMapper;
 import prism.db.mappers.StateMapper;
 import prism.db.mappers.TransitionMapper;
 import prism.server.TaskManager;
 import simulator.TransitionList;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -562,6 +563,146 @@ public class Model implements Namespace {
         String stateString = statesOfInterest.stream().map(s -> "'" + s + "'").collect(Collectors.joining(","));
         List<State> states = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s in (%s)", TABLE_STATES, ENTRY_S_ID, stateString), new StateMapper(this));
         return new Graph(this, states, transitions);
+    }
+
+    public File createSubModel(List<String> stateIDs, String identifier) throws PrismException {
+        class WrittenTransition{
+            String source;
+            String actionName;
+            Map<String, Double> probabilityDistribution;
+            String[] vars = modulesFile.getVarNames().toArray(new String[modulesFile.getNumVars()]);
+
+            public WrittenTransition(String source, String actionName, Map<String, Double> probabilityDistribution) throws PrismException {
+                this.source = stateToGuard(source, false);
+                this.actionName = actionName;
+                this.probabilityDistribution = new HashMap<>();
+                for (Map.Entry<String, Double> entry : probabilityDistribution.entrySet()){
+                    this.probabilityDistribution.put(stateToGuard(entry.getKey(), true), entry.getValue());
+                }
+            }
+
+            private String stateToGuard(String state, boolean assign) throws PrismException {
+                System.out.println(assign?"Assignment":"Guard" + " for: " + state);
+                StringBuffer out = new StringBuffer();
+
+                String[] split = state.split(";");
+
+                if (split.length != vars.length){
+                    throw new PrismException("Could not match Variables: " + Arrays.toString(vars) + " to " + Arrays.toString(split));
+                }
+
+                boolean first = true;
+                for (int i = 0; i < split.length; i++){
+                    if (first){
+                        first = false;
+                    }else{
+                        out.append(" & ");
+                    }
+                    if (assign){
+                        out.append(String.format("(%s'=%s)", vars[i], split[i]));
+                    }else{
+                        out.append(String.format("(%s=%s)", vars[i], split[i]));
+                    }
+                }
+                return out.toString();
+            }
+
+            public String updates(){
+                if (probabilityDistribution.entrySet().size() == 1){
+                    return probabilityDistribution.entrySet().iterator().next().getKey();
+                }
+
+                StringBuffer out = new StringBuffer();
+
+                boolean first = true;
+                for (Map.Entry<String, Double> entry : probabilityDistribution.entrySet()){
+                    if (first){
+                        first = false;
+                    }else{
+                        out.append(" + ");
+                    }
+                    out.append(String.format("%s:%s", entry.getValue(), entry.getKey()));
+                }
+                return out.toString();
+            }
+        }
+
+        if (!isBuilt()) {
+            this.getModelChecker().buildModel();
+        }
+
+        File newModelFile = new File(this.getModelFile().getParentFile().getPath() + "/" + identifier + ".prism");
+
+        try(FileWriter fw = new FileWriter(newModelFile)) {
+            fw.write("mdp\n\n");
+            //Add initial Block if necessary
+            Expression initialBlock = modulesFile.getInitialStates();
+            if (initialBlock != null) {
+                fw.write("init\n\t" + initialBlock.toString() + "\nendinit\n\n");
+            }
+            //Add constants, formulas and labels
+            fw.write("\n//Constants\n");
+            for (int i=0; i < modulesFile.getConstantList().size(); i++){
+                fw.write(String.format("const %s %s = %s;\n", modulesFile.getConstantList().getConstantType(i).toString(), modulesFile.getConstantList().getConstantName(i), modulesFile.getConstantList().getConstant(i).toString()));
+            }
+
+            fw.write("\n//Formulas\n");
+            for (int i=0; i < modulesFile.getFormulaList().size(); i++){
+                fw.write(String.format("formula %s = %s;\n", modulesFile.getFormulaList().getFormulaName(i), modulesFile.getFormulaList().getFormula(i).toString()));
+            }
+
+            fw.write("\n//Labels\n");
+            for (int i=0; i < modulesFile.getLabelList().size(); i++){
+                fw.write(String.format("label \"%s\" = %s;\n", modulesFile.getLabelList().getLabelName(i), modulesFile.getLabelList().getLabel(i).toString()));
+            }
+
+            //Start core module
+            fw.write("module core\n");
+            //Write variables with ranges
+            for (int i = 0; i < modulesFile.getNumVars(); i++){
+                fw.write(String.format("\t%s;\n", modulesFile.getVarDeclaration(i).toString()));
+            }
+            //Gather Transitions in Reachable Subset
+            List<String> stringIds = new ArrayList<>(stateIDs);
+            String stateID = stateIDs.stream().map(s -> "'" + s + "'").collect(Collectors.joining(","));
+            Map<String, String> stateMap = database.executeCollectionQuery(String.format("SELECT %s, %s FROM %s WHERE %s in (%s)", ENTRY_S_ID, ENTRY_S_NAME, TABLE_STATES, ENTRY_S_ID, stateID) , new PairMapper<String, String>(ENTRY_S_ID, ENTRY_S_NAME, String.class, String.class)).stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            List<Transition> transitions = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s IN (%s)", TABLE_TRANS, ENTRY_T_OUT, stateID), new TransitionMapper(this));
+            List<WrittenTransition> transitionsOut = new ArrayList<>();
+            for (Transition t : transitions){
+                Set<String> reach = new HashSet<>(t.getProbabilityDistribution().keySet());
+                stringIds.forEach(reach::remove);
+                if (reach.isEmpty()){
+                    Map<String, Double> probabilityDistribution = t.getProbabilityDistribution().entrySet().stream().collect(Collectors.toMap(e -> stateMap.get(e.getKey()), Map.Entry::getValue));
+                    Matcher m = PATTERN_ACTION.matcher(t.getAction());
+                    String actionName = "";
+                    if(m.find()){
+                        actionName = m.group(1);
+                    }
+
+                    WrittenTransition wt = new WrittenTransition(stateMap.get(t.getSource()), actionName, probabilityDistribution);
+                    transitionsOut.add(wt);
+                }
+            }
+
+            //Write Transitions
+            for (WrittenTransition wt : transitionsOut){
+                fw.write(String.format("\t[%s] %s -> %s;\n", wt.actionName, wt.source, wt.updates()));
+            }
+
+            //End Module
+            fw.write("endmodule\n");
+
+            //Add rewards
+            fw.write("\n//Rewards:\n");
+            for(RewardStruct reward : modulesFile.getRewardStructs()){
+                fw.write(reward.toString() + "\n");
+            }
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return newModelFile;
     }
 
 }
