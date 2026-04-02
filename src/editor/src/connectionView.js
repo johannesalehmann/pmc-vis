@@ -100,6 +100,7 @@ class ConnectionViewProvider {
                     this._decorator.register(project);
                     this._decorator.parseDocument(activeEditor);
                     this._decorator.updateInfo(activeEditor);
+                    vscode.commands.executeCommand('providerView.refresh')
                 }
             }
         }

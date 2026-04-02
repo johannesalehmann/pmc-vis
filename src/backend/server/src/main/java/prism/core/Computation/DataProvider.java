@@ -1,5 +1,6 @@
 package prism.core.Computation;
 
+import prism.api.EditorOption;
 import prism.core.Model;
 import prism.core.Property.Property;
 
@@ -49,6 +50,8 @@ public interface DataProvider {
     Map<String, String[]> getColumnMap();
 
     Map<String, DataProviderTask> getProviderTasks();
+
+    Map<String, List<EditorOption>> getEditorOptions();
 
     String getName();
 

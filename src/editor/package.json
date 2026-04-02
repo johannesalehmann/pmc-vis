@@ -76,6 +76,10 @@
         {
           "id": "stateView",
           "name": "States"
+        },
+        {
+          "id": "providerView",
+          "name": "Data Provider"
         }
       ]
     },
@@ -115,6 +119,11 @@
         "icon": "$(save-as)"
       },
       {
+        "command": "providerView.openHighlighting",
+        "title": "Open Highlighting for Provider",
+        "icon": "$(debug-start)"
+      },
+      {
         "command": "moveTo",
         "title": "Move to line in current active Window"
       }
@@ -152,6 +161,11 @@
           "command": "connectionView.saveAsLocalFile",
           "when": "view == connectionView && viewItem == File",
           "group": "inline"
+        },
+        {
+          "command": "providerView.openHighlighting",
+          "when": "view == providerView && viewItem == Option",
+          "group": "inline"
         }
       ]
     },
@@ -163,6 +177,10 @@
       {
         "view": "stateView",
         "contents": "No selected states"
+      },
+      {
+        "view": "providerView",
+        "contents": "This is not working"
       }
     ]
   },

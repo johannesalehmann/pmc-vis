@@ -4,7 +4,13 @@ import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.setup.Environment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import prism.api.EditorHighlighting;
+import prism.api.EditorOption;
 import prism.api.Message;
+import prism.core.Computation.DataProvider;
+import prism.core.Computation.DataProviderTask;
+import prism.core.Model;
+import prism.core.Project;
 import prism.server.PRISMServerConfiguration;
 import prism.server.TaskManager;
 
@@ -125,6 +131,78 @@ public class ModelResource extends Resource {
         refreshProject(projectID);
         if (!tasks.containsProject(projectID)) return ok(new ArrayList<String>());
         return ok(tasks.getProject(projectID).getFileStructure());
+    }
+
+    @Path("/provider")
+    @GET
+    public Response getProviderOptions(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @QueryParam("version") Optional<String> version
+    ){
+        refreshProject(projectID);
+        if (!tasks.containsProject(projectID)) return ok(new HashMap<String, List<EditorOption>>());
+        Project project = tasks.getProject(projectID);
+        try {
+            Model m;
+            if (version.isPresent()) {
+                if (project.getVersions().contains(version.get())) {
+                    m = project.getModel(version.get());
+                } else {
+                    return error(String.format("version %s does not exist", version.get()));
+                }
+            } else {
+                m = project.getDefaultModel();
+            }
+            Map<String, Map<String, List<EditorOption>>> options = new HashMap<>();
+            for (DataProvider provider : m.getDataProviders()) {
+                Map<String, List<EditorOption>> opts = provider.getEditorOptions();
+                if (!opts.isEmpty()) options.put(provider.getName(), opts);
+            }
+            return ok(options);
+        } catch (Exception e) {
+            return error(e);
+        }
+    }
+
+    @Path("/highlight:{provider}:{property}")
+    @GET
+    public Response getHighlighting(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @PathParam("provider") String provider,
+            @PathParam("property") String property,
+            @QueryParam("version") Optional<String> version,
+            @QueryParam("arg") List<String> arguments
+    ){
+        refreshProject(projectID);
+        if (!tasks.containsProject(projectID)) return ok(new HashMap<String, List<EditorHighlighting>>());
+        Project project = tasks.getProject(projectID);
+        try {
+            Model m;
+            if (version.isPresent()) {
+                if (project.getVersions().contains(version.get())) {
+                    m = project.getModel(version.get());
+                } else {
+                    return error(String.format("version %s does not exist", version.get()));
+                }
+            } else {
+                m = project.getDefaultModel();
+            }
+            for (DataProvider p : m.getDataProviders()) {
+                if (p.getName().equals(provider)) {
+                    DataProviderTask t = p.getProviderTasks().get(property);
+                    if (t==null) return error(String.format("property %s does not exist", property));
+                    List<EditorHighlighting> output = t.getEditorHighlighting(arguments);
+                    if (output == null) output = new ArrayList<>();
+                    return ok(output);
+                }
+            }
+
+            return error(String.format("provider %s does not exist", provider));
+        } catch (Exception e) {
+            return error(e);
+        }
     }
 
     @Path("/file:{file}")

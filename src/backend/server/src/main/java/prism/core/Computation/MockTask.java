@@ -1,5 +1,11 @@
 package prism.core.Computation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import prism.api.EditorHighlighting;
+import prism.api.EditorOption;
+import prism.api.EditorParameter;
 import prism.api.Transition;
 import prism.core.Model;
 import prism.core.Namespace;
@@ -58,6 +64,38 @@ public class MockTask extends DataProviderTask {
     @Override
     public String shortName(){
         return "Mock";
+    }
+
+    @Override
+    public List<EditorOption> getEditorOptions() {
+        List<EditorOption> options = new ArrayList<>();
+        options.add(new EditorOption("One", "-1"));
+        List<EditorParameter> extra = new ArrayList<>();
+        extra.add(new EditorParameter("one", "1"));
+        extra.add(new EditorParameter("two", "2"));
+        Map<String, List<EditorParameter>> parameters = new HashMap<>();
+        parameters.put("extra", extra);
+        options.add(new EditorOption("Two", "-2 $extra", parameters));
+        return options;
+    }
+
+    @Override
+    public List<EditorHighlighting> getEditorHighlighting(List<String> arguments){
+        String exampleHighlighting = "[\n" +
+                "    {\n" +
+                "        \"from\": 0,\n" +
+                "        \"to\": 3,\n" +
+                "        \"tooltip\": \"Example tooltip\",\n" +
+                "        \"colour\": \"#e25858\"\n" +
+                "    }" +
+                "]";
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            List<EditorHighlighting> highlightings = objectMapper.readValue(exampleHighlighting, new TypeReference<List<EditorHighlighting>>(){});
+            return highlightings;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 

@@ -3,6 +3,7 @@ package prism.core.Computation;
 import prism.PrismException;
 import prism.api.DataCategory;
 import prism.api.DataEntry;
+import prism.api.EditorOption;
 import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Property.Property;
@@ -138,5 +139,15 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     @Override
     public Map<String, DataProviderTask> getProviderTasks(){
         return (Map<String, DataProviderTask>) this.tasks;
+    }
+
+    public Map<String, List<EditorOption>> getEditorOptions(){
+        Map<String, List<EditorOption>> editorOptions = new HashMap<>();
+        for (T task: tasks.values()) {
+            if (task.getEditorOptions()!=null){
+                editorOptions.put(task.getPropertyName(), task.getEditorOptions());
+            }
+        }
+        return editorOptions;
     }
 }

@@ -2,6 +2,8 @@ package prism.core.Computation;
 
 import prism.PrismLangException;
 import prism.api.DataEntry;
+import prism.api.EditorHighlighting;
+import prism.api.EditorOption;
 import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Property.Property;
@@ -167,5 +169,13 @@ public abstract class DataProviderTask implements Task {
     public List<String> getHighlightedStates() {
         String query = String.format("SELECT %s FROM %s WHERE %s = '1'", Namespace.ENTRY_S_ID, model.getTableStates(), this.getHighlightCollumn());
         return model.getDatabase().executeCollectionQuery(query, String.class);
+    }
+
+    public List<EditorOption> getEditorOptions(){
+        return null;
+    }
+
+    public List<EditorHighlighting> getEditorHighlighting(List<String> arguments){
+        return null;
     }
 }

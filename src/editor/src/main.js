@@ -14,6 +14,7 @@ const token = require("./tokens.js");
 const { ConnectionViewProvider } = require('./connectionView.js');
 const { VirtualFileSystemProvider } = require('./virtualFile.js');
 const { Communication } = require('./communication.js')
+const { ProviderViewProvider } = require('./providerView.js')
 const constants = require("./constants.js");
 const decorations = require("./decorations.js");
 
@@ -35,8 +36,10 @@ function activate(context) {
 	context.subscriptions.push(vscode.workspace.registerFileSystemProvider(VirtualFileSystemProvider.uri(), fileSystemProvider, { isCaseSensitive: true }))
 
 	const decorator = new decorations.Decorator();
+	const provProvider = new ProviderViewProvider(decorator);
 
 	const stateView = vscode.window.createTreeView("stateView", { treeDataProvider: decorator });
+	const providerView = vscode.window.createTreeView("providerView", { treeDataProvider: provProvider });
 
 	stateView.onDidChangeCheckboxState(event => {
 		event.items.forEach(item => {
@@ -50,6 +53,17 @@ function activate(context) {
 		})
 	})
 
+	providerView.onDidChangeCheckboxState(event => {
+		event.items.forEach(item => {
+			if (item[1] == vscode.TreeItemCheckboxState.Checked) {
+				console.log(item[0].label + " checked");
+				provProvider.selectParameter(item[0])
+			} else {
+				console.log(item[0].label + " unchecked");
+			}
+		})
+	})
+
 	connectionProvider = new ConnectionViewProvider(decorator);
 	fileSystemProvider.watchSave(connectionProvider);
 	connectionProvider.addExistingProjects();
@@ -59,8 +73,11 @@ function activate(context) {
 
 	context.subscriptions.push(communicationStatus);
 
+
+
 	//Commands for backend communication
 	context.subscriptions.push(vscode.window.registerTreeDataProvider("connectionView", connectionProvider));
+	context.subscriptions.push(providerView);
 	context.subscriptions.push(stateView);
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.connect', () => connectionProvider.addProject()))
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.reset', () => connectionProvider.removeProjects()))
@@ -69,6 +86,8 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.front', item => connectionProvider.openFrontend(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.openDocument', item => connectionProvider.openDocument(item)));
 	context.subscriptions.push(vscode.commands.registerCommand('connectionView.saveAsLocalFile', item => connectionProvider.saveAsLocalFile(item)));
+	context.subscriptions.push(vscode.commands.registerCommand('providerView.openHighlighting', item => provProvider.openHighlighting(item)));
+	context.subscriptions.push(vscode.commands.registerCommand('providerView.refresh', _ => provProvider.refresh()))
 	context.subscriptions.push(vscode.commands.registerCommand('moveTo', item => moveTo(item)))
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(_ => { resetWorkspace(null) }));
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => { resetWorkspace(event.document) }));
