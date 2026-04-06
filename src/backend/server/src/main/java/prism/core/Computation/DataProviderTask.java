@@ -20,22 +20,26 @@ import java.util.Map;
 public abstract class DataProviderTask implements Task {
 
     protected String name;
+    protected int id;
     protected Model model;
-    protected Property property;
-    protected Map<String, Object> arguments;
+    protected String property;
+    protected String propertyExpression;
+    protected Map<String, String> arguments;
     protected boolean computed;
     protected boolean highlighting;
     protected boolean hovering;
 
-    public DataProviderTask(String name, Model model, Property property) {
-        this(name, model, property, false, false);
+    public DataProviderTask(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments) {
+        this(name, id, model, property, propertyExpression, arguments, false, false);
     }
 
-    public DataProviderTask(String name, Model model, Property property, boolean highlighting, boolean hovering) {
+    public DataProviderTask(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments, boolean highlighting, boolean hovering) {
         this.name = name;
+        this.id = id;
         this.model = model;
         this.property = property;
-        this.arguments = new HashMap<>();
+        this.propertyExpression = propertyExpression;
+        this.arguments = new HashMap<>(arguments);
         this.computed = checkDB();
         this.highlighting = highlighting;
         this.hovering = hovering;
@@ -46,12 +50,12 @@ public abstract class DataProviderTask implements Task {
         return entry;
     }
 
-    public void setArguments(Map<String, Object> arguments) {
+    public void setArguments(Map<String, String> arguments) {
         this.arguments.putAll(arguments);
     }
 
     protected String getColumnName(){
-        return String.format("%s_%s", this.shortName(), property.getID());
+        return String.format("%s_%s", this.shortName(), id);
     }
 
     public String getHighlightName(){
@@ -70,14 +74,14 @@ public abstract class DataProviderTask implements Task {
 
     public String getHighlightCollumn(){
         if (highlighting){
-            return String.format("color_%s_%s", this.shortName(), property.getID());
+            return String.format("color_%s_%s", this.shortName(), id);
         }
         return "";
     }
 
     public String getHoverCollumn(){
         if (hovering){
-            return String.format("hover_%s_%s", this.shortName(), property.getID());
+            return String.format("hover_%s_%s", this.shortName(), id);
         }
         return "";
     }
@@ -91,7 +95,7 @@ public abstract class DataProviderTask implements Task {
     //Name of the Task
     @Override
     public String name(){
-        return String.format("%s-%s", shortName(), property.getID());
+        return String.format("%s-%s", shortName(), id);
     }
 
     public abstract String shortName();
@@ -123,7 +127,7 @@ public abstract class DataProviderTask implements Task {
     }
 
     public String getPropertyName(){
-        return property.getName();
+        return property;
     }
 
     protected abstract void callTool();

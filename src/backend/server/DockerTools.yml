@@ -1,6 +1,12 @@
 pathTemplate: volume
 debug: true
-registeredDataProvider: [responsibility, mock, witness]
+registeredDataProvider:
+  - name: Responsibility
+    type: responsibility
+    executable: ../SVaBResp/target/release/svabresp-cli
+  - name: Witnessing Subsystem
+    type: witness
+    executable: ../switss/build/switss-multi
 
 logging:
 

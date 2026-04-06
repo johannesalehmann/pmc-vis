@@ -28,7 +28,7 @@ public class PRISMServerConfiguration extends Configuration {
 
     private String socketHost = "0.0.0.0";
 
-    private List<String> registeredDataProvider = new ArrayList<>();
+    private List<DataProviderConfiguration> registeredDataProvider = new ArrayList<>();
 
     @Valid
     @NotNull
@@ -129,12 +129,12 @@ public class PRISMServerConfiguration extends Configuration {
     }
 
     @JsonProperty
-    public List<String> getRegisteredDataProvider() {
+    public List<DataProviderConfiguration> getRegisteredDataProvider() {
         return registeredDataProvider;
     }
 
     @JsonProperty
-    public void setRegisteredDataProvider(List<String> registeredDataProvider) {
+    public void setRegisteredDataProvider(List<DataProviderConfiguration> registeredDataProvider) {
         this.registeredDataProvider = registeredDataProvider;
     }
 

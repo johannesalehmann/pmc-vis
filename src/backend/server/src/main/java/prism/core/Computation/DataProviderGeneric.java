@@ -7,6 +7,7 @@ import prism.api.EditorOption;
 import prism.core.Model;
 import prism.core.Namespace;
 import prism.core.Property.Property;
+import prism.server.DataProviderConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -15,24 +16,30 @@ import java.util.*;
 public class DataProviderGeneric<T extends DataProviderTask> implements DataProvider, Namespace {
 
     protected final String name;
+    protected final String executable;
+    protected final long timeout;
     protected final Model parent;
     protected final DataEntry.Type type;
     protected final Constructor<T> taskConstructor;
+    protected final Map<String, String> extraArguments;
 
     protected Map<String, T> tasks;
 
-    protected DataProviderGeneric(String name, Model parent, Constructor<T> taskConstructor) {
-        this(name, parent, DataEntry.Type.TYPE_NUMBER, taskConstructor);
+    protected DataProviderGeneric(DataProviderConfiguration config, Model parent, Map<String, String> properties, Constructor<T> taskConstructor) {
+        this(config, parent, properties, DataEntry.Type.TYPE_NUMBER, taskConstructor);
     }
 
-    protected DataProviderGeneric(String name, Model parent, DataEntry.Type type, Constructor<T> taskConstructor) {
-        this.name = name;
+    protected DataProviderGeneric(DataProviderConfiguration config, Model parent, Map<String, String> properties, DataEntry.Type type, Constructor<T> taskConstructor) {
+        this.name = config.getName();
+        this.executable = config.getExecutable();
+        this.timeout = config.getTimeout();
+        this.extraArguments = config.getExtraArguments();
         this.parent = parent;
         this.taskConstructor = taskConstructor;
         this.type = type;
         this.tasks = new TreeMap<>();
 
-        inititializeTasks();
+        inititializeTasks(properties);
 
         if(parent.debug){
             System.out.println(String.format("Created Provider for %s", this.name));
@@ -58,30 +65,35 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     }
 
     @Override
-    public void compute(String property, Map<String, Object> args){
+    public void compute(String property, Map<String, String> args){
         T task = tasks.get(property);
         task.setArguments(args);
         parent.getInfo().getStateEntry(this.name, property).setStatus(DataEntry.Status.computing);
         runTask(task);
     }
 
-    protected void inititializeTasks(){
-        for (Property property : parent.getProperties()) {
-            this.addProperty(property);
+    protected void inititializeTasks(Map<String, String> properties){
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            this.addProperty(entry.getKey(), entry.getValue());
         }
     }
 
     @Override
-    public void addProperty(Property property) {
+    public void addProperty(String name, String expression) {
         try {
-            T task = taskConstructor.newInstance(name, parent, property);
+            int id = tasks.size();
+            Map<String, Object> args = new HashMap<>();
+            args.put("executable", executable);
+            args.put("timeout", timeout);
+            args.putAll(extraArguments);
+            T task = taskConstructor.newInstance(this.name, id, parent, name, expression, args);
             if (task.isReady()){
                 DataEntry.Status status = DataEntry.Status.missing;
                 if (task.computed()) {
                     status = DataEntry.Status.ready;
                 }
-                parent.getInfo().setStateEntry(this.name, new DataEntry(property.getName(), this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
-                tasks.put(property.getName(), task);
+                parent.getInfo().setStateEntry(this.name, new DataEntry(name, this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
+                tasks.put(name, task);
             }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException(e);

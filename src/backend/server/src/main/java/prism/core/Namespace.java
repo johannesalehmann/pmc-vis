@@ -108,6 +108,8 @@ public interface Namespace {
 
     Pattern PATTERN_ACTION = Pattern.compile("\\[(.*)\\]");
 
+    Pattern PATTERN_PROPERTY = Pattern.compile("\\\"(.*)\\\"\\s*\\:\\s*(.*);");
+
     static String getLanguage(String filename){
         String language = filename.substring(filename.lastIndexOf(".") + 1);
         switch (language){

@@ -11,8 +11,8 @@ import java.util.Random;
 
 public class MockTask2 extends DataProviderTask {
 
-    public MockTask2(String name, Model model, Property property) {
-        super(name, model, property, false, true);
+    public MockTask2(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments) {
+        super(name, id, model, property, propertyExpression, arguments, false, true);
     }
 
     @Override

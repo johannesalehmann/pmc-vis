@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
 
 public class MockTask extends DataProviderTask {
 
-    public MockTask(String name, Model model, Property property) {
-        super(name, model, property, true, false);
+    public MockTask(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments) {
+        super(name, id, model, property, propertyExpression, arguments, true, false);
     }
 
     @Override

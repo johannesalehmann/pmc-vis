@@ -16,6 +16,7 @@ import prism.db.Database;
 import prism.db.mappers.PairMapper;
 import prism.db.mappers.StateMapper;
 import prism.db.mappers.TransitionMapper;
+import prism.server.DataProviderConfiguration;
 import prism.server.TaskManager;
 import simulator.TransitionList;
 
@@ -52,6 +53,7 @@ public class Model implements Namespace {
     private final Map<String, String> apFormulas;
 
     private final List<DataProvider> dataProviders;
+    private final Map<String, String> inertProperties;
 
     private final File outLog;
 
@@ -82,6 +84,7 @@ public class Model implements Namespace {
 
         this.properties = new ArrayList<>();
         this.schedulers = new ArrayList<>();
+        this.inertProperties = new HashMap<>();
 
         this.APs = new HashMap<>();
         this.apFormulas = new HashMap<>();
@@ -142,7 +145,7 @@ public class Model implements Namespace {
 
         this.info.setComputable(OUTPUT_RESULTS);
 
-        for (String registeredProvider : parent.getRegisteredDataProviders()){
+        for (DataProviderConfiguration registeredProvider : parent.getRegisteredDataProviders()){
             DataProvider dataProvider = DataProvider.initialize(registeredProvider, this);
             if(dataProvider != null){
                 dataProviders.add(dataProvider);
@@ -244,9 +247,23 @@ public class Model implements Namespace {
         Property property = Property.createProperty(this, properties.size(), propertiesFile, prismProperty);
         properties.add(property);
         for (DataProvider dataProvider : dataProviders) {
-            dataProvider.addProperty(property);
+            dataProvider.addProperty(property.getName(), property.getExpression().toString());
         }
         return name;
+    }
+
+    public void newInertProperty(String line){
+        Matcher m = PATTERN_PROPERTY.matcher(line);
+        if (m.find()){
+            this.inertProperties.put(m.group(1), m.group(2));
+            for (DataProvider dataProvider : dataProviders) {
+                dataProvider.addProperty(m.group(1), m.group(2));
+            }
+        }
+    }
+
+    public Map<String, String> getInertProperties() {
+        return inertProperties;
     }
 
     public Info getInfoCopy() {

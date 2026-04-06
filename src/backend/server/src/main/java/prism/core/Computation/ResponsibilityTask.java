@@ -26,9 +26,9 @@ public class ResponsibilityTask extends DataProviderTask {
 
     private final String binaryLocation;
 
-    public ResponsibilityTask(String name, Model model, Property property) {
-        super(name, model, property);
-        this.binaryLocation = "../SVaBResp/target/release/svabresp-cli";
+    public ResponsibilityTask(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments) {
+        super(name, id, model, property, propertyExpression, arguments);
+        this.binaryLocation = this.arguments.get("executable");
     }
 
     @Override
@@ -36,7 +36,7 @@ public class ResponsibilityTask extends DataProviderTask {
         String modelPath = String.format("%s/%s", model.parent.getPath(), model.getModelFile().getName());
         String grouping = this.arguments.containsKey("grouping")?this.arguments.get("grouping").toString():null;
 
-        Map<String, String> results = callSVAResp(modelPath, property.getExpression().toString(), grouping);
+        Map<String, String> results = callSVAResp(modelPath, propertyExpression, grouping);
         Map<String, String> modifiedResults = new HashMap<>();
         for (Map.Entry<String, String> entry : results.entrySet()) {
             modifiedResults.put(mapStateToId(entry.getKey().replace("{", "(")), entry.getValue());
@@ -202,7 +202,7 @@ public class ResponsibilityTask extends DataProviderTask {
             String[] args = new String[size];
             args[0] = call;
             args[1] = modelPath;
-            args[2] = this.property.getExpression().toString();
+            args[2] = this.propertyExpression;
             for (int i = 0; i < arguments.size(); i++) {
                 args[i+3] = arguments.get(i);
             }

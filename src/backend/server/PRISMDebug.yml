@@ -1,6 +1,12 @@
 pathTemplate: volume
 debug: true
-registeredDataProvider: [mock, mock2]
+registeredDataProvider:
+  - name: Mock Values,
+    type: mock
+    executable: something
+  - name: Mockier Values,
+    type: mock2
+    executable: somethingElse
 
 logging:
 

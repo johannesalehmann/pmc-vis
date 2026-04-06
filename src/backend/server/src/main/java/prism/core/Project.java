@@ -4,6 +4,7 @@ import prism.api.*;
 import prism.core.Scheduler.Scheduler;
 import prism.db.Database;
 import prism.db.mappers.PaneMapper;
+import prism.server.DataProviderConfiguration;
 import prism.server.PRISMServerConfiguration;
 import prism.server.TaskManager;
 
@@ -37,7 +38,7 @@ public class Project implements Namespace{
     private Map<String, Model> models;
     private String newestVersion;
 
-    private List<String> registerdProviders;
+    private List<DataProviderConfiguration> registerdProviders;
 
     public static Project reset(Project original) throws Exception {
         return new Project(original.id, original.rootDir, original.taskManager, original.database, original.cuddMaxMem, original.numIterations, original.debug, original.registerdProviders);
@@ -47,7 +48,7 @@ public class Project implements Namespace{
         this(id, rootDir, taskManager, database, config.getCUDDMaxMem(), config.getIterations(), config.getDebug(), config.getRegisteredDataProvider());
     }
 
-    public Project(String id, String rootDir, TaskManager taskManager, Database database, long cuddMaxMem, int numIterations, boolean debug, List<String> dataProviders) throws Exception {
+    public Project(String id, String rootDir, TaskManager taskManager, Database database, long cuddMaxMem, int numIterations, boolean debug, List<DataProviderConfiguration> dataProviders) throws Exception {
         this.id = id;
         this.taskManager = taskManager;
         this.debug = debug;
@@ -103,7 +104,7 @@ public class Project implements Namespace{
         throw new RuntimeException("Could not find version: " + version + "\nThese Versions exist: " + this.getVersions().toString());
     }
 
-    public List<String> getRegisteredDataProviders() {
+    public List<DataProviderConfiguration> getRegisteredDataProviders() {
         return registerdProviders;
     }
 

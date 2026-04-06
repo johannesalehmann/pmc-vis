@@ -22,9 +22,9 @@ public class WitnessTask extends DataProviderTask {
     private final int gurobiTimelimit; // Specifies the Gurobi timelimit in seconds
     private final String subsystemFilename;
 
-    public WitnessTask(String name, Model model, Property property) {
+    public WitnessTask(String name, int id, Model model, String property, String propertyExpression, Map<String, String> arguments) {
 
-        super(name, model, property, true, false);
+        super(name, id, model, property, propertyExpression, arguments, true, false);
         this.binaryLocation = "../switss/build/switss-multi";
         this.gurobiTimelimit = 30;
         this.subsystemFilename = "ws_0.txt";
@@ -34,7 +34,7 @@ public class WitnessTask extends DataProviderTask {
     public void callTool() {
         String modelPath = String.format("%s/%s", model.parent.getPath(), model.getModelFile().getName());
 
-        Map<String, String> results = callSwitssMulti(modelPath, property.getExpression().toString());
+        Map<String, String> results = callSwitssMulti(modelPath, propertyExpression);
         Map<String, String> modifiedResults = new HashMap<>();
         for (Map.Entry<String, String> entry : results.entrySet()) {
             modifiedResults.put(mapStateToId(entry.getKey().replace("{", "(")), entry.getValue());
@@ -55,7 +55,7 @@ public class WitnessTask extends DataProviderTask {
 
     @Override
     public boolean isReady() {
-        String property = this.property.getExpression().toString();
+        String property = this.propertyExpression;
         if (property.contains("Pmax=?") || property.contains("Pmin=?")){
             return false;
         }

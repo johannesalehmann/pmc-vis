@@ -439,7 +439,19 @@ public class ModelChecker implements Namespace {
     }
 
     public void parsePropertyFile(String path) throws Exception {
-        PropertiesFile propertiesFile = prism.parsePropertiesFile(new File(path));
+        PropertiesFile propertiesFile = null;
+        try{
+        propertiesFile = prism.parsePropertiesFile(new File(path));
+        } catch (PrismLangException e) {
+            System.out.println(String.format("PRISM could not parse property file %s\n Error: %s\n", path, e.getMessage()));
+            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+                String line;
+                while (br.ready()) {
+                    line = br.readLine();
+                    parent.newInertProperty(line);
+                }
+            }
+        }
 
         if (propertiesFile == null) {
             propertiesFile = prism.parsePropertiesString("");
