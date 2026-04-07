@@ -1,3 +1,4 @@
+// @ts-nocheck
 const vscode = require('vscode');
 
 //Decorations in TextEditor
@@ -132,7 +133,8 @@ class ConnectionViewProvider {
                     await project.uploadFile("upload-properties");
                     break;
                 default:
-                    vscode.window.showInformationMessage("File not recognized")
+                    await project.uploadFile("upload-file");
+                    break;
             }
         } else {
             if (project) {
@@ -331,8 +333,8 @@ class ConnectionItem extends vscode.TreeItem {
                 call = "upload-properties";
                 break;
             default:
-                vscode.window.showInformationMessage("File not recognized")
-                return
+                call = "upload-file";
+                break;
         }
 
         var data = new FormData();

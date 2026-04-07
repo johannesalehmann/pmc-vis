@@ -240,6 +240,50 @@ public class TaskResource extends Resource {
         return Response.ok(String.format("Property File uploaded to %s\n", uploadProp)).build();
     }
 
+    @Path("/upload-file")
+    @POST
+    @Timed
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Upload Files to Model Checker", description = "POST other files (like style files and csv data)")
+    public Response uploadFile(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID,
+            @Parameter(description = "File to upload to project")
+            @FormDataParam("file") InputStream fileInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileDetail
+    ) {
+
+        refreshProject(projectID);
+
+        if (!new File(String.format("%s/%s", rootDir, projectID)).exists()){
+            return Response.status(Response.Status.FORBIDDEN).entity("Project does not exist. Please upload a model first.").build();
+        }
+
+        final String uploadFile = String.format("%s/%s/", rootDir, projectID) + fileDetail.getFileName();
+
+        //Check whether we overwrite the property file. Remove Project and delete file if this is the case.
+        if(new File(uploadFile).delete()) {
+            try {
+                writeToFile(fileInputStream, uploadFile);
+                tasks.resetProject(projectID);
+            } catch (Exception e) {
+                return error(e);
+            }
+        }else{
+            try {
+                writeToFile(fileInputStream, uploadFile);
+                if (tasks.containsProject(projectID)) {
+                    tasks.getProject(projectID).addFile(new File(uploadFile));
+                }else{
+                    loadProject(projectID);
+                }
+            } catch (Exception e) {
+                return error(e);
+            }
+        }
+        return Response.ok(String.format("File uploaded to %s\n", uploadFile)).build();
+    }
+
     @Path("/add-scheduler")
     @POST
     @Timed
@@ -350,7 +394,7 @@ public class TaskResource extends Resource {
                         if (provider.contains(propertyName)) {
                             provider.compute(propertyName, new HashMap<>());
                             if (debug){
-                                System.out.println(String.format("Computing %s of %s ", provider.getName(), propertyName));
+                                System.out.println(String.format("Computing %s of %s ", propertyName, provider.getName()));
                             }
                         }
                     }

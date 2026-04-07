@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ ! -d "db" ]; then
+  ./bin/initdb
+fi
+
 pg_ctl start -D db -l server.log | echo "Database Started" &
 
 shutdownDatabase() {

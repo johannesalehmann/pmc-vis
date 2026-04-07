@@ -7,6 +7,11 @@ registeredDataProvider:
   - name: Mockier Values,
     type: mock2
     executable: somethingElse
+  - name: CSV Data
+    type: csv
+    executable: irrelevant
+    extraArguments:
+      separator: " "
 
 logging:
 

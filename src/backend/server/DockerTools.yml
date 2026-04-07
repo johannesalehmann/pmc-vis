@@ -7,6 +7,11 @@ registeredDataProvider:
   - name: Witnessing Subsystem
     type: witness
     executable: ../switss/build/switss-multi
+  - name: CSV Data
+    type: csv
+    executable: ""
+    extraArguments:
+      separator: " "
 
 logging:
 

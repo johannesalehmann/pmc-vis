@@ -34,6 +34,7 @@ public class Project implements Namespace{
     private final File outLog;
 
     private Set<File> propertyFiles;
+    private Set<File> csvFiles;
 
     private Map<String, Model> models;
     private String newestVersion;
@@ -61,6 +62,7 @@ public class Project implements Namespace{
 
         this.database = database;
         this.propertyFiles = new HashSet<>();
+        this.csvFiles = new HashSet<>();
         this.models = new HashMap<>();
 
         this.registerdProviders = dataProviders;
@@ -89,6 +91,11 @@ public class Project implements Namespace{
             case ".mdp":
             case ".prism":
                 createModel(file);
+                break;
+            case ".csv":
+                if(!file.getName().equals("style.csv")){
+                    addCSV(file);
+                }
                 break;
             default:
                 if (debug){
@@ -120,6 +127,13 @@ public class Project implements Namespace{
         }
     }
 
+    public void addCSV(File file) throws Exception {
+        csvFiles.add(file);
+        for (Model m : this.models.values()) {
+            m.addCSVFile(file);
+        }
+    }
+
     public List<File> getPropertyFiles(){
         return new ArrayList<>(propertyFiles);
     }
@@ -140,9 +154,9 @@ public class Project implements Namespace{
         }
         models.put(version, m);
         this.newestVersion = version;
-        for (File f : propertyFiles) {
-            m.loadPropertyFile(f);
-        }
+        //for (File f : propertyFiles) {
+        //    m.loadPropertyFile(f);
+        //}
         return version;
     }
 
@@ -216,6 +230,10 @@ public class Project implements Namespace{
         }
         structure.sort(String::compareTo);
         return structure;
+    }
+
+    public Set<File> getCSVFiles() {
+        return csvFiles;
     }
 
     public Map<String, String> getFileContent(int fileID) {

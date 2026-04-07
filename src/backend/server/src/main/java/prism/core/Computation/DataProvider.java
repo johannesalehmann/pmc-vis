@@ -41,6 +41,9 @@ public interface DataProvider {
             case "witness":
                 dataProvider = new DataProviderGeneric<>(config, parent, properties, WitnessTask.class.getConstructor(String.class, int.class, Model.class, String.class, String.class, Map.class));
                 break;
+            case "csv":
+                dataProvider = new DataProviderCSV(config, parent);
+                break;
         }
         }catch(NoSuchMethodException e){
             System.out.println("Could not find Constructor for: " + type);

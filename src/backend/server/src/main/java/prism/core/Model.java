@@ -7,6 +7,7 @@ import parser.ast.RewardStruct;
 import prism.*;
 import prism.api.*;
 import prism.core.Computation.DataProvider;
+import prism.core.Computation.DataProviderCSV;
 import prism.core.Property.Property;
 import prism.core.Scheduler.Criteria;
 import prism.core.Scheduler.CriteriaSort;
@@ -258,6 +259,15 @@ public class Model implements Namespace {
             this.inertProperties.put(m.group(1), m.group(2));
             for (DataProvider dataProvider : dataProviders) {
                 dataProvider.addProperty(m.group(1), m.group(2));
+            }
+        }
+    }
+
+    public void addCSVFile(File csvFile){
+        for (DataProvider dataProvider : dataProviders) {
+            if(dataProvider instanceof DataProviderCSV){
+                System.out.println((dataProvider.getName()));
+                ((DataProviderCSV) dataProvider).addCSV(csvFile.getName().split("\\.")[0], csvFile);
             }
         }
     }
