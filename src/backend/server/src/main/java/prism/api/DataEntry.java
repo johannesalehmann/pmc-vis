@@ -12,7 +12,7 @@ public class DataEntry implements Namespace {
 
     public enum Type {TYPE_BLANK, TYPE_NUMBER, TYPE_BOOL, TYPE_OTHER};
 
-    public enum Status {missing, ready, computing}
+    public enum Status {missing, ready, computing, failed}
 
     private final String entryName;
 
@@ -26,6 +26,7 @@ public class DataEntry implements Namespace {
 
     private String highlightEntry = "";
     private String hoverEntry = "";
+    private String errorMessage = "";
 
     public static DataEntry blank(String name){
         return new DataEntry(name, Type.TYPE_BLANK, 0, 0, Status.missing);
@@ -114,6 +115,12 @@ public class DataEntry implements Namespace {
     }
 
     @JsonIgnore
+    public void setError(String error){
+        this.errorMessage = error;
+        this.status = Status.failed;
+    }
+
+    @JsonIgnore
     public void setHighlightEntry(String highlightEntry){
         this.highlightEntry = highlightEntry;
     }
@@ -151,6 +158,11 @@ public class DataEntry implements Namespace {
     @JsonProperty
     public String hoverEntry() {
         return hoverEntry;
+    }
+
+    @JsonProperty
+    public String errorMessage() {
+        return errorMessage;
     }
 
     public DataEntry copy(){

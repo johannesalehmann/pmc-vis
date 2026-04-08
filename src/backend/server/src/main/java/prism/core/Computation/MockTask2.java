@@ -17,20 +17,20 @@ public class MockTask2 extends DataProviderTask {
 
     @Override
     public void callTool() {
-
-        Map<String, String> results = new HashMap<>();
-        Map<String, String> hoverEntries = new HashMap<>();
-        Random random = new Random(4356436);
-        for(String s : model.getAllStateIDs()){
-            double d = random.nextDouble();
-            results.put(s, Double.toString(d));
-        }
-        for(String s : model.getAllStateIDs()){
-            String hover = String.valueOf(random.nextDouble());
-            hoverEntries.put(s, hover);
-        }
-        this.writeToDatabase(model.getTableStates(), this.getColumnName(), Namespace.ENTRY_S_ID, results);
-        this.writeToDatabase(model.getTableStates(), this.getHoverCollumn(), Namespace.ENTRY_S_ID, hoverEntries);
+        throw new RuntimeException("This Error is here to test");
+//        Map<String, String> results = new HashMap<>();
+//        Map<String, String> hoverEntries = new HashMap<>();
+//        Random random = new Random(4356436);
+//        for(String s : model.getAllStateIDs()){
+//            double d = random.nextDouble();
+//            results.put(s, Double.toString(d));
+//        }
+//        for(String s : model.getAllStateIDs()){
+//            String hover = String.valueOf(random.nextDouble());
+//            hoverEntries.put(s, hover);
+//        }
+//        this.writeToDatabase(model.getTableStates(), this.getColumnName(), Namespace.ENTRY_S_ID, results);
+//        this.writeToDatabase(model.getTableStates(), this.getHoverCollumn(), Namespace.ENTRY_S_ID, hoverEntries);
     }
 
     @Override
