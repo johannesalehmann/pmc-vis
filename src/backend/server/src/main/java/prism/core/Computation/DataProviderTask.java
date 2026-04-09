@@ -220,4 +220,9 @@ public abstract class DataProviderTask implements Task {
     public List<EditorHighlighting> getEditorHighlighting(List<String> arguments){
         return null;
     }
+
+    public void clear(){
+        this.computed = false;
+        model.getInfo().getStateEntry(this.name, this.getPropertyName()).setStatus(DataEntry.Status.missing);
+    }
 }

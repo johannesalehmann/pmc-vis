@@ -73,4 +73,6 @@ public interface DataProvider {
     boolean isReady();
 
     boolean isBool();
+
+    void clear();
 }

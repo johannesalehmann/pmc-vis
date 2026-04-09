@@ -162,4 +162,11 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
         }
         return editorOptions;
     }
+
+    @Override
+    public void clear(){
+        for (T task: tasks.values()) {
+            task.clear();
+        }
+    }
 }
