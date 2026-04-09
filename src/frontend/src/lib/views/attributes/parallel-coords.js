@@ -3,7 +3,9 @@
 
 import { setPane } from '../../utils/controls.js';
 import events from '../../utils/events.js';
-import { fixed } from '../../utils/utils.js';
+import {
+  fixed, highlightPropType, resetHighlightPropType,
+} from '../../utils/utils.js';
 import makeCtxMenu from './ctx-menu.js';
 import {
   frequencies, histogram, violin,
@@ -441,7 +443,7 @@ function parallelCoords(pane, data, metadata) {
     };
 
     // get list of dimensions and create a scale for each, considering the data types.
-    dimensions = cols.filter((d) => {
+    dimensions = Object.keys(metadata.pld).filter((d) => {
       if (metadata.nominals.includes(d)) {
         const domain = data
           .map((p) => p[d])
@@ -543,10 +545,12 @@ function parallelCoords(pane, data, metadata) {
       .enter()
       .append('g')
       .attr('id', (d) => getAxisId(d))
-      .attr('class', () => 'dimension')
+      .attr('class', (d) => `dimension ${metadata.pld[d].prop.replace(/\s/g, '-')}`)
       .on('contextmenu', (e, d) => {
         e.axisName = d; // attaches axis information to the event for context menu
       })
+      .on('mouseover', (e, d) => highlightPropType(metadata.pld[d].prop))
+      .on('mouseout', (e, d) => resetHighlightPropType(metadata.pld[d].prop))
       .attr('transform', (d) => resp.trans[orient] + resp.scale(d) + ')')
       .call( // axes reordering
         d3
@@ -730,7 +734,7 @@ function parallelCoords(pane, data, metadata) {
       .attr('text-anchor', resp.anchor[orient])
       .attr('transform', resp.title[orient])
       .attr(resp.x_y[orient], -12)
-      .text(String);
+      .text(d => metadata.pld[d].name);
 
     // add and store a brush for each axis.
     const brushes = {};

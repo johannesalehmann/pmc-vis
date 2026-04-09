@@ -12,12 +12,6 @@ path.highlighted-path {
   stroke-width: var(--pcp-hover-width);
 }
 
-.axis line,
-.axis path {
-  fill: none;
-  stroke: var(--pcp-axes-lines);
-}
-
 .axis text {
   fill: var(--pcp-text-fill);
   cursor: move;

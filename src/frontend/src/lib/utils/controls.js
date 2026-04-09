@@ -3,7 +3,9 @@ import tippy from 'tippy.js';
 
 import { info, setInfo, BACKEND } from '../main/main.js';
 import { getPanes } from '../views/panes/panes.js';
-import { h, t } from './utils.js';
+import {
+  h, highlightPropType, resetHighlightPropType, t,
+} from './utils.js';
 
 // import { params as _elk } from '../views/graph/layout-options/elk.js';
 import { params as _dagre } from '../views/graph/layout-options/dagre.js';
@@ -604,6 +606,8 @@ function makeDetailCheckboxes() {
       ]),
       h('div', { class: 'content' }, [...makeDetailPropsCheckboxes(options[k], k)]),
     ]);
+    $option_label.addEventListener('mouseover', () => highlightPropType(k));
+    $option_label.addEventListener('mouseleave', () => resetHighlightPropType(k));
 
     if (opened[id]) {
       $option_label.open = true;

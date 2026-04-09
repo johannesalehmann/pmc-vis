@@ -1,3 +1,5 @@
+import d3 from '../views/imports/import-d3';
+
 function h(tag, attrs, children) {
   const el = document.createElement(tag);
 
@@ -40,6 +42,20 @@ const colorList = [
   '#f79205',
 ];
 
+function highlightPropType(type, fix = false) {
+  d3.selectAll(`.dimension.${
+    type.replace(/\s/g, '-')
+  } > .axis > path.domain, line`).attr('fill', () => '#c7e9eb');
+  document.getElementById(`details-${type}`).style.backgroundColor = '#c7e9eb';
+}
+
+function resetHighlightPropType(type) {
+  d3.selectAll(`.dimension.${
+    type.replace(/\s/g, '-')
+  } > .axis > path.domain, line`).attr('fill', () => 'none');
+  document.getElementById(`details-${type}`).style.backgroundColor = 'white';
+}
+
 export {
-  h, t, fixed, colorList,
+  h, t, fixed, colorList, highlightPropType, resetHighlightPropType,
 };

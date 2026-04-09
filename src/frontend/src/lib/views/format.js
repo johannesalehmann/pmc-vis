@@ -1,5 +1,9 @@
 import { info } from '../main/main.js';
 
+function pid(propType, propName) {
+  // creates safe Polyline ID
+  return `${propType.replace(/\s/g, '')}_____${propName}`;
+}
 function ndl_to_pcp(data, prop) {
   const returnable = { pl: [], pld: {} }; // polylines, polyline data
 
@@ -15,12 +19,13 @@ function ndl_to_pcp(data, prop) {
 
       Object.keys(prop[p].props).forEach((e) => {
         if (prop[p].props[e] && d.details[p]) {
-          polyline[e] = d.details[p][e];
-          returnable.pld[e] ||= {
+          polyline[pid(p, e)] = d.details[p][e];
+          returnable.pld[pid(p, e)] ||= {
             type: prop[p].metadata[e].type,
             min: prop[p].metadata[e].min,
             max: prop[p].metadata[e].max,
             prop: p,
+            name: e,
           };
         }
       });
@@ -32,4 +37,4 @@ function ndl_to_pcp(data, prop) {
   return returnable;
 }
 
-export { ndl_to_pcp };
+export { ndl_to_pcp, pid };
