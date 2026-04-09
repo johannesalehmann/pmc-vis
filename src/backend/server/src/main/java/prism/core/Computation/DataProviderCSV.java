@@ -95,7 +95,7 @@ public class DataProviderCSV extends DataProviderGeneric<CSVTask>{
                     status = DataEntry.Status.ready;
                 }
 
-                parent.getInfo().setStateEntry(this.name, new DataEntry(entry.getKey(), this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
+                parent.getInfo().setStateEntry(this.name, new DataEntry(entry.getKey(), task.shortName(), this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
 
                 tasks.put(entry.getKey(), task);
             }

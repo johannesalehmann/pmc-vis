@@ -92,7 +92,7 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
                 if (task.computed()) {
                     status = DataEntry.Status.ready;
                 }
-                parent.getInfo().setStateEntry(this.name, new DataEntry(name, this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
+                parent.getInfo().setStateEntry(this.name, new DataEntry(name, task.shortName(), this.type, task.getMin(), task.getMax(), status, task.getHighlightName(), task.getHoverName()));
                 tasks.put(name, task);
             }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
@@ -104,7 +104,7 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     public Map<String, String[]> getColumnMap() {
         Map<String, String[]> columnMap = new HashMap<>();
         for (T task : tasks.values()) {
-            String property = task.getPropertyName();
+            String property = task.shortName() + ":" + task.getPropertyName();
             String[] values = new String[] {this.getName(), property};
             columnMap.put(task.getColumnName().toLowerCase(), values);
 

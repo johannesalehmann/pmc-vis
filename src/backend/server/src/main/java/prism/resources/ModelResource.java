@@ -191,8 +191,9 @@ public class ModelResource extends Resource {
             }
             for (DataProvider p : m.getDataProviders()) {
                 if (p.getName().equals(provider)) {
-                    DataProviderTask t = p.getProviderTasks().get(property);
-                    if (t==null) return error(String.format("property %s does not exist", property));
+                    String prop = removePrefix(property);
+                    DataProviderTask t = p.getProviderTasks().get(prop);
+                    if (t==null) return error(String.format("property %s does not exist", prop));
                     List<EditorHighlighting> output = t.getEditorHighlighting(arguments);
                     if (output == null) output = new ArrayList<>();
                     return ok(output);

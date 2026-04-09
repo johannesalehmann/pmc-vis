@@ -12,7 +12,6 @@ import java.util.Map;
 public class DataCategory implements Namespace {
 
     private String name;
-    private String shortName;
     private Map<String, DataEntry> entries;
 
     public DataCategory(String name, List<DataEntry> entries) {
@@ -23,9 +22,8 @@ public class DataCategory implements Namespace {
         }
     }
 
-    public DataCategory(String name, String shortName) {
+    public DataCategory(String name) {
         this.name = name;
-        this.shortName = shortName;
         this.entries = new HashMap<>();
     }
 
@@ -44,11 +42,6 @@ public class DataCategory implements Namespace {
     @JsonIgnore
     public String getName() {
         return this.name;
-    }
-
-    @JsonIgnore
-    public String getShortName() {
-        return this.shortName;
     }
 
     @JsonIgnore

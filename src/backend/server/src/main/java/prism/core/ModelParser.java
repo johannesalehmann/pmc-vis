@@ -54,13 +54,13 @@ public class ModelParser {
 
         for (int i = 0; i < varList.getNumVars() ; i++) {
             String name = varList.getName(i);
-            this.parent.getInfo().setStateEntry(Namespace.OUTPUT_VARIABLES, new DataEntry(name, DataEntry.parseType(varList.getType(i).getTypeString()), varList.getLow(i), varList.getHigh(i) ));
+            this.parent.getInfo().setStateEntry(Namespace.OUTPUT_VARIABLES, new DataEntry(name, "Var", DataEntry.parseType(varList.getType(i).getTypeString()), varList.getLow(i), varList.getHigh(i) ));
         }
 
         for (int i = 0; i < modulesFile.getNumRewardStructs() ; i++) {
             RewardStruct rw = modulesFile.getRewardStruct(i);
             String name = rw.getName();
-            DataEntry info = new DataEntry(name, DataEntry.Type.TYPE_NUMBER, 0, Double.POSITIVE_INFINITY);
+            DataEntry info = new DataEntry(name, "Rew", DataEntry.Type.TYPE_NUMBER, 0, Double.POSITIVE_INFINITY);
             this.parent.getInfo().setStateEntry(Namespace.OUTPUT_REWARDS, info);
             this.parent.getInfo().setTransitionEntry(Namespace.OUTPUT_REWARDS, info);
         }
