@@ -24,6 +24,7 @@ const $cy_config = $('#cy-config');
 const $graph_config = $('#graph-config');
 const $pcp_config = $('#pcp-config');
 const $props_config = $('#props-config');
+const $pane_config = $('#pane-config');
 const $overview_config = $('#overview-config');
 
 const url = new URL(window.location.href);
@@ -160,12 +161,14 @@ function createControllers(params) {
       opened[d.id] = d.open;
     });
 
+  // pane settings
+  makeAppendDropdown();
+
   // props
   $props_config.innerHTML = '';
 
   makeDetailCheckboxes();
   makeSchedulerPropDropdown();
-  makeAppendDropdown();
   makeSelectionModesDropdown();
 
   // graph view settings
@@ -933,7 +936,7 @@ function makeAppendDropdown() {
     },
     'select-pane-position',
     'New Pane Position',
-    $props_config,
+    $pane_config,
   );
 }
 
