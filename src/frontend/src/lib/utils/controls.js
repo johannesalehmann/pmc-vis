@@ -492,7 +492,7 @@ function makeDetailCheckboxes() {
   const subModel = h('i', {
     id: 'clone-model',
     class: subModelButton,
-    style: 'margin-left:3px;',
+    style: 'margin-left:3px;display:none',
     title: 'Copy Model with Focus Property restriction',
   });
 

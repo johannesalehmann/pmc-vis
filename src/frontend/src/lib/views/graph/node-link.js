@@ -967,6 +967,7 @@ function updateScheduler(cy, category, prop, propType = CONSTANTS.results) {
           for (let i = 0; i < text.length; i += 1) {
             if (text[i].innerHTML === prop) {
               text[i].style.fontWeight = 'bold';
+              document.getElementById('clone-model').style.display = 'inline-block';
             } else {
               text[i].style.fontWeight = 'normal';
             }
