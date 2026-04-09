@@ -14,6 +14,7 @@ const CONSTANTS = {
     ready: 'ready',
     computing: 'computing',
     missing: 'missing',
+    failed: 'failed',
   },
 
   MESSAGES: {

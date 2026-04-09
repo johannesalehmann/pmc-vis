@@ -44,6 +44,7 @@ const layoutTemplates = {
 
 const spinningIcon = 'loading spinner icon trigger-check-prop';
 const triggerIcon = 'fa fa-rocket trigger-check-prop';
+const retryIcon = 'fa-solid fa-arrow-rotate-right trigger-check-prop';
 const makeScheduler = 'fa-regular fa-compass trigger-check-prop';
 const subModelButton = 'fa-regular fa-clone trigger-check-prop';
 
@@ -364,21 +365,49 @@ function makeSchedulerPropDropdown() {
     schedulers, // only scheduler from the 'details'
   ).map(k => {
     return { value: k, name: k };
-  }).filter(m => schedulers[m.name].status === 'ready');
+  }).filter(m => schedulers[m.name].status === CONSTANTS.STATUS.ready);
 
-  options.push({ value: '_none_', name: 'No scheduler' });
+  options.push({ value: '_none_', name: 'None' });
 
-  _makeDropdown(
-    Object.values(options),
-    pane.cy.vars['scheduler'].value,
-    (value) => {
-      pane.cy.vars['scheduler'].fn(pane.cy, value);
-      updateScheduler(pane.cy, 'Scheduler', value);
-    },
-    'scheduler-prop',
-    'Scheduler (DOI)',
-    $props_config,
-  );
+  const subModel = h('i', {
+    id: 'clone-model',
+    class: subModelButton,
+    style: 'margin-left:3px; display:none',
+    title: 'Copy Model with Focus Property restriction',
+  });
+
+  subModel.addEventListener('click', async () => {
+    const category = pane.cy.vars['scheduler'].category;
+    const value = pane.cy.vars['scheduler'].value;
+
+    fetch(`${BACKEND}/${PROJECT}/submodel?provider=${category}&property=${value}${VERSION ? ('&version=' + VERSION) : ''}`).then(
+      async accept => {
+        const newVersion = await accept.text();
+        console.log(newVersion);
+        await window.open(`${url.protocol}//${url.host}/?id=${PROJECT}&version=${newVersion}`, '_blank').focus();
+      },
+      reject => {
+        console.log('Failed to open new Sub Model\n Error: ' + reject.json());
+      },
+    );
+  });
+
+  // _makeDropdown(
+  //   Object.values(options),
+  //   pane.cy.vars['scheduler'].value,
+  //   (value) => {
+  //     pane.cy.vars['scheduler'].fn(pane.cy, value);
+  //     updateScheduler(pane.cy, 'Scheduler', value);
+  //     document.getElementById('clone-model').style.display = value === '_none_' ?
+  //      'none' : 'block';
+  //   },
+  //   'scheduler-prop',
+  //   'Focus Property',
+  //   $props_config,
+  //   subModel,
+  // );
+
+  $props_config.appendChild(subModel);
 
   const $param = h('div', { class: 'param' });
   const $label = h('p', { class: 'label label-default param' }, [t('Simulation Steps')]);
@@ -409,28 +438,6 @@ function makeSchedulerPropDropdown() {
 
   $param.appendChild($label);
   $param.appendChild($numberInput);
-
-  const subModel = h('i', {
-    class: subModelButton,
-    style: 'margin-left:3px',
-    title: 'Create new Model from Highlighting',
-  });
-  subModel.addEventListener('click', async () => {
-    const category = pane.cy.vars['scheduler'].category;
-    const value = pane.cy.vars['scheduler'].value;
-
-    fetch(`${BACKEND}/${PROJECT}/submodel?provider=${category}&property=${value}${VERSION ? ('&version=' + VERSION) : ''}`).then(
-      async accept => {
-        const newVersion = await accept.text();
-        console.log(newVersion);
-        await window.open(`${url.protocol}//${url.host}/?id=${PROJECT}&version=${newVersion}`, '_blank').focus();
-      },
-      reject => {
-        console.log('Failed to open new Sub Model\n Error: ' + reject.json());
-      },
-    );
-  });
-  $param.appendChild(subModel);
   $props_config.appendChild($param);
 }
 
@@ -516,7 +523,7 @@ function makeDetailCheckboxes() {
     'beforeend',
     `<div class="buttons param">
       <button class="ui button" id="clear">
-        <span>Clear Properties (Testing)</span>
+        <span>Delete Properties</span>
       </button>
       <button class="ui button" id="status">
         <span>Print Status</span>
@@ -556,20 +563,33 @@ function makeDetailCheckboxes() {
         ready: new Set(),
         computing: new Set(),
         missing: new Set(),
+        failed: new Set(),
       };
 
       keys.forEach((a) => statuses[options[k].metadata[a].status].add(a));
-
       const ready = statuses.ready.size === keys.length;
       const computing = statuses.computing.size > 0;
+      const failed = statuses.failed.size > 0;
 
+      let classIcon = triggerIcon;
+      if (computing) {
+        console.log('wtf');
+        classIcon = spinningIcon;
+      }
+      if (failed) {
+        classIcon = retryIcon;
+      }
       if (!ready) {
         $input_div = h('i', {
-          class: computing ? spinningIcon : triggerIcon,
+          class: classIcon,
           id: `trigger-button-${k}`,
         });
         $input_div.addEventListener('click', (e) => {
-          triggerModelCheckProperty(e, k, Array.from(statuses.missing));
+          triggerModelCheckProperty(
+            e,
+            k,
+            Array.from(statuses.missing).concat(Array.from(statuses.failed)),
+          );
           e.preventDefault();
         });
       }
@@ -638,23 +658,39 @@ function makeDetailPropsCheckboxes(options, propType) {
     if (
       info.computable.includes(propType)
     ) {
-      if (options.metadata[propName].status !== CONSTANTS.STATUS.ready) {
-        const computing = options.metadata[propName].status === CONSTANTS.STATUS.computing;
-        $input_div = h('i', {
-          class: computing ? spinningIcon : triggerIcon,
-          id: `trigger-button-${propType}-${propName}`,
-        });
-        $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
+      const status = options.metadata[propName].status;
+      if (status !== CONSTANTS.STATUS.ready) {
+        if (status === CONSTANTS.STATUS.computing) {
+          $input_div = h('i', {
+            class: spinningIcon,
+            id: `trigger-button-${propType}-${propName}`,
+            title: 'Computing...',
+          });
+        } else if (status === CONSTANTS.STATUS.failed) {
+          $input_div = h('i', {
+            class: retryIcon,
+            id: `trigger-button-${propType}-${propName}`,
+            title: 'Computation failed. Click to try again',
+          });
+          $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
+        } else if (status === CONSTANTS.STATUS.missing) {
+          $input_div = h('i', {
+            class: triggerIcon,
+            id: `trigger-button-${propType}-${propName}`,
+            title: 'Click to compute property',
+          });
+          $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
+        }
       } else if (options.metadata[propName].highlightEntry) {
         $schedule_div = h('i', {
           class: makeScheduler,
           id: `schedule-button-${propName}`,
-          title: `Highlight ${options.metadata[propName].highlightEntry}`,
+          title: `Focus on ${propName}`,
           style: 'margin-left:3px',
         });
         $schedule_div.addEventListener('click', (e) => {
-          updateScheduler(pane.cy, options.metadata[propName].highlightEntry, propName);
-          document.getElementById('scheduler-prop').value = propName;
+          updateScheduler(pane.cy, options.metadata[propName].highlightEntry, propName, propType);
+          // document.getElementById('scheduler-prop').value = propName;
           e.preventDefault();
         });
       }
@@ -735,7 +771,7 @@ function makeImportExport() {
   $graph_config.appendChild($buttons);
 }
 
-function _makeDropdown(options, value, fn, id, name, where) {
+function _makeDropdown(options, value, fn, id, name, where, addons) {
   const $select = h('select', {
     id: id,
     class: 'dropdown',
@@ -746,7 +782,7 @@ function _makeDropdown(options, value, fn, id, name, where) {
     $select.appendChild($option);
   });
 
-  const $param = h('div', { class: 'param' });
+  const $param = h('div', { class: 'param' }, addons ? [addons] : undefined);
   const $label = h('span', { class: 'label label-default', for: id }, [t(name)]);
 
   $param.appendChild($label);

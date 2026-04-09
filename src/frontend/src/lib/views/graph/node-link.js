@@ -107,7 +107,6 @@ function setStyles(cy) {
 
       if (data && data.details[cy.vars['scheduler'].category]) {
         const nodeSchedulerValue = data.details[cy.vars['scheduler'].category][cy.vars['scheduler'].value];
-        console.log(nodeSchedulerValue === 1);
         return nodeSchedulerValue === 1;
       }
     })
@@ -951,18 +950,33 @@ function updateDetailsToShow(cy, { update } = {}) {
   spawnPCP(cy);
 }
 
-function updateScheduler(cy, category, prop) {
+function updateScheduler(cy, category, prop, propType = CONSTANTS.results) {
   cy.vars['scheduler'].category = category;
   cy.vars['scheduler'].value = prop;
+  cy.vars['scheduler'].type = propType;
 
-  const menu = document.getElementById('props-checkboxes-Model Checking Results');
-  if (menu) {
-    const kids = menu.children;
-    for (var i = 0; i < kids.length; i += 1) {
-      if (kids[i].childNodes[1].innerHTML === prop) {
-        kids[i].childNodes[1].style.fontWeight = 'bold';
-      } else {
-        kids[i].childNodes[1].style.fontWeight = 'normal';
+  const menus = document.getElementById('props-checkboxes')?.getElementsByTagName('details');
+
+  if (menus) {
+    for (let j = 0; j < menus.length; j += 1) {
+      const menu = menus[j];
+
+      if (menu) {
+        if (menu.id === `details-${propType}`) {
+          const text = menu.getElementsByClassName('prop-text-label-text');
+          for (let i = 0; i < text.length; i += 1) {
+            if (text[i].innerHTML === prop) {
+              text[i].style.fontWeight = 'bold';
+            } else {
+              text[i].style.fontWeight = 'normal';
+            }
+          }
+        } else {
+          const text = menu.getElementsByClassName('prop-text-label-text');
+          for (let i = 0; i < text.length; i += 1) {
+            text[i].style.fontWeight = 'normal';
+          }
+        }
       }
     }
   }
@@ -1975,6 +1989,7 @@ function setPublicVars(cy, preset) {
     scheduler: {
       value: undefined,
       category: undefined,
+      type: undefined,
       fn: updateScheduler,
     },
     panePosition: {
@@ -2030,7 +2045,7 @@ function setPublicVars(cy, preset) {
   } else {
     setSelectMode(cy, preset['mode'].value);
     updateDetailsToShow(cy, { update: preset['details'].value });
-    updateScheduler(cy, preset['scheduler'].category, preset['scheduler'].value);
+    updateScheduler(cy, preset['scheduler'].category, preset['scheduler'].value, preset['scheduler'].type);
     updateNewPanePosition(cy, preset['panePosition'].value);
     toggleFullSync(cy, preset['pcp-auto-sync'].value);
   }
