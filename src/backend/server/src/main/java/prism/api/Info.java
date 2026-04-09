@@ -50,20 +50,21 @@ public class Info {
         return map;
     }
 
+    @JsonProperty
     public List<String> getComputable() {
         return computable;
     }
 
     public void setStateEntry(String category, DataEntry entry) {
         if (!stateInformation.containsKey(category)) {
-            stateInformation.put(category, new DataCategory(category));
+            stateInformation.put(category, new DataCategory(category, category.substring(0, 3)));
         }
         stateInformation.get(category).addEntry(entry);
     }
 
     public void setTransitionEntry(String category, DataEntry entry) {
         if (!transitionInformation.containsKey(category)) {
-            transitionInformation.put(category, new DataCategory(category));
+            transitionInformation.put(category, new DataCategory(category, category.substring(0, 3)));
         }
         transitionInformation.get(category).addEntry(entry);
     }

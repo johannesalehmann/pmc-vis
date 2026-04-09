@@ -118,7 +118,12 @@ public abstract class DataProviderTask implements Task {
     @Override
     public void run(){
         System.out.println("Running " + name());
-        callTool();
+        try {
+            callTool();
+        }catch (Exception e){
+            model.getInfo().getStateEntry(this.name, this.getPropertyName()).setError(String.format("Failed to run %s:\n%s", this.name, e.getMessage()));
+            return;
+        }
         computed = true;
         model.getInfo().getStateEntry(this.name, this.getPropertyName()).setStatus(DataEntry.Status.ready);
     }
