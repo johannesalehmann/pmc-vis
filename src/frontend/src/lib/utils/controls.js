@@ -673,7 +673,7 @@ function makeDetailPropsCheckboxes(options, propType) {
           $input_div = h('i', {
             class: retryIcon,
             id: `trigger-button-${propType}-${propName}`,
-            title: 'Computation failed. Click to try again',
+            title: `Computation failed. Click here to try again. \nError Mesage:\n"${options.metadata[propName].errorMessage}"`,
           });
           $input_div.addEventListener('click', (e) => triggerModelCheckProperty(e, propType, [propName]));
         } else if (status === CONSTANTS.STATUS.missing) {
