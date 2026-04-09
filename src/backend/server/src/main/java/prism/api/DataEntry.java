@@ -109,7 +109,7 @@ public class DataEntry implements Namespace {
 
     @JsonIgnore
     public String getEntryName(){
-        return String.format("%s:%s", prefix, entryName);
+        return entryName;
     }
 
     @JsonIgnore

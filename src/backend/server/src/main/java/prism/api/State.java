@@ -63,8 +63,8 @@ public class State implements Node{
     @Override
     public Map<String, Map<String, Object>> getDetails() {
         Map<String, Map<String, Object>> details = new HashMap<>();
-        details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters.entrySet().stream().collect(Collectors.toMap(e-> "Var:" + e.getKey(), Map.Entry::getValue))));
-        details.put(OUTPUT_REWARDS, new TreeMap<>(rewards.entrySet().stream().collect(Collectors.toMap(e-> "Rew:" + e.getKey(), Map.Entry::getValue))));
+        details.put(OUTPUT_VARIABLES, new TreeMap<>(parameters));
+        details.put(OUTPUT_REWARDS, new TreeMap<>(rewards));
         for (Map.Entry<String, Map<String, Object>> entry : properties.entrySet()) {
             details.put(entry.getKey(), new TreeMap<>(entry.getValue()));
         }
@@ -72,7 +72,7 @@ public class State implements Node{
             details.put(OUTPUT_LABELS, new TreeMap<>());
             return details;
         }
-        details.put(OUTPUT_LABELS, new TreeMap<>(atomicPropositions.entrySet().stream().collect(Collectors.toMap(e-> "AP:" + e.getKey(), e -> !(e.getValue() == null)))));
+        details.put(OUTPUT_LABELS, new TreeMap<>(atomicPropositions.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !(e.getValue() == null)))));
         return details;
     }
 

@@ -33,7 +33,7 @@ public class PropertyMapper implements RowMapper<Map<String, Map<String, Object>
             String collumn = rsm.getColumnName(i);
             if (collumn.startsWith(Namespace.ENTRY_PROP)){
                 int l = Integer.parseInt(collumn.replace(Namespace.ENTRY_PROP, ""));
-                map.put(properties.get(l).getFullName(), rs.getDouble(i));
+                map.put(properties.get(l).getName(), rs.getDouble(i));
             }
         }
         propertyMap.put(Namespace.OUTPUT_RESULTS, map);
