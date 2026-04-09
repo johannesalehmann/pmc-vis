@@ -162,6 +162,7 @@ function createControllers(params) {
     });
 
   // pane settings
+  $pane_config.innerHTML = '';
   makeAppendDropdown();
 
   // props
