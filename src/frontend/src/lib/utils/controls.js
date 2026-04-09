@@ -163,8 +163,8 @@ function createControllers(params) {
   // props
   $props_config.innerHTML = '';
 
-  makeSchedulerPropDropdown();
   makeDetailCheckboxes();
+  makeSchedulerPropDropdown();
   makeAppendDropdown();
   makeSelectionModesDropdown();
 
@@ -369,29 +369,6 @@ function makeSchedulerPropDropdown() {
 
   options.push({ value: '_none_', name: 'None' });
 
-  const subModel = h('i', {
-    id: 'clone-model',
-    class: subModelButton,
-    style: 'margin-left:3px; display:none',
-    title: 'Copy Model with Focus Property restriction',
-  });
-
-  subModel.addEventListener('click', async () => {
-    const category = pane.cy.vars['scheduler'].category;
-    const value = pane.cy.vars['scheduler'].value;
-
-    fetch(`${BACKEND}/${PROJECT}/submodel?provider=${category}&property=${value}${VERSION ? ('&version=' + VERSION) : ''}`).then(
-      async accept => {
-        const newVersion = await accept.text();
-        console.log(newVersion);
-        await window.open(`${url.protocol}//${url.host}/?id=${PROJECT}&version=${newVersion}`, '_blank').focus();
-      },
-      reject => {
-        console.log('Failed to open new Sub Model\n Error: ' + reject.json());
-      },
-    );
-  });
-
   // _makeDropdown(
   //   Object.values(options),
   //   pane.cy.vars['scheduler'].value,
@@ -407,10 +384,11 @@ function makeSchedulerPropDropdown() {
   //   subModel,
   // );
 
-  $props_config.appendChild(subModel);
-
   const $param = h('div', { class: 'param' });
-  const $label = h('p', { class: 'label label-default param' }, [t('Simulation Steps')]);
+  const $label = h('p', {
+    class: 'label label-default param',
+    title: 'Defines how many steps the graph will expand when using batch expansions',
+  }, [t('Simulation Steps')]);
   const $numberInput = h('input', {
     type: 'number',
     name: 'bestPathLength',
@@ -510,28 +488,39 @@ function makeDetailCheckboxes() {
       id: 'props-checkboxes',
       style: 'display: block',
     });
+
+  const subModel = h('i', {
+    id: 'clone-model',
+    class: subModelButton,
+    style: 'margin-left:3px;',
+    title: 'Copy Model with Focus Property restriction',
+  });
+
+  subModel.addEventListener('click', async () => {
+    const category = pane.cy.vars['scheduler'].category;
+    const value = pane.cy.vars['scheduler'].value;
+
+    fetch(`${BACKEND}/${PROJECT}/submodel?provider=${category}&property=${value}${VERSION ? ('&version=' + VERSION) : ''}`).then(
+      async accept => {
+        const newVersion = await accept.text();
+        console.log(newVersion);
+        await window.open(`${url.protocol}//${url.host}/?id=${PROJECT}&version=${newVersion}`, '_blank').focus();
+      },
+      reject => {
+        console.log('Failed to open new Sub Model\n Error: ' + reject.json());
+      },
+    );
+  });
+
   const $label = h(
     'span',
     { id: 'props-checkboxes-label', class: 'label label-default' },
-    [t('Details to show')],
+    [t('Details to show'), subModel],
   );
 
   $param.innerHTML = '';
   $param.appendChild($label);
 
-  $props_config.insertAdjacentHTML(
-    'beforeend',
-    `<div class="buttons param">
-      <button class="ui button" id="clear">
-        <span>Delete Properties</span>
-      </button>
-      <button class="ui button" id="status">
-        <span>Print Status</span>
-      </button>
-    </div>`,
-  );
-  document.getElementById('clear').addEventListener('click', () => clear());
-  document.getElementById('status').addEventListener('click', () => status());
   const options = pane.cy.vars['details'].value;
   const mode = pane.cy.vars['mode'].value;
 
@@ -620,6 +609,20 @@ function makeDetailCheckboxes() {
   });
 
   $props_config.appendChild($param);
+
+  $props_config.insertAdjacentHTML(
+    'beforeend',
+    `<div class="buttons param">
+      <button class="ui button" id="clear">
+        <span>Delete Properties</span>
+      </button>
+      <button class="ui button" id="status">
+        <span>Print Status</span>
+      </button>
+    </div>`,
+  );
+  document.getElementById('clear').addEventListener('click', () => clear());
+  document.getElementById('status').addEventListener('click', () => status());
 }
 
 function makeDetailPropsCheckboxes(options, propType) {
