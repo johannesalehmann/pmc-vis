@@ -469,6 +469,9 @@ public class Model implements Namespace {
         for (Property p : properties) {
             p.clear();
         }
+        for (DataProvider d : dataProviders){
+            d.clear();
+        }
         setBuilt(false);
     }
 

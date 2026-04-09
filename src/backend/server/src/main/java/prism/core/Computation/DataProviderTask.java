@@ -169,7 +169,39 @@ public abstract class DataProviderTask implements Task {
     //Takes inputs of one of the forms (v1;v2;v3...), (v1=x1;v2=x2;v3=x3;...), (v1,v2,v3...), (v1=x1,v2=x2,v3=x3,...)
     protected String mapStateToId(String state){
         try{
-            BigInteger identifier = model.getModelParser().stateIdentifier(model.getModelParser().parseState(state));
+            String intern =state;
+
+            // Remove parentheses if necessary
+            if (intern.startsWith("(")) {
+                intern = state.substring(1, state.length() - 1);
+                //System.out.println(intern);
+            }
+
+            //Replace , by ;
+            if (!intern.contains(";")) {
+                intern = intern.replace(",", ";");
+                //System.out.println(intern);
+            }
+
+            if (intern.contains("=")) {
+                String[] parts = intern.split(";");
+                String[] newParts = new String[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    String key = parts[i].trim();
+                    if(!key.contains("=")){
+                        if (key.startsWith("!")){
+                            newParts[i] = key.substring(1) + "=false";
+                        }else{
+                            newParts[i] = key + "=true";
+                        }
+                    }else{
+                        newParts[i] = key;
+                    }
+                }
+                intern = String.join(";", newParts);
+                System.out.println(intern);
+            }
+            BigInteger identifier = model.getModelParser().stateIdentifier(model.getModelParser().parseState(intern));
             return identifier.toString();
         } catch (PrismLangException e) {
             throw new RuntimeException("Failed to convert string to state: " + state, e);
@@ -187,5 +219,10 @@ public abstract class DataProviderTask implements Task {
 
     public List<EditorHighlighting> getEditorHighlighting(List<String> arguments){
         return null;
+    }
+
+    public void clear(){
+        this.computed = false;
+        model.getInfo().getStateEntry(this.name, this.getPropertyName()).setStatus(DataEntry.Status.missing);
     }
 }

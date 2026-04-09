@@ -104,7 +104,7 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     public Map<String, String[]> getColumnMap() {
         Map<String, String[]> columnMap = new HashMap<>();
         for (T task : tasks.values()) {
-            String property = task.shortName() + ":" + task.getPropertyName();
+            String property = task.getPropertyName();
             String[] values = new String[] {this.getName(), property};
             columnMap.put(task.getColumnName().toLowerCase(), values);
 
@@ -161,5 +161,12 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
             }
         }
         return editorOptions;
+    }
+
+    @Override
+    public void clear(){
+        for (T task: tasks.values()) {
+            task.clear();
+        }
     }
 }
