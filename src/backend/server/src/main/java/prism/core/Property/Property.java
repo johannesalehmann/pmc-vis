@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 public abstract class Property implements Namespace {
 
+    public static final String prefix = "MC";
+
     protected int id;
 
     protected Model model;
@@ -57,13 +59,13 @@ public abstract class Property implements Namespace {
             model.getInfo().setStateEntry(OUTPUT_RESULTS, info);
             model.getInfo().setTransitionEntry(OUTPUT_RESULTS, info);
         }else{
-            model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
-            model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
+            model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name, prefix));
+            model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name, prefix));
         }
     }
 
     protected DataEntry getPropertyInfo(){
-        return new DataEntry(this.name, DataEntry.Type.TYPE_NUMBER, 0, maximum, OUTPUT_SCHEDULER, "");
+        return new DataEntry(this.name, prefix, DataEntry.Type.TYPE_NUMBER, 0, maximum, OUTPUT_SCHEDULER, "");
     }
 
     protected void newMaximum(){
@@ -107,6 +109,8 @@ public abstract class Property implements Namespace {
 
     public String getName() {return name;}
 
+    public String getFullName() {return String.format("%s:%s", prefix, name);}
+
     public String getPropertyCollumn(){
         return ENTRY_PROP + id;
     }
@@ -123,8 +127,8 @@ public abstract class Property implements Namespace {
 
     public void clear(){
         this.alreadyChecked = false;
-        model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
-        model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name));
+        model.getInfo().setStateEntry(OUTPUT_RESULTS, DataEntry.blank(this.name, prefix));
+        model.getInfo().setTransitionEntry(OUTPUT_RESULTS, DataEntry.blank(this.name, prefix));
     }
 
     public abstract DataEntry modelCheck() throws PrismException;

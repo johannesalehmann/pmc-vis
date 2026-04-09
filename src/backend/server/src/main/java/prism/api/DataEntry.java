@@ -15,6 +15,7 @@ public class DataEntry implements Namespace {
     public enum Status {missing, ready, computing, failed}
 
     private final String entryName;
+    private final String prefix;
 
     private final String type;
 
@@ -28,8 +29,8 @@ public class DataEntry implements Namespace {
     private String hoverEntry = "";
     private String errorMessage = "";
 
-    public static DataEntry blank(String name){
-        return new DataEntry(name, Type.TYPE_BLANK, 0, 0, Status.missing);
+    public static DataEntry blank(String name, String prefix){
+        return new DataEntry(name, prefix, Type.TYPE_BLANK, 0, 0, Status.missing);
     }
 
     public static Type parseType(String typeName){
@@ -50,16 +51,17 @@ public class DataEntry implements Namespace {
         }
     }
 
-    public DataEntry(String name, Type type, double minValue, double maxValue){
-        this(name, type, minValue, maxValue, Status.ready);
+    public DataEntry(String name, String prefix, Type type, double minValue, double maxValue){
+        this(name, prefix, type, minValue, maxValue, Status.ready);
     }
 
-    public DataEntry(String name, Type type, double minValue, double maxValue, String highlightEntry, String hoverEntry){
-        this(name, type, minValue, maxValue, Status.ready, highlightEntry, hoverEntry);
+    public DataEntry(String name, String prefix, Type type, double minValue, double maxValue, String highlightEntry, String hoverEntry){
+        this(name, prefix, type, minValue, maxValue, Status.ready, highlightEntry, hoverEntry);
     }
 
-    public DataEntry(String name, Type type, double minValue, double maxValue, Status status){
+    public DataEntry(String name, String prefix, Type type, double minValue, double maxValue, Status status){
         this.entryName = name;
+        this.prefix = prefix;
         switch(type){
             case TYPE_NUMBER:
                 this.type = TYPE_NUMBER;
@@ -80,8 +82,9 @@ public class DataEntry implements Namespace {
         this.status = status;
     }
 
-    public DataEntry(String name, Type type, double minValue, double maxValue, Status status, String highlightEntry, String hoverEntry){
+    public DataEntry(String name, String prefix, Type type, double minValue, double maxValue, Status status, String highlightEntry, String hoverEntry){
         this.entryName = name;
+        this.prefix = prefix;
         switch(type){
             case TYPE_NUMBER:
                 this.type = TYPE_NUMBER;
@@ -106,7 +109,7 @@ public class DataEntry implements Namespace {
 
     @JsonIgnore
     public String getEntryName(){
-        return entryName;
+        return String.format("%s:%s", prefix, entryName);
     }
 
     @JsonIgnore
@@ -128,6 +131,11 @@ public class DataEntry implements Namespace {
     @JsonIgnore
     public void setHoverEntry(String hoverEntry){
         this.hoverEntry = hoverEntry;
+    }
+
+    @JsonProperty
+    public String getPrefix(){
+        return prefix;
     }
 
     @JsonProperty
@@ -166,6 +174,6 @@ public class DataEntry implements Namespace {
     }
 
     public DataEntry copy(){
-        return new DataEntry(this.entryName, parseType(this.type), this.minValue, this.maxValue, this.status);
+        return new DataEntry(this.entryName, this.prefix, parseType(this.type), this.minValue, this.maxValue, this.status);
     }
 }

@@ -11,7 +11,7 @@ public class AP extends DataEntry {
     private boolean icon;
 
     public AP(String name, String identifier, boolean icon){
-        super(name, Type.TYPE_BOOL, 0.0, 1.0);
+        super(name, "AP", Type.TYPE_BOOL, 0.0, 1.0);
         this.identifier = identifier;
         this.icon = icon;
     }

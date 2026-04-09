@@ -135,9 +135,9 @@ public class Model implements Namespace {
         }
 
         Map<String, DataEntry> actionParameter = new TreeMap<>();
-        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_OUT, DataEntry.parseType("string"), 0,0));
-        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_ACT, DataEntry.parseType("string"), 0,0));
-        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_PROB, DataEntry.parseType("complex"), 0,0));
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_OUT, "Act", DataEntry.parseType("string"), 0,0));
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_ACT, "Act", DataEntry.parseType("string"), 0,0));
+        this.info.setTransitionEntry(OUTPUT_ACTION, new DataEntry(ENTRY_T_PROB, "Act", DataEntry.parseType("complex"), 0,0));
 
         this.loadPropertyFiles();
         if (checker.isBuilt()) {
