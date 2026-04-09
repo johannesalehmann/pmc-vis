@@ -373,7 +373,8 @@ public class TaskResource extends Resource {
                 m = p.getDefaultModel();
             }
             if (category == null || category.equals(Namespace.OUTPUT_RESULTS)){
-                for (String propertyName : properties) {
+                for (String propName : properties) {
+                    String propertyName = removePrefix(propName);
                     m.getProperty(propertyName).ifPresent(property -> {
                         try {
                             m.checkProperty(propertyName);
@@ -390,7 +391,8 @@ public class TaskResource extends Resource {
                 Optional<DataProvider> prov = m.getDataProviders().stream().filter(d -> d.getName().equals(category)).findFirst();
                 if (prov.isPresent()) {
                     DataProvider provider = prov.get();
-                    for (String propertyName : properties) {
+                    for (String propName : properties) {
+                        String propertyName = removePrefix(propName);
                         if (provider.contains(propertyName)) {
                             provider.compute(propertyName, new HashMap<>());
                             if (debug){
@@ -438,17 +440,18 @@ public class TaskResource extends Resource {
                 if(property.isEmpty()){
                     return error("Missing property for " + provider.get());
                 }
+                String prop = removePrefix(property.get());
                 DataProviderTask task = null;
                 for (DataProvider prov : m.getDataProviders()){
-                    DataProviderTask tempTask = prov.getProviderTasks().get(property.get());
+                    DataProviderTask tempTask = prov.getProviderTasks().get(prop);
                     if (tempTask != null && tempTask.getHighlightName().equals(provider.get())){
-                        task = prov.getProviderTasks().get(property.get());
+                        task = prov.getProviderTasks().get(prop);
                     }
                 }
-                if (task==null) return error("Could not find Highlighting for Provider Task: " + provider.get() + " : " + property.get());
+                if (task==null) return error("Could not find Highlighting for Provider Task: " + provider.get() + " : " + prop);
                 else{
                     if(!task.computed()){
-                        return error("Task has not yet been computed: " + provider.get() + " : " + property.get());
+                        return error("Task has not yet been computed: " + provider.get() + " : " + prop);
                     }
                     List<String> stateIDs = task.getHighlightedStates();
                     modelFile = m.createSubModel(stateIDs, newVersionName);

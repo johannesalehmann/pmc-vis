@@ -169,4 +169,22 @@ public abstract class Resource {
             throw new FileNotFoundException("No Project found at " + file.getAbsoluteFile());
         }
     }
+
+    public static String removePrefix(String name){
+        String[] parts = name.split(":");
+        if(parts.length == 2){
+            return parts[1];
+        }
+        if(parts.length == 1){
+            return parts[0];
+        }
+        StringBuffer out = new StringBuffer();
+        for(int i = 1; i < parts.length; i++){
+            if(i > 1){
+                out.append(":");
+            }
+            out.append(parts[i]);
+        }
+        return out.toString();
+    }
 }
