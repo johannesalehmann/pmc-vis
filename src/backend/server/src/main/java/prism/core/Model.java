@@ -695,13 +695,13 @@ public class Model implements Namespace {
             //Gather Transitions in Reachable Subset
             List<String> stringIds = new ArrayList<>(stateIDs);
             String stateID = stateIDs.stream().map(s -> "'" + s + "'").collect(Collectors.joining(","));
-            Map<String, String> stateMap = database.executeCollectionQuery(String.format("SELECT %s, %s FROM %s WHERE %s in (%s)", ENTRY_S_ID, ENTRY_S_NAME, TABLE_STATES, ENTRY_S_ID, stateID) , new PairMapper<String, String>(ENTRY_S_ID, ENTRY_S_NAME, String.class, String.class)).stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            Map<String, String> stateMap = database.executeCollectionQuery(String.format("SELECT %s, %s FROM %s", ENTRY_S_ID, ENTRY_S_NAME, TABLE_STATES) , new PairMapper<String, String>(ENTRY_S_ID, ENTRY_S_NAME, String.class, String.class)).stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue));
             List<Transition> transitions = database.executeCollectionQuery(String.format("SELECT * FROM %s WHERE %s IN (%s)", TABLE_TRANS, ENTRY_T_OUT, stateID), new TransitionMapper(this));
             List<WrittenTransition> transitionsOut = new ArrayList<>();
             for (Transition t : transitions){
                 Set<String> reach = new HashSet<>(t.getProbabilityDistribution().keySet());
                 stringIds.forEach(reach::remove);
-                if (reach.isEmpty()){
+                if (!reach.equals(t.getProbabilityDistribution().keySet())){
                     Map<String, Double> probabilityDistribution = t.getProbabilityDistribution().entrySet().stream().collect(Collectors.toMap(e -> stateMap.get(e.getKey()), Map.Entry::getValue));
                     Matcher m = PATTERN_ACTION.matcher(t.getAction());
                     String actionName = "";

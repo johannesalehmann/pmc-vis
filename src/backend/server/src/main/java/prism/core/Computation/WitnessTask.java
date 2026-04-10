@@ -26,7 +26,7 @@ public class WitnessTask extends DataProviderTask {
 
         super(name, id, model, property, propertyExpression, arguments, true, false);
         this.binaryLocation = "../switss/build/switss-multi";
-        this.gurobiTimelimit = 30;
+        this.gurobiTimelimit = Integer.parseInt(arguments.get("timeout"))/1000;
         this.subsystemFilename = "ws_0.txt";
     }
 
