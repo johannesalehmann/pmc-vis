@@ -30,6 +30,7 @@ const $ = document.querySelector.bind(document);
 const $cy_config = $('#cy-config');
 const $graph_config = $('#graph-config');
 const $pcp_config = $('#pcp-config');
+const $pane_config = $('#pane-config');
 const $props_config = $('#props-config');
 const $overview_config = $('#overview-config');
 
@@ -205,7 +206,8 @@ function updateSidebarLegends(pane) {
   }
 
   // Always show interactive node type legend for node-link view
-  createNodeTypeLegendInSidebar(pane);
+  // KILLSWITCHED
+  // createNodeTypeLegendInSidebar(pane);
 }
 
 /**
@@ -580,7 +582,11 @@ function createPcpOverlayLegendInSidebar(pane) {
   if (!infoBox) return;
 
   const overlayState = pane.cy.pcp.getOverlayState();
-  if (!overlayState || !overlayState.enabled || !overlayState.panes || overlayState.panes.length === 0) return;
+  if (!overlayState
+    || !overlayState.enabled
+    || !overlayState.panes
+    || overlayState.panes.length === 0
+  ) return;
 
   const legend = document.createElement('div');
   legend.id = `legend-pcp-overlay-${pane.id}`;
@@ -705,14 +711,28 @@ function createControllers(params) {
       opened[d.id] = d.open;
     });
 
-  // props
-  $props_config.innerHTML = '';
-
-  makeSchedulerPropDropdown();
-  makeDetailCheckboxes();
+  // pane-related
+  $pane_config.innerHTML = '';
   makeAppendDropdown();
   makeSelectionModesDropdown();
 
+  // props
+  $props_config.innerHTML = '';
+  makeDetailCheckboxes();
+  makeSchedulerPropDropdown();
+  $props_config.insertAdjacentHTML(
+    'beforeend',
+    `<div class="buttons param"> 
+      <button class="ui button" id="clear">
+        <span>Delete Properties</span>
+      </button>
+      <button class="ui button" id="status">
+        <span>Print Status</span>
+      </button>
+    </div>`,
+  );
+  document.getElementById('clear').addEventListener('click', () => clear());
+  document.getElementById('status').addEventListener('click', () => status());
   // graph view settings
   $graph_config.innerHTML = '';
   makeGraphComparisonSettings();
@@ -952,7 +972,7 @@ function makeSelectionModesDropdown() {
     },
     'selection-mode',
     'Selection mode',
-    $props_config,
+    $pane_config,
   );
 }
 
@@ -1085,19 +1105,6 @@ function makeDetailCheckboxes() {
   $param.innerHTML = '';
   $param.appendChild($label);
 
-  $props_config.insertAdjacentHTML(
-    'beforeend',
-    `<div class="buttons param"> 
-      <button class="ui button" id="clear">
-        <span>Clear Properties (Testing)</span>
-      </button>
-      <button class="ui button" id="status">
-        <span>Print Status</span>
-      </button>
-    </div>`,
-  );
-  document.getElementById('clear').addEventListener('click', () => clear());
-  document.getElementById('status').addEventListener('click', () => status());
   const options = pane.cy.vars['details'].value;
   const mode = pane.cy.vars['mode'].value;
 
@@ -1287,7 +1294,7 @@ function makeImportExport() {
     }
   });
 
-  $graph_config.appendChild($buttons);
+  $props_config.appendChild($buttons);
 }
 
 function _makeDropdown(options, value, fn, id, name, where) {
@@ -1448,7 +1455,7 @@ function makeGraphComparisonSettings() {
   const $target = document.getElementById('graph-comparison-config');
 
   // Checkbox 1: Enable shared / unique colors
-  const $label = h('label', { class: 'label label-default', for: id }, [t('Enable shared / unique colors')]);
+  const $label = h('label', { class: 'label label-default', for: id }, [t('Cross-pane Shared / Unique Colors')]);
   const $param = h('div', { class: 'param ui small checkbox', style: 'display: flex' });
   const $toggle = h('input', {
     type: 'checkbox',
@@ -1467,7 +1474,7 @@ function makeGraphComparisonSettings() {
 
   // Checkbox 2: Enable curved connectors
   const id2 = 'checkbox-curved-connectors';
-  const $label2 = h('label', { class: 'label label-default', for: id2 }, [t('Enable curved connectors')]);
+  const $label2 = h('label', { class: 'label label-default', for: id2 }, [t('Cross-pane curved connectors')]);
   const $param2 = h('div', { class: 'param ui small checkbox', style: 'display: flex' });
   const $toggle2 = h('input', {
     type: 'checkbox',
@@ -1484,36 +1491,57 @@ function makeGraphComparisonSettings() {
     updateCurvedConnectors(e.target.checked);
   });
 
+  // Button: Show diff graph (added/removed)
+  const $buttonDiff = h('button', {
+    class: 'ui button',
+    style: 'margin-top: 5px',
+    title: 'Create new pane with a traditional\nadded/removed diff encoding',
+  }, [h('span', {}, [t('Create Diff View')])]);
+  $buttonDiff.addEventListener('click', () => {
+    showPaneDiffDialog();
+  });
+  $target.appendChild($buttonDiff);
+
   // Button: Merge into unified view
-  const $buttonMerge = h('button', { class: 'ui button', style: 'margin-top: 10px' }, [h('span', {}, [t('Merge panes into unified view')])]);
+  const $buttonMerge = h('button', {
+    class: 'ui button',
+    style: 'margin-top: 10px',
+    title: 'Create a merge view\nfrom the contents of panes',
+  }, [h('span', {}, [t('Create Unified View')])]);
   $buttonMerge.addEventListener('click', () => {
     showPaneMergeDialog();
   });
   $target.appendChild($buttonMerge);
 
   // Button: Compare All (pairwise matrix comparisons)
-  const $buttonCompareAll = h('button', { class: 'ui button', style: 'margin-top: 5px;', id: 'compare-all-btn' }, [h('span', {}, [t('Compare All (pairwise matrix merges)')])]);
-  $buttonCompareAll.addEventListener('click', () => {
-    showCompareAllDialog();
-  });
-  $target.appendChild($buttonCompareAll);
-
-  // Button: Show diff graph (added/removed)
-  const $buttonDiff = h('button', { class: 'ui button', style: 'margin-top: 5px' }, [h('span', {}, [t('Show diff graph (added/removed)')])]);
-  $buttonDiff.addEventListener('click', () => {
-    showPaneDiffDialog();
-  });
-  $target.appendChild($buttonDiff);
+  // KILLSWITCHED
+  // const $buttonCompareAll = h('button', {
+  //   class: 'ui button',
+  //   style: 'margin-top: 5px;',
+  //   id: 'compare-all-btn',
+  // }, [h('span', {}, [t('Compare All (pairwise matrix merges)')])]);
+  // $buttonCompareAll.addEventListener('click', () => {
+  //   showCompareAllDialog();
+  // });
+  // $target.appendChild($buttonCompareAll);
 
   // Button: Scatter-Diff View
-  const $buttonScatter = h('button', { class: 'ui button', style: 'margin-top: 5px' }, [h('span', {}, [t('Scatter-Diff View (Attribute Distributions)')])]);
-  $buttonScatter.addEventListener('click', () => {
-    showScatterDiffDialog();
-  });
-  $target.appendChild($buttonScatter);
+  // KILLSWITCHED
+  // const $buttonScatter = h('button', {
+  //   class: 'ui button',
+  //   style: 'margin-top: 5px',
+  // }, [h('span', {}, [t('Scatter-Diff View (Attribute Distributions)')])]);
+  // $buttonScatter.addEventListener('click', () => {
+  //   showScatterDiffDialog();
+  // });
+  // $target.appendChild($buttonScatter);
 
   // Button: PCP Overlay (in-pane)
-  const $buttonPcpOverlay = h('button', { class: 'ui button', style: 'margin-top: 5px' }, [h('span', {}, [t('PCP Overlay (In-Pane Comparison)')])]);
+  const $buttonPcpOverlay = h('button', {
+    class: 'ui button',
+    style: 'margin-top: 5px',
+    title: 'Add an overlay with the contents of another pane\nto the active pane\'s PCP',
+  }, [h('span', {}, [t('Create PCP Overlay')])]);
   $buttonPcpOverlay.addEventListener('click', () => {
     showPcpOverlayDialog();
   });
@@ -1746,7 +1774,7 @@ function makeAppendDropdown() {
     },
     'select-pane-position',
     'New Pane Position',
-    $props_config,
+    $pane_config,
   );
 }
 
