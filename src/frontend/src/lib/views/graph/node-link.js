@@ -848,172 +848,217 @@ function openDraggableDetailsWindow({ titleHtml, contentEl, originalEvent }) {
   $close.addEventListener('click', destroy, { passive: true });
 }
 
-function buildDetailsTooltipFromNode(cy, n, originalEvent = undefined) {
+function buildDetailsTooltipFromNode(cy, n) {
   n.unselectify();
   cy.pendingSelectify = true;
 
   const g = n.data();
-  const details = cy.vars.details.value;
-
-  // Category color themes
-  const categoryColors = {
-    'Variable Values': { bg: '#eff6ff', header: '#3b82f6', border: '#bfdbfe' },
-    'Reward Structures': { bg: '#f0fdf4', header: '#10b981', border: '#bbf7d0' },
-    'Model Checking Results': { bg: '#faf5ff', header: '#8b5cf6', border: '#e9d5ff' },
-  };
-
-  // Gather graph metrics
-  const incomingEdges = n.incomers('edge').length;
-  const outgoingEdges = n.outgoers('edge').length;
-  const degree = n.degree();
-  const isSelected = n.selected();
-
-  // Build overview section
-  const overviewHtml = `
-    <div style="background: #667eea; color: white; padding: 15px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
-        <div>
-          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Incoming</div>
-          <div style="font-size: 20px; font-weight: bold;">${incomingEdges}</div>
-        </div>
-        <div>
-          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Outgoing</div>
-          <div style="font-size: 20px; font-weight: bold;">${outgoingEdges}</div>
-        </div>
-        <div>
-          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Degree</div>
-          <div style="font-size: 20px; font-weight: bold;">${degree}</div>
-        </div>
-      </div>
-    </div>
-  `;
-
   const $blocks = [];
-
-  Object.keys(details).forEach((d) => {
+  const details = cy.vars['details'].value;
+  Object.keys(details).forEach(d => {
     if (!g.details[d]) return;
 
-    const show =      details[d].all
-      || Object.values(details[d].props).reduce((a, b) => a || b, false);
+    const show = details[d].all
+      || Object.values(
+        details[d].props,
+      ).reduce((a, b) => a || b, false);
 
     if (show) {
-      const colorTheme = categoryColors[d] || { bg: '#f9fafb', header: '#6b7280', border: '#e5e7eb' };
       const block = document.createElement('div');
-      block.style.marginBottom = '20px';
-
-      // Collect all values for this category to calculate min/max
-      const categoryValues = {};
-      const attributes = Object.keys(details[d].props).filter((p) => details[d].props[p]);
-
-      attributes.forEach((k) => {
-        const isNumber = details[d].metadata[k]?.type === 'number';
-        if (isNumber && details[d].metadata[k]) {
-          const min = details[d].metadata[k].min;
-          const max = details[d].metadata[k].max;
-          // Only add if min/max are valid numbers
-          if (typeof min === 'number' && typeof max === 'number' && !isNaN(min) && !isNaN(max)) {
-            categoryValues[k] = {
-              value: g.details[d][k],
-              min: min,
-              max: max,
-            };
-          }
-        }
-      });
-
-      // Build table HTML
-      let tableHtml = `
-        <div style="margin-bottom: 15px;">
-          <div style="background: ${colorTheme.header}; color: white; padding: 10px; border-radius: 6px 6px 0 0; font-weight: bold; font-size: 14px; text-align: center; display: flex; justify-content: space-between; align-items: center;">
-            <span>${d}</span>
-            <span style="font-size: 11px; opacity: 0.9; font-weight: normal;">${attributes.length} attribute${attributes.length !== 1 ? 's' : ''}</span>
-          </div>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid ${colorTheme.border}; border-top: none;">
-            <tbody>
+      block.innerHTML = `
+        <p>${d} ======== </p>
+        <pre>${
+          Object.keys(details[d].props)
+            .filter(p => details[d].props[p])
+            .map(k => {
+              if (details[d].metadata[k].type === 'number') {
+                return `${k}: <span id="tt-${g.id}-${k}">${fixed(g.details[d][k])}</span>`;
+              } else {
+                return `${k}: <span id="tt-${g.id}-${k}">${g.details[d][k]}</span>`;
+              }
+            })
+            .join('\n')
+        }</pre>
       `;
-
-      attributes.forEach((k, idx) => {
-        const isNumber = details[d].metadata[k]?.type === 'number';
-        const value = g.details[d][k];
-        const displayValue = isNumber ? fixed(value) : value;
-        const rowBg = idx % 2 === 0 ? '#ffffff' : colorTheme.bg;
-
-        let valueCell = `<td style="padding: 10px 12px; text-align: right; border-bottom: 1px solid ${colorTheme.border}; font-weight: 600; color: ${colorTheme.header}; font-family: 'Courier New', monospace;">
-          ${displayValue}
-        </td>`;
-
-        // Add range visualization for numeric values
-        if (isNumber && categoryValues[k]) {
-          const min = categoryValues[k].min;
-          const max = categoryValues[k].max;
-          const range = max - min;
-          const percentage = range > 0 ? ((value - min) / range) * 100 : 50;
-
-          // Ensure displayValue is valid for numeric display
-          const safeDisplayValue = typeof value === 'number' && !isNaN(value) ? fixed(value) : value;
-
-          // Add range indicator bar
-          valueCell = `
-            <td style="padding: 8px 12px; border-bottom: 1px solid ${colorTheme.border};">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; position: relative; overflow: hidden;">
-                  <div style="position: absolute; left: 0; top: 0; height: 100%; width: ${percentage}%; background: linear-gradient(90deg, ${colorTheme.header}cc, ${colorTheme.header}); border-radius: 4px; transition: width 0.3s;"></div>
-                  <div style="position: absolute; left: ${percentage}%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 14px; background: ${colorTheme.header}; border-radius: 2px; box-shadow: 0 0 3px rgba(0,0,0,0.3);"></div>
-                </div>
-                <div style="font-weight: 600; color: ${colorTheme.header}; font-family: 'Courier New', monospace; min-width: 80px; text-align: right;">
-                  ${safeDisplayValue}
-                </div>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: #9ca3af;">
-                <span>min: ${typeof min === 'number' ? fixed(min) : min}</span>
-                <span>max: ${typeof max === 'number' ? fixed(max) : max}</span>
-              </div>
-            </td>
-          `;
-        }
-
-        tableHtml += `
-          <tr style="background-color: ${rowBg};">
-            <td style="padding: 10px 12px; text-align: left; border-bottom: 1px solid ${colorTheme.border}; font-weight: 500; color: #374151; width: 40%;">
-              ${k}
-            </td>
-            ${valueCell}
-          </tr>
-        `;
-      });
-
-      tableHtml += `
-            </tbody>
-          </table>
-        </div>
-      `;
-
-      block.innerHTML = tableHtml;
       $blocks.push(block);
     }
   });
 
   if ($blocks.length > 0) {
-    const container = document.createElement('div');
-    container.style.textAlign = 'left';
-
-    // Add overview section
-    const overviewDiv = document.createElement('div');
-    overviewDiv.innerHTML = overviewHtml;
-    container.appendChild(overviewDiv);
-
-    // Add attribute blocks
-    $blocks.forEach((block) => container.appendChild(block));
-
-    const titleHtml = `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span>Node Details: ${g.id}</span>
-        ${isSelected ? '<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">SELECTED</span>' : ''}
-      </div>
-    `;
-    openDraggableDetailsWindow({ titleHtml, contentEl: container, originalEvent });
+    const tooltip = document.createElement('div');
+    tooltip.style.textAlign = 'right';
+    $blocks.forEach(block => tooltip.appendChild(block));
+    makeTippy(n, tooltip, `tippy-${g.id}`);
   }
 }
+
+// function buildDetailsTooltipFromNode(cy, n, originalEvent = undefined) {
+// KILLSWITCHED
+//   n.unselectify();
+//   cy.pendingSelectify = true;
+
+//   const g = n.data();
+//   const details = cy.vars.details.value;
+
+//   // Category color themes
+//   const categoryColors = {
+//     'Variable Values': { bg: '#eff6ff', header: '#3b82f6', border: '#bfdbfe' },
+//     'Reward Structures': { bg: '#f0fdf4', header: '#10b981', border: '#bbf7d0' },
+//     'Model Checking Results': { bg: '#faf5ff', header: '#8b5cf6', border: '#e9d5ff' },
+//   };
+
+//   // Gather graph metrics
+//   const incomingEdges = n.incomers('edge').length;
+//   const outgoingEdges = n.outgoers('edge').length;
+//   const degree = n.degree();
+//   const isSelected = n.selected();
+
+//   // Build overview section
+//   const overviewHtml = `
+//     <div style="background: #667eea; color: white; padding: 15px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+//       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+//         <div>
+//           <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Incoming</div>
+//           <div style="font-size: 20px; font-weight: bold;">${incomingEdges}</div>
+//         </div>
+//         <div>
+//           <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Outgoing</div>
+//           <div style="font-size: 20px; font-weight: bold;">${outgoingEdges}</div>
+//         </div>
+//         <div>
+//           <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Degree</div>
+//           <div style="font-size: 20px; font-weight: bold;">${degree}</div>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+
+//   const $blocks = [];
+
+//   Object.keys(details).forEach((d) => {
+//     if (!g.details[d]) return;
+
+//     const show =      details[d].all
+//       || Object.values(details[d].props).reduce((a, b) => a || b, false);
+
+//     if (show) {
+//       const colorTheme = categoryColors[d] || { bg: '#f9fafb', header: '#6b7280', border: '#e5e7eb' };
+//       const block = document.createElement('div');
+//       block.style.marginBottom = '20px';
+
+//       // Collect all values for this category to calculate min/max
+//       const categoryValues = {};
+//       const attributes = Object.keys(details[d].props).filter((p) => details[d].props[p]);
+
+//       attributes.forEach((k) => {
+//         const isNumber = details[d].metadata[k]?.type === 'number';
+//         if (isNumber && details[d].metadata[k]) {
+//           const min = details[d].metadata[k].min;
+//           const max = details[d].metadata[k].max;
+//           // Only add if min/max are valid numbers
+//           if (typeof min === 'number' && typeof max === 'number' && !isNaN(min) && !isNaN(max)) {
+//             categoryValues[k] = {
+//               value: g.details[d][k],
+//               min: min,
+//               max: max,
+//             };
+//           }
+//         }
+//       });
+
+//       // Build table HTML
+//       let tableHtml = `
+//         <div style="margin-bottom: 15px;">
+//           <div style="background: ${colorTheme.header}; color: white; padding: 10px; border-radius: 6px 6px 0 0; font-weight: bold; font-size: 14px; text-align: center; display: flex; justify-content: space-between; align-items: center;">
+//             <span>${d}</span>
+//             <span style="font-size: 11px; opacity: 0.9; font-weight: normal;">${attributes.length} attribute${attributes.length !== 1 ? 's' : ''}</span>
+//           </div>
+//           <table style="width: 100%; border-collapse: collapse; border: 1px solid ${colorTheme.border}; border-top: none;">
+//             <tbody>
+//       `;
+
+//       attributes.forEach((k, idx) => {
+//         const isNumber = details[d].metadata[k]?.type === 'number';
+//         const value = g.details[d][k];
+//         const displayValue = isNumber ? fixed(value) : value;
+//         const rowBg = idx % 2 === 0 ? '#ffffff' : colorTheme.bg;
+
+//         let valueCell = `<td style="padding: 10px 12px; text-align: right; border-bottom: 1px solid ${colorTheme.border}; font-weight: 600; color: ${colorTheme.header}; font-family: 'Courier New', monospace;">
+//           ${displayValue}
+//         </td>`;
+
+//         // Add range visualization for numeric values
+//         if (isNumber && categoryValues[k]) {
+//           const min = categoryValues[k].min;
+//           const max = categoryValues[k].max;
+//           const range = max - min;
+//           const percentage = range > 0 ? ((value - min) / range) * 100 : 50;
+
+//           // Ensure displayValue is valid for numeric display
+//           const safeDisplayValue = typeof value === 'number' && !isNaN(value) ? fixed(value) : value;
+
+//           // Add range indicator bar
+//           valueCell = `
+//             <td style="padding: 8px 12px; border-bottom: 1px solid ${colorTheme.border};">
+//               <div style="display: flex; align-items: center; gap: 10px;">
+//                 <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; position: relative; overflow: hidden;">
+//                   <div style="position: absolute; left: 0; top: 0; height: 100%; width: ${percentage}%; background: linear-gradient(90deg, ${colorTheme.header}cc, ${colorTheme.header}); border-radius: 4px; transition: width 0.3s;"></div>
+//                   <div style="position: absolute; left: ${percentage}%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 14px; background: ${colorTheme.header}; border-radius: 2px; box-shadow: 0 0 3px rgba(0,0,0,0.3);"></div>
+//                 </div>
+//                 <div style="font-weight: 600; color: ${colorTheme.header}; font-family: 'Courier New', monospace; min-width: 80px; text-align: right;">
+//                   ${safeDisplayValue}
+//                 </div>
+//               </div>
+//               <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: #9ca3af;">
+//                 <span>min: ${typeof min === 'number' ? fixed(min) : min}</span>
+//                 <span>max: ${typeof max === 'number' ? fixed(max) : max}</span>
+//               </div>
+//             </td>
+//           `;
+//         }
+
+//         tableHtml += `
+//           <tr style="background-color: ${rowBg};">
+//             <td style="padding: 10px 12px; text-align: left; border-bottom: 1px solid ${colorTheme.border}; font-weight: 500; color: #374151; width: 40%;">
+//               ${k}
+//             </td>
+//             ${valueCell}
+//           </tr>
+//         `;
+//       });
+
+//       tableHtml += `
+//             </tbody>
+//           </table>
+//         </div>
+//       `;
+
+//       block.innerHTML = tableHtml;
+//       $blocks.push(block);
+//     }
+//   });
+
+//   if ($blocks.length > 0) {
+//     const container = document.createElement('div');
+//     container.style.textAlign = 'left';
+
+//     // Add overview section
+//     const overviewDiv = document.createElement('div');
+//     overviewDiv.innerHTML = overviewHtml;
+//     container.appendChild(overviewDiv);
+
+//     // Add attribute blocks
+//     $blocks.forEach((block) => container.appendChild(block));
+
+//     const titleHtml = `
+//       <div style="display: flex; align-items: center; gap: 10px;">
+//         <span>Node Details: ${g.id}</span>
+//         ${isSelected ? '<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">SELECTED</span>' : ''}
+//       </div>
+//     `;
+//     openDraggableDetailsWindow({ titleHtml, contentEl: container, originalEvent });
+//   }
+// }
 
 function buildComparisonTooltip(cy, nodes) {
   // Support both single comparison (2 nodes) and multi-node comparison
