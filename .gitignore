@@ -16,6 +16,7 @@ package-lock.json
 **/.idea
 .idea
 **/dist
+**/server/db
 
 backend/server/target
 backend/prism

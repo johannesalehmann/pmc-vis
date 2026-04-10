@@ -1,7 +1,12 @@
-import { v4 as uuidv4 } from 'uuid';
+import shortid from 'shortid';
 import Swal from 'sweetalert2/dist/sweetalert2.all.min.js';
 
-import { setPane } from '../../utils/controls.js';
+import {
+  setPane,
+  PROJECT,
+  updateGraphComparison,
+  updateCurvedConnectors,
+} from '../../utils/controls.js';
 import { colorList } from '../../utils/utils.js';
 import { CONSTANTS } from '../../utils/names.js';
 import makeCtxMenu from './ctx-menu.js';
@@ -11,9 +16,9 @@ import { socket } from '../imports/import-socket.js';
 const MIN_FLEX_GROW = 0.005;
 const MIN_SIZE = 10;
 const panes = {}; // governs the pane-based exploration
+const allPanesRegistry = {};
 const tracker = {}; // keeps track of already seen nodes, marks, etc.
 
-// let width;
 let height;
 const maxheight = () => height - MIN_SIZE * 2;
 
@@ -27,8 +32,164 @@ socket.on('disconnect', () => {
   location.reload();
 });
 
+// ============================================================================
+// Matrix Hover Cross-Pane Synchronization
+// ============================================================================
+
+/**
+ * Resolve a state node element in Cytoscape by its ID.
+ * Tries direct ID lookup first, then falls back to searching by data ID.
+ * Only returns state nodes (type === 's').
+ *
+ * @param {Object} cy - Cytoscape instance
+ * @param {string} nodeId - The node ID to resolve
+ * @returns {Object|null} The Cytoscape node element, or null if not found
+ */
+function resolveStateNodeElement(cy, nodeId) {
+  if (!cy || !nodeId) return null;
+
+  // Try direct ID lookup first
+  try {
+    const direct = cy.getElementById(nodeId);
+    if (direct && direct.nonempty && direct.isNode && direct.isNode() && direct.data('type') === 's') {
+      return direct;
+    }
+  } catch {
+    // Ignore errors and try fallback
+  }
+
+  // Fallback: search by data('id') property
+  try {
+    const fallback = cy.nodes().filter((n) => n.data('id') === nodeId && n.data('type') === 's');
+    if (fallback && fallback.length > 0) {
+      return fallback;
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  return null;
+}
+
+/**
+ * Apply matrix hover highlighting to Cytoscape nodes and edges.
+ * Called in response to the global 'matrix-hover' event to synchronize
+ * hover state across all panes.
+ *
+ * @param {Object} cy - Cytoscape instance
+ * @param {Array<string>} ids - Array of node IDs to highlight
+ * @param {Object} [edge] - Optional edge info {fromId, toId} for edge highlighting
+ */
+function applyMatrixHoverToCy(cy, ids, edge = null) {
+  if (!cy) return;
+
+  // Initialize tracking set for previously highlighted nodes
+  cy._matrixHoverGlobalIds ||= new Set();
+  cy._matrixHoverEdges ||= [];
+
+  // Clear previous hover highlights (nodes)
+  if (cy._matrixHoverGlobalIds.size > 0) {
+    Array.from(cy._matrixHoverGlobalIds).forEach((id) => {
+      const el = resolveStateNodeElement(cy, id);
+      try {
+        el?.removeClass?.('matrix-hover');
+      } catch {
+        // Ignore errors
+      }
+    });
+    cy._matrixHoverGlobalIds.clear();
+  }
+
+  // Clear previous hover highlights (edges)
+  if (cy._matrixHoverEdges.length > 0) {
+    cy._matrixHoverEdges.forEach((edgeEl) => {
+      try {
+        edgeEl?.removeClass?.('matrix-hover');
+      } catch {
+        // Ignore errors
+      }
+    });
+    cy._matrixHoverEdges = [];
+  }
+
+  // Apply new highlights to nodes
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+  if (uniqueIds.length === 0) return;
+
+  uniqueIds.forEach((id) => {
+    const el = resolveStateNodeElement(cy, id);
+    try {
+      el?.addClass?.('matrix-hover');
+      cy._matrixHoverGlobalIds.add(id);
+    } catch {
+      // Ignore errors
+    }
+  });
+
+  // Apply highlight to edge if edge info is provided
+  if (edge && edge.fromId && edge.toId) {
+    try {
+      // The graph structure uses transition nodes (t-nodes) between state nodes.
+      // So an edge from state A to state B is actually: A -> tX -> B
+      // We need to find the transition node(s) that connect the two states.
+      const allEdges = cy.edges();
+
+      // Build a map of outgoing edges from each node
+      const outgoingEdges = new Map(); // nodeId -> [{ edge, targetId }]
+
+      allEdges.forEach((e) => {
+        const sourceId = e.data('source');
+        const targetId = e.data('target');
+
+        if (!outgoingEdges.has(sourceId)) outgoingEdges.set(sourceId, []);
+        outgoingEdges.get(sourceId).push({ edge: e, targetId });
+      });
+
+      // Find edges: fromId -> t* -> toId
+      const fromOutgoing = outgoingEdges.get(edge.fromId) || [];
+
+      fromOutgoing.forEach(({ edge: edgeToT, targetId: tNodeId }) => {
+        if (tNodeId && tNodeId.toString().startsWith('t')) {
+          const tOutgoing = outgoingEdges.get(tNodeId) || [];
+          tOutgoing.forEach(({ edge: edgeFromT, targetId: finalTarget }) => {
+            if (finalTarget === edge.toId) {
+              edgeToT.addClass('matrix-hover');
+              edgeFromT.addClass('matrix-hover');
+              cy._matrixHoverEdges.push(edgeToT);
+              cy._matrixHoverEdges.push(edgeFromT);
+            }
+          });
+        }
+      });
+
+      // Also check reverse direction: toId -> t* -> fromId
+      const toOutgoing = outgoingEdges.get(edge.toId) || [];
+
+      toOutgoing.forEach(({ edge: edgeToT, targetId: tNodeId }) => {
+        if (tNodeId && tNodeId.toString().startsWith('t')) {
+          const tOutgoing = outgoingEdges.get(tNodeId) || [];
+          tOutgoing.forEach(({ edge: edgeFromT, targetId: finalTarget }) => {
+            if (finalTarget === edge.fromId) {
+              edgeToT.addClass('matrix-hover');
+              edgeFromT.addClass('matrix-hover');
+              cy._matrixHoverEdges.push(edgeToT);
+              cy._matrixHoverEdges.push(edgeFromT);
+            }
+          });
+        }
+      });
+    } catch {
+      // Ignore errors
+    }
+  }
+}
+
+// ============================================================================
+// Pane Management Utilities
+// ============================================================================
+
 function uid() {
-  return 'id' + uuidv4().replace(/-/g, '');
+  return 'id' + shortid.generate();
 }
 
 function updateHeights() {
@@ -156,13 +317,19 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
   }
 
   panes[div.id] = pane;
+  allPanesRegistry[pane.id] = {
+    ...pane,
+    destroyed: false,
+  };
   const paneKeysAfter = Object.keys(panes);
-  if (spawner && panes[spawner]) {
-    if (spawner.length > 0) {
-      // TODO, eg merged
-    }
-    panes[spawner].spawned ||= new Set();
-    panes[spawner].spawned.add(div.id); // remembers which panes were created from this one
+  if (spawner) {
+    const spawners = Array.isArray(spawner) ? spawner : [spawner];
+    spawners.forEach(spawnerId => {
+      if (panes[spawnerId]) {
+        panes[spawnerId].spawned ||= new Set();
+        panes[spawnerId].spawned.add(div.id);
+      }
+    });
   }
 
   enableDragBars();
@@ -175,7 +342,21 @@ function spawnPane({ spawner, id, newPanePosition }, nodesIds, spawnerNodes) {
         firstOnly: true,
         pre: true,
       },
-    );
+    ).catch(error => {
+      console.error('Error destroying panes:', error);
+    });
+  }
+
+  // trigger graph comparison update if enabled
+  const checkbox = document.getElementById('checkbox-graph-comparison');
+  if (checkbox?.checked) {
+    updateGraphComparison(true);
+  }
+
+  // trigger curved connectors update if enabled
+  const curvedCheckbox = document.getElementById('checkbox-curved-connectors');
+  if (curvedCheckbox?.checked) {
+    updateCurvedConnectors(true);
   }
 
   return pane;
@@ -403,17 +584,124 @@ function getPanes() {
 }
 
 function updatePanes(newPanesData) {
-  Object.keys(newPanesData).forEach((k) => (panes[k] = newPanesData[k]));
+  Object.keys(newPanesData).forEach((k) => {
+    panes[k] = newPanesData[k];
+    if (allPanesRegistry[k]) {
+      allPanesRegistry[k] = {
+        ...allPanesRegistry[k],
+        ...newPanesData[k],
+        destroyed: false,
+      };
+    } else {
+      allPanesRegistry[k] = {
+        ...newPanesData[k],
+        destroyed: false,
+      };
+    }
+    if (panes[k]) {
+      clearTimeout(panes[k]._storeTimeout);
+      panes[k]._storeTimeout = setTimeout(() => {
+        storePaneToServer(k, panes[k]).catch(error => {
+          console.warn(`Failed to auto-store pane ${k}:`, error);
+        });
+      }, 1000);
+    }
+  });
 }
 
-// recursively destroy every pane starting from an id
-function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
+// Store pane data to server
+async function storePaneToServer(paneId, paneData) {
+  try {
+    const paneInfo = {
+      id: paneId,
+      nodesIds: Array.from(paneData.nodesIds || []),
+      spawner: paneData.spawner,
+      spawnerNodes: paneData.spawnerNodes,
+      backgroundColor: paneData.backgroundColor,
+      cyData: paneData.cy ? paneData.cy.json() : null,
+    };
+
+    const content = JSON.stringify(paneInfo);
+    const encodedPaneId = encodeURIComponent(paneId);
+
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane/store?pane_id=${encodedPaneId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: content,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`Failed to store pane ${paneId} to server: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to store pane: ${response.status}`);
+    }
+
+    console.log(`Successfully stored pane ${paneId} to server`);
+  } catch (error) {
+    console.error(`Error storing pane ${paneId} to server:`, error);
+    throw error;
+  }
+}
+
+// Fetch pane data from server
+async function fetchPaneFromServer(paneId) {
+  try {
+    const response = await fetch(`${BACKEND}/${PROJECT}/pane?pane_id=${paneId}`);
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 500) {
+        return null;
+      }
+      return null;
+    }
+    const data = await response.json();
+    if (data && typeof data === 'object') {
+      const paneData = data[paneId];
+      if (paneData) {
+        if (typeof paneData === 'string') {
+          try {
+            return JSON.parse(paneData);
+          } catch {
+            try {
+              const decoded = decodeURIComponent(escape(atob(paneData)));
+              return JSON.parse(decoded);
+            } catch (e2) {
+              console.warn(`Failed to parse pane data for ${paneId}:`, e2);
+              return null;
+            }
+          }
+        }
+        return paneData;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn(`Error fetching pane ${paneId} from server:`, error);
+    return null;
+  }
+}
+
+async function destroyPanes(firstId, {
+  firstOnly = false, pre = false, manualRemoval = false,
+} = {}) {
   const pane = document.getElementById(firstId);
 
   if (pane) {
     if (panes[firstId] && panes[firstId].spawned?.size > 0) {
       if (!firstOnly) {
-        panes[firstId].spawned.forEach(p => destroyPanes(p));
+        const spawnedArray = Array.from(panes[firstId].spawned);
+        for (let i = 0; i < spawnedArray.length; i += 1) {
+          await destroyPanes(spawnedArray[i], { manualRemoval });
+        }
+      }
+    }
+
+    if (panes[firstId]) {
+      try {
+        await storePaneToServer(firstId, panes[firstId]);
+      } catch (error) {
+        console.error(`Failed to store pane ${firstId} before destruction:`, error);
       }
     }
 
@@ -423,6 +711,14 @@ function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
     }
 
     pane.remove();
+
+    if (manualRemoval) {
+      delete allPanesRegistry[firstId];
+      socket.emit('pane removed', firstId);
+    } else if (allPanesRegistry[firstId]) {
+      allPanesRegistry[firstId].destroyed = true;
+    }
+
     delete panes[firstId];
 
     const newKeys = Object.keys(panes);
@@ -431,14 +727,95 @@ function destroyPanes(firstId, { firstOnly = false, pre = false } = {}) {
     });
 
     if (!pre) {
-      setPane(panes[newKeys[newKeys.length - 1]].id);
+      const lastPaneId = newKeys[newKeys.length - 1];
+
+      highlightPaneById(lastPaneId);
     }
 
     socket.emit('pane removed', firstId);
+
+    // trigger graph comparison update if enabled
+    const checkbox = document.getElementById('checkbox-graph-comparison');
+    if (checkbox?.checked) {
+      updateGraphComparison(true);
+    }
+
+    // trigger curved connectors update if enabled
+    const curvedCheckbox = document.getElementById('checkbox-curved-connectors');
+    if (curvedCheckbox?.checked) {
+      updateCurvedConnectors(true);
+    }
   }
 }
 
-function highlightPaneById(paneId) {
+async function restorePaneFromServer(paneId) {
+  if (!allPanesRegistry[paneId] || !allPanesRegistry[paneId].destroyed) {
+    console.log(`Pane ${paneId} is not in destroyed state, skipping restore`);
+    return false;
+  }
+
+  console.log(`Attempting to restore pane ${paneId} from server...`);
+  let serverData = null;
+  try {
+    serverData = await fetchPaneFromServer(paneId);
+  } catch (error) {
+    console.warn(`Error fetching pane ${paneId} from server:`, error);
+  }
+
+  const { spawnGraph } = await import('../graph/node-link.js');
+  const { params } = await import('../graph/layout-options/klay.js');
+
+  const registryPane = allPanesRegistry[paneId];
+  const nodesIds = serverData?.nodesIds || Array.from(registryPane.nodesIds || []);
+
+  if (nodesIds.length === 0) {
+    console.warn(`Cannot restore pane ${paneId}: no node IDs available`);
+    return false;
+  }
+
+  const pane = spawnPane(
+    {
+      spawner: registryPane.spawner,
+      id: paneId,
+      newPanePosition: { value: 'end' },
+    },
+    nodesIds,
+    registryPane.spawnerNodes,
+  );
+
+  if (serverData?.cyData && spawnGraph) {
+    try {
+      const data = {
+        cyImport: serverData.cyData,
+        nodes: serverData.cyData.elements?.nodes || [],
+        edges: serverData.cyData.elements?.edges || [],
+      };
+      const layoutParams = params.default || params;
+      spawnGraph(pane, data, layoutParams);
+    } catch (error) {
+      console.warn(`Error restoring graph for pane ${paneId}:`, error);
+    }
+  } else if (nodesIds.length > 0) {
+    console.log(`Pane ${paneId} has no stored graph data, will need to expand nodes`);
+  }
+
+  if (allPanesRegistry[paneId]) {
+    allPanesRegistry[paneId].destroyed = false;
+  }
+
+  console.log(`Successfully restored pane ${paneId}`);
+  return true;
+}
+
+async function highlightPaneById(paneId) {
+  if (!panes[paneId]) {
+    const restored = await restorePaneFromServer(paneId);
+    if (!restored) {
+      console.warn(`Pane ${paneId} not found and could not be restored`);
+      return;
+    }
+  }
+
   const paneDiv = document.getElementById(paneId);
   setPane(paneId);
   if (paneDiv) {
@@ -456,8 +833,6 @@ function highlightPaneById(paneId) {
 }
 
 function updateDocDims() {
-  // width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
   const navHeight = parseInt(
     // turns NNpx into NN
     window.getComputedStyle(document.body).getPropertyValue('--nav-height'),
@@ -483,7 +858,7 @@ addEventListener('resize', () => {
     document.getElementById(panes[pane].container).style.height = height * (1 - panes[pane].split) + 'px';
     document.getElementById(panes[pane].details).style.height = height * panes[pane].split + 'px';
   });
-});
+}, { passive: true });
 
 addEventListener('global-action', (e) => {
   if (e.detail.action === 'propagate') {
@@ -514,6 +889,68 @@ addEventListener('global-action', (e) => {
     });
   }
 });
+
+window.addEventListener('matrix-hover', (e) => {
+  const ids = e?.detail?.ids || [];
+  const edge = e?.detail?.edge || null;
+  Object.values(getPanes()).forEach((pane) => {
+    applyMatrixHoverToCy(pane?.cy, ids, edge);
+    try {
+      // Also highlight in PCP if available
+      if (pane?.cy?.pcp) {
+        if (ids.length > 0) {
+          // Highlight all hovered node IDs in the PCP
+          pane.cy.pcp.highlightNode(ids);
+        } else {
+          pane.cy.pcp.clearHighlight();
+        }
+      }
+    } catch {
+      console.log('tried to draw on unrendered pcp canvas...');
+    }
+  });
+});
+
+// Synchronize matrix selection across all panes
+// window.addEventListener('matrix-selection', (e) => {
+//   const sourcePaneId = e?.detail?.sourcePaneId;
+//   const nodeId = e?.detail?.nodeId;
+//   const isSelected = e?.detail?.isSelected;
+
+//   if (!nodeId) return;
+
+//   Object.values(getPanes()).forEach((pane) => {
+//     // Skip the source pane (it already has the selection)
+//     if (pane?.id === sourcePaneId) return;
+
+//     const cy = pane?.cy;
+//     if (!cy) return;
+
+//     // Find the node in this pane
+//     let el = cy.getElementById(nodeId);
+//     if (!(el && el.nonempty && el.isNode && el.isNode() && el.data('type') === 's')) {
+//       el = cy.nodes().filter((n) => n.data('id') === nodeId && n.data('type') === 's');
+//     }
+
+//     const empty = (
+//       !el || (el.nonempty !== undefined && !el.nonempty)
+//       || (el.length !== undefined && el.length === 0));
+//     if (empty) return;
+
+//     try {
+//       // Make selectable temporarily if needed
+//       if (typeof el.selectify === 'function') el.selectify();
+
+//       if (isSelected) {
+//         if (typeof el.select === 'function') el.select();
+//       } else if (typeof el.unselect === 'function') {
+//         el.unselect();
+//       }
+//     } catch {
+//       // Ignore errors
+//     }
+//   });
+// });
 
 document.getElementById('export-strat')?.addEventListener('click', () => {
   if (!tracker['mark']) {
@@ -668,7 +1105,7 @@ document
             formValues.props[0],
           );
 
-          formValues.name ||= uuidv4();
+          formValues.name ||= shortid.generate();
           redirectName = formValues.name;
           return fetch(
             `${BACKEND}/${formValues.name}/create-project`,

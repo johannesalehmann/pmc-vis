@@ -18,7 +18,6 @@ export default defineConfig([
         tippy: 'readonly',
         Swal: 'readonly',
         JSZip: 'readonly',
-        uuidv4: 'readonly',
       },
     },
   },

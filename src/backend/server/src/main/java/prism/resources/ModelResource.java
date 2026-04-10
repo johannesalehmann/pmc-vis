@@ -5,7 +5,6 @@ import io.dropwizard.setup.Environment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import prism.api.Message;
-import prism.core.View.ViewType;
 import prism.server.PRISMServerConfiguration;
 import prism.server.TaskManager;
 
@@ -32,11 +31,13 @@ public class ModelResource extends Resource {
     public Response createUpperGraph(
             @Parameter(description = "identifier of project")
             @PathParam("project_id") String projectID,
-            @QueryParam("view") List<Integer> viewID
+            @QueryParam("version") Optional<String> version
     ) {
         try{
+            refreshProject(projectID);
             if (!tasks.containsProject(projectID)) return error(new Message(String.format("Project %s not found", projectID)));
-            return ok(tasks.getProject(projectID).getGraph(viewID));
+            if (version.isPresent()) return ok(tasks.getProject(projectID).getGraph(version.get()));
+            return ok(tasks.getProject(projectID).getGraph());
         } catch (Exception e) {
             return error(e);
         }
@@ -50,8 +51,10 @@ public class ModelResource extends Resource {
             @Parameter(description = "identifier of project")
             @PathParam("project_id") String projectID,
             @Parameter(description = "Identifier of target node", required = true)
-            @PathParam("id") String nodeID
+            @PathParam("id") String nodeID,
+            @QueryParam("version") Optional<String> version
     ) {
+        if(version.isPresent()) return ok(tasks.getProject(projectID).getState(nodeID, version.get()));
         return ok(tasks.getProject(projectID).getState(nodeID));
     }
 
@@ -62,10 +65,11 @@ public class ModelResource extends Resource {
     public Response getSubGraph(
             @Parameter(description = "identifier of project") @PathParam("project_id") String projectID,
             @Parameter(description = "Identifier of target node", required = true) @QueryParam("id") List<String> nodeIDs,
-            @QueryParam("view") List<Integer> viewID
+            @QueryParam("version") Optional<String> version
     ) {
         refreshProject(projectID);
-        return ok(tasks.getProject(projectID).getSubGraph(nodeIDs, viewID));
+        if(version.isPresent()) return ok(tasks.getProject(projectID).getSubGraph(nodeIDs, version.get()));
+        return ok(tasks.getProject(projectID).getSubGraph(nodeIDs));
     }
 
     @Path("/reset")
@@ -76,9 +80,10 @@ public class ModelResource extends Resource {
             @Parameter(description = "identifier of project") @PathParam("project_id") String projectID,
             @Parameter(description = "Identifier of target node", required = true) @QueryParam("id") List<String> nodeIDs,
             @Parameter(description = "Identifier of target node that is not explored", required = true) @QueryParam("idu") List<String> unexploredNodeIDs,
-            @QueryParam("view") List<Integer> viewID
+            @QueryParam("version") Optional<String> version
     ) {
         refreshProject(projectID);
+        if(version.isPresent()) return ok(tasks.getProject(projectID).resetGraph(nodeIDs, unexploredNodeIDs, version.get()));
         return ok(tasks.getProject(projectID).resetGraph(nodeIDs, unexploredNodeIDs));
     }
 
@@ -89,29 +94,29 @@ public class ModelResource extends Resource {
     public Response getOutgoing(
             @Parameter(description = "identifier of project") @PathParam("project_id") String projectID,
             @Parameter(description = "Identifier of target node", required = true) @QueryParam("id") List<String> nodeIDs,
-            @QueryParam("view") List<Integer> viewID
+            @QueryParam("version") Optional<String> version
     ) {
         refreshProject(projectID);
         if (!tasks.containsProject(projectID)) return error(String.format("project %s not open", projectID));
-        return ok(tasks.getProject(projectID).getOutgoing(nodeIDs, viewID));
+        if(version.isPresent()) return ok(tasks.getProject(projectID).getOutgoing(nodeIDs, version.get()));
+        return ok(tasks.getProject(projectID).getOutgoing(nodeIDs));
     }
 
     @Path("/initial")
     @GET
-    @Timed(name="initial")
     @Operation(summary = "Returns all initial nodes", description = "Returns all nodes that are marked as initial states")
     public Response getInitial(
             @Parameter(description = "identifier of project")
             @PathParam("project_id") String projectID,
-            @QueryParam("view") List<Integer> viewID
+            @QueryParam("version") Optional<String> version
     ) {
         refreshProject(projectID);
-        return ok(tasks.getProject(projectID).getInitialNodes(viewID));
+        if (version.isPresent()) return ok(tasks.getProject(projectID).getInitialNodes(version.get()));
+        return ok(tasks.getProject(projectID).getInitialNodes());
     }
 
     @Path("/files")
     @GET
-    @Timed(name="initial")
     @Operation(summary = "Returns the project files", description = "Returns the filename of all files that are currently placed in the project")
     public Response getFileStructure(
             @Parameter(description = "identifier of project")
@@ -124,7 +129,6 @@ public class ModelResource extends Resource {
 
     @Path("/file:{file}")
     @GET
-    @Timed(name="initial")
     @Operation(summary = "Returns the project files", description = "Returns the filename of all files that are currently placed in the project")
     public Response getFileContent(
             @Parameter(description = "identifier of project")
@@ -136,25 +140,53 @@ public class ModelResource extends Resource {
         return ok(tasks.getProject(projectID).getFileContent(fileID));
     }
 
-    @Path("/view:{type}")
+    @Path("/schedulers")
     @GET
-    @Operation(summary = "Creates a views", description = "Creates a new view in the project")
-    public Response createView(
+    @Operation(summary = "Returns the project files", description = "Returns the filename of all files that are currently placed in the project")
+    public Response getSchedulerIdentifier(
+            @Parameter(description = "identifier of project")
+            @PathParam("project_id") String projectID
+    ) {
+        refreshProject(projectID);
+        return ok(tasks.getProject(projectID).getSchedulers());
+    }
+
+    @Path("/scheduler:{scheduler}")
+    @GET
+    @Operation(summary = "Returns the project files", description = "Returns the filename of all files that are currently placed in the project")
+    public Response getScheduler(
             @Parameter(description = "identifier of project")
             @PathParam("project_id") String projectID,
-            @PathParam("type") ViewType type,
-            @QueryParam("param") List<String> parameters,
-            @QueryParam("limit_expression") String expression,
-            @QueryParam("limit_data") String data
+            @Parameter(description = "id of the targeted file")
+            @PathParam("scheduler") String schedulerID
     ) {
-        try {
-            tasks.getProject(projectID).createView(type, parameters);
-            return ok("Created View");
-
+        try{
+        refreshProject(projectID);
+        return ok(tasks.getProject(projectID).getScheduler(schedulerID));
         } catch (Exception e) {
-            System.out.println(e.getCause());
-            e.printStackTrace();
             return error(e);
         }
     }
+
+//    @Path("/view:{type}")
+//    @GET
+//    @Operation(summary = "Creates a views", description = "Creates a new view in the project")
+//    public Response createView(
+//            @Parameter(description = "identifier of project")
+//            @PathParam("project_id") String projectID,
+//            @PathParam("type") ViewType type,
+//            @QueryParam("param") List<String> parameters,
+//            @QueryParam("limit_expression") String expression,
+//            @QueryParam("limit_data") String data
+//    ) {
+//        try {
+//            tasks.getProject(projectID).createView(type, parameters);
+//            return ok("Created View");
+//
+//        } catch (Exception e) {
+//            System.out.println(e.getCause());
+//            e.printStackTrace();
+//            return error(e);
+//        }
+//    }
 }
