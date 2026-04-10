@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -117,7 +118,13 @@ public class ResponsibilityTask extends DataProviderTask {
                 output.add(line);
             }
 
-            int exitVal = process.waitFor();
+            boolean finished = process.waitFor(Long.getLong(arguments.get("timeout")), TimeUnit.MILLISECONDS);
+
+            if (!finished) {
+                throw new RuntimeException("Timeout after " + arguments.get("timeout") + " milliseconds");
+            }
+
+            int exitVal = process.exitValue();
             if (exitVal == 0) {
                 Map<String, String> map = new HashMap<>();
                 if (g.equals("individual")) {

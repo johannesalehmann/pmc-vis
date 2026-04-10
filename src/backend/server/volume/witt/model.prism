@@ -30,7 +30,7 @@ module AnalysisMachine
     [] (state=1) -> 0.5: (state'=2) + 0.5: (state'=4);
 
     [Sample] (state=2 & time<3) -> true;
-    [TakeSample] (state=2 & time<3) -> (time'=time+1) & (temp1'=min(25, temp1+sample_value));
+    [TakeSample] (state=2 & time<3) -> (time'=time+1)&(temp1'=min(25, temp1+sample_value));
     [] (state=2 & time<=3 & !sample_ready) -> (state'=3);
 
     [] (state=3 & temp1 < 5) -> (state'=6)&(analysis_result'=false);

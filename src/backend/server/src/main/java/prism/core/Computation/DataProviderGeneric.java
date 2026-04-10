@@ -82,9 +82,9 @@ public class DataProviderGeneric<T extends DataProviderTask> implements DataProv
     public void addProperty(String name, String expression) {
         try {
             int id = tasks.size();
-            Map<String, Object> args = new HashMap<>();
+            Map<String, String> args = new HashMap<>();
             args.put("executable", executable);
-            args.put("timeout", timeout);
+            args.put("timeout", String.valueOf(timeout));
             args.putAll(extraArguments);
             T task = taskConstructor.newInstance(this.name, id, parent, name, expression, args);
             if (task.isReady()){
