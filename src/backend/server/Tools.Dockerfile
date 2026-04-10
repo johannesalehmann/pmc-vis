@@ -52,10 +52,6 @@ RUN make
 
 RUN cp switss-multi /usr/local/bin/
 
-#Hook gurobi license
-VOLUME ["/data"]
-ENV GRB_LICENSE_FILE="/data/gurobi.lic"
-
 WORKDIR /home/prismServer
 
 #Load the SPR Tool
@@ -85,6 +81,10 @@ RUN sed -i 's/\r$//' bin/run && chmod +x bin/run && chmod +x bin/initdb
 USER prismServer
 
 RUN /bin/bash -c 'bin/initdb'
+
+#Hook gurobi license
+VOLUME ["/data"]
+ENV GRB_LICENSE_FILE="/data/gurobi.lic"
 
 ENTRYPOINT ["bin/run", "server", "DockerTools.yml"]
 
