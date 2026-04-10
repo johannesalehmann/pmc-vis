@@ -1608,7 +1608,7 @@ function makeGraphComparisonSettings() {
   // Button: Merge into unified view
   const $buttonMerge = h('button', {
     class: 'ui button',
-    style: 'margin-top: 10px',
+    style: 'margin-top: 5px',
     title: 'Create a merge view\nfrom the contents of panes',
   }, [h('span', {}, [t('Create Unified View')])]);
   $buttonMerge.addEventListener('click', () => {
